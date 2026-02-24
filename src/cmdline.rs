@@ -23,7 +23,7 @@ use clap::Parser;
 #[command(name = "mpi_wrapper", author = "C. Pospiech", version = "0.1", about = "Create wrapper files for MPI profiler", long_about = None)]
 pub struct CliArgs {
     /// Verbose output
-    #[arg(short = 'v', long, default_value_t = false)]
+    #[arg(short = 'v', long, default_value_t = true)]
     pub verbose: bool,
 
     /// Perform a dry run without making actual changes
@@ -31,6 +31,7 @@ pub struct CliArgs {
     pub dry_run: bool,
 
     /// Input file to process
+    #[arg(default_value = "/home/cp/Documents/MPI/mpi31-report.pdf")]
     pub input_file: String,
 }
 
