@@ -16,6 +16,14 @@
 // Description: ~/tools/Rust/mpi_wrapper/src/main.rs
 // Author: Dr. Christoph Pospiech
 
-fn main() {
+use anyhow::Result;
+
+pub(crate) mod cmdline;
+
+fn main() -> Result<()> {
+    let args = cmdline::parse_args()?;
+    cmdline::echo_args(&args)?;
+
     println!("Hello, world!");
+    Ok(())
 }
