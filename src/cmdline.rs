@@ -20,7 +20,13 @@ use anyhow::Result;
 use clap::Parser;
 
 #[derive(Parser, Debug, Default)]
-#[command(name = "mpi_wrapper", author = "C. Pospiech", version = "0.1", about = "Create wrapper files for MPI profiler", long_about = None)]
+#[command(
+    name = env!("CARGO_PKG_NAME"),
+    author = env!("CARGO_PKG_AUTHORS"),
+    version = env!("CARGO_PKG_VERSION"),
+    about = env!("CARGO_PKG_DESCRIPTION"),
+    long_about = None
+)]
 pub struct CliArgs {
     /// Verbose output
     #[arg(short = 'v', long, default_value_t = true)]
