@@ -743,7 +743,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "mpi_wrapper"
+name = "mpi_wrap_gen"
 version = "0.2.0"
 dependencies = [
  "anyhow",
