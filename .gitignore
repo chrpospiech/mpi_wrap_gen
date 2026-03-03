@@ -4,7 +4,7 @@
 __pycache__/
 .env
 *.log
-mpi_wrapper.code-workspace
+mpi_wrap_gen.code-workspace
 pyproject.toml
 .mdl*
 uv.lock
