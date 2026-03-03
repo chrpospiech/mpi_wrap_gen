@@ -4,7 +4,7 @@
 __pycache__/
 .env
 *.log
-lmx2db.code-workspace
+mpi_wrapper.code-workspace
 pyproject.toml
 .mdl*
 uv.lock
