@@ -1,4 +1,4 @@
-// Copyright 2026 MPI_wrapper C. Pospiech
+// Copyright 2026 mpi_wrap_gen C. Pospiech
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 // File: main.rs
-// Description: ~/tools/Rust/mpi_wrapper/src/main.rs
+// Description: ~/tools/Rust/mpi_wrap_gen/src/main.rs
 // Author: Dr. Christoph Pospiech
 
 use anyhow::Result;
