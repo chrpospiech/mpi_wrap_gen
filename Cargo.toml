@@ -1,5 +1,5 @@
 [package]
-name = "mpi_wrapper"
+name = "mpi_wrap_gen"
 version = "0.2.0"
 authors = ["C. Pospiech <pospiech-HD@t-online.de>"]
 description = "Create wrapper files for MPI profiler"
