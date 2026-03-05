@@ -26,8 +26,13 @@ fn main() -> Result<()> {
     let args = cmdline::parse_args()?;
     cmdline::echo_args(&args)?;
 
+    if args.dry_run {
+        println!("Dry-run mode: skipping PDF processing.");
+        return Ok(());
+    }
+
     let mut doc = PdfDocument::open(&args.input_file)?;
-    if args.dry_run || args.verbose {
+    if args.verbose {
         println!("PDF opened successfully: {:?}", &doc);
     }
 
