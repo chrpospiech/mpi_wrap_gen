@@ -749,6 +749,7 @@ dependencies = [
  "anyhow",
  "clap",
  "pdf_oxide",
+ "regex",
 ]
 
 [[package]]

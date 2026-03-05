@@ -31,15 +31,10 @@ fn main() -> Result<()> {
         println!("PDF opened successfully: {:?}", &doc);
     }
 
-    let text = doc.extract_text(55)?;
-    println!("{text}");
-
-    if let Some(outline) = doc.get_outline()? {
-        let page_ref_to_index = chapters::build_page_ref_to_index_map(&mut doc)?;
-        println!("PDF Outline:");
-        chapters::print_outline_items(&mut doc, &outline, &page_ref_to_index, 0)?;
+    if let Ok(chapter_indices) = chapters::get_page_indices_for_chapters(&mut doc) {
+        println!("Chapter indices: {:?}", chapter_indices);
     } else {
-        println!("No outline found in the PDF.");
+        println!("Failed to extract chapter indices.");
     }
 
     println!("Hello, world!");

@@ -20,9 +20,37 @@ use anyhow::Result;
 use pdf_oxide::object::{Object, ObjectRef};
 use pdf_oxide::Destination;
 use pdf_oxide::PdfDocument;
+use regex::Regex;
 use std::collections::HashMap;
 
-pub fn build_page_ref_to_index_map(doc: &mut PdfDocument) -> Result<HashMap<ObjectRef, usize>> {
+pub fn get_page_indices_for_chapters(doc: &mut PdfDocument) -> Result<HashMap<i32, usize>> {
+    let page_ref_to_index = build_page_ref_to_index_map(doc)?;
+    let mut chapter_indices = HashMap::new();
+    let chapter_regex = Regex::new(r"chapter\.(\d+)")?;
+
+    if let Some(outline) = doc.get_outline()? {
+        for item in &outline {
+            if let Some(Destination::Named(name)) = &item.dest {
+                if let Some(caps) = chapter_regex.captures(name) {
+                    if let Some(page_index) =
+                        resolve_named_destination_page_index(doc, &page_ref_to_index, name)?
+                    {
+                        if let Some(chapter_number) = caps
+                            .get(1)
+                            .and_then(|m: regex::Match<'_>| m.as_str().parse::<i32>().ok())
+                        {
+                            chapter_indices.insert(chapter_number, page_index);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(chapter_indices)
+}
+
+fn build_page_ref_to_index_map(doc: &mut PdfDocument) -> Result<HashMap<ObjectRef, usize>> {
     let mut page_ref_to_index = HashMap::new();
     let catalog = doc.catalog()?;
     let pages_ref = catalog
@@ -71,47 +99,6 @@ fn collect_page_refs(
     }
 
     Ok(())
-}
-
-pub fn print_outline_items(
-    doc: &mut PdfDocument,
-    items: &[pdf_oxide::OutlineItem],
-    page_ref_to_index: &HashMap<ObjectRef, usize>,
-    depth: usize,
-) -> Result<()> {
-    let chapters_only: bool = true;
-    for item in items {
-        let should_print = match &item.dest {
-            Some(Destination::Named(name)) => !chapters_only || is_chapter_name(name),
-            _ => !chapters_only,
-        };
-
-        let indent = "  ".repeat(depth);
-        let dest_text = match &item.dest {
-            Some(Destination::PageIndex(page_index)) => format!("page_index={page_index}"),
-            Some(Destination::Named(name)) => {
-                match resolve_named_destination_page_index(doc, page_ref_to_index, name)? {
-                    Some(page_index) => format!("named={name}, page_index={page_index}"),
-                    None => format!("named={name}, page_index=<unresolved>"),
-                }
-            }
-            None => "dest=<none>".to_string(),
-        };
-
-        if should_print {
-            println!("{indent}- {} ({dest_text})", item.title);
-        }
-
-        if !item.children.is_empty() {
-            print_outline_items(doc, &item.children, page_ref_to_index, depth + 1)?;
-        }
-    }
-
-    Ok(())
-}
-
-fn is_chapter_name(name: &str) -> bool {
-    name.to_ascii_lowercase().starts_with("chapter.")
 }
 
 fn resolve_named_destination_page_index(
