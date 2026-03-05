@@ -31,10 +31,9 @@ fn main() -> Result<()> {
         println!("PDF opened successfully: {:?}", &doc);
     }
 
-    if let Ok(chapter_indices) = chapters::get_page_indices_for_chapters(&mut doc) {
-        println!("Chapter indices: {:?}", chapter_indices);
-    } else {
-        println!("Failed to extract chapter indices.");
+    match chapters::get_page_indices_for_chapters(&mut doc) {
+        Ok(chapter_indices) => println!("Chapter indices: {:?}", chapter_indices),
+        Err(e) => println!("Failed to extract chapter indices: {}", e),
     }
 
     println!("Hello, world!");
