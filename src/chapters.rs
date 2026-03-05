@@ -26,10 +26,12 @@ use std::collections::HashMap;
 #[cfg(test)]
 mod tests;
 
+const CHAPTER_REGEX: &str = r"^chapter\.(\d+)$";
+
 pub fn get_page_indices_for_chapters(doc: &mut PdfDocument) -> Result<HashMap<i32, usize>> {
     let page_ref_to_index = build_page_ref_to_index_map(doc)?;
     let mut chapter_indices = HashMap::new();
-    let chapter_regex = Regex::new(r"chapter\.(\d+)")?;
+    let chapter_regex = Regex::new(CHAPTER_REGEX)?;
 
     if let Some(outline) = doc.get_outline()? {
         for item in &outline {

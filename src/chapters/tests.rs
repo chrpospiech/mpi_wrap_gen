@@ -112,6 +112,29 @@ fn test_find_named_dest_object_missing() -> Result<()> {
     Ok(())
 }
 
+// ── chapter regex anchoring ─────────────────────────────────────────────────
+
+/// Strings that contain "chapter.<n>" as a substring but are not exactly
+/// "chapter.<n>" must not be treated as chapter destinations.
+#[test]
+fn test_chapter_regex_does_not_match_substrings() -> Result<()> {
+    use regex::Regex;
+    let chapter_regex = Regex::new(super::CHAPTER_REGEX)?;
+    for name in &[
+        "foo-chapter.1",
+        "chapter.1-bar",
+        "foo-chapter.1-bar",
+        "prefix_chapter.2",
+        "chapter.3_suffix",
+    ] {
+        assert!(
+            !chapter_regex.is_match(name),
+            "Regex should not match '{name}' (expected exact match only)"
+        );
+    }
+    Ok(())
+}
+
 // ── object_to_name_key ──────────────────────────────────────────────────────
 
 #[test]
