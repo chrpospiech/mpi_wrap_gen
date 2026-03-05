@@ -76,27 +76,16 @@ fn collect_page_refs(
         return Ok(());
     };
 
-    match node_dict.get("Type").and_then(Object::as_name) {
-        Some("Page") => {
-            let index = page_ref_to_index.len();
-            page_ref_to_index.insert(node_ref, index);
-        }
-        Some("Pages") => {
-            if let Some(Object::Array(kids)) = node_dict.get("Kids") {
-                for kid in kids {
-                    if let Some(kid_ref) = kid.as_reference() {
-                        collect_page_refs(doc, kid_ref, page_ref_to_index)?;
-                    }
-                }
-            }
-        }
-        _ => {
-            if let Some(Object::Array(kids)) = node_dict.get("Kids") {
-                for kid in kids {
-                    if let Some(kid_ref) = kid.as_reference() {
-                        collect_page_refs(doc, kid_ref, page_ref_to_index)?;
-                    }
-                }
+    if node_dict.get("Type").and_then(Object::as_name) == Some("Page") {
+        let index = page_ref_to_index.len();
+        page_ref_to_index.insert(node_ref, index);
+        return Ok(());
+    }
+
+    if let Some(Object::Array(kids)) = node_dict.get("Kids") {
+        for kid in kids {
+            if let Some(kid_ref) = kid.as_reference() {
+                collect_page_refs(doc, kid_ref, page_ref_to_index)?;
             }
         }
     }
