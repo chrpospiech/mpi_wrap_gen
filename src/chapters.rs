@@ -23,6 +23,9 @@ use pdf_oxide::PdfDocument;
 use regex::Regex;
 use std::collections::HashMap;
 
+#[cfg(test)]
+mod tests;
+
 pub fn get_page_indices_for_chapters(doc: &mut PdfDocument) -> Result<HashMap<i32, usize>> {
     let page_ref_to_index = build_page_ref_to_index_map(doc)?;
     let mut chapter_indices = HashMap::new();
