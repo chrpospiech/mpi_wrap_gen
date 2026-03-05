@@ -19,6 +19,7 @@
 use anyhow::Result;
 use pdf_oxide::PdfDocument;
 
+pub(crate) mod chapters;
 pub(crate) mod cmdline;
 
 fn main() -> Result<()> {
@@ -26,12 +27,18 @@ fn main() -> Result<()> {
     cmdline::echo_args(&args)?;
 
     if args.dry_run {
-        println!("Dry run mode: Would open PDF file: {:?}", args.input_file);
-    } else {
-        let pdf = PdfDocument::open(&args.input_file)?;
-        if args.verbose {
-            println!("PDF opened successfully: {:?}", pdf);
-        }
+        println!("Dry-run mode: skipping PDF processing.");
+        return Ok(());
+    }
+
+    let mut doc = PdfDocument::open(&args.input_file)?;
+    if args.verbose {
+        println!("PDF opened successfully: {:?}", &doc);
+    }
+
+    match chapters::get_page_indices_for_chapters(&mut doc) {
+        Ok(chapter_indices) => println!("Chapter indices: {:?}", chapter_indices),
+        Err(e) => println!("Failed to extract chapter indices: {}", e),
     }
 
     println!("Hello, world!");
