@@ -76,13 +76,45 @@ pub fn extract_mpi_calls(
 
 /// Parse the parameter string from an MPI call signature.
 /// Handles missing spaces (e.g., "constvoid*buf" -> "const void* buf")
-/// by splitting on commas and normalizing whitespace.
+/// by inserting spaces before C type keywords and after pointer operators,
+/// then splitting on commas and normalizing whitespace.
 fn parse_parameters(params_str: &str) -> Vec<String> {
     params_str
         .split(',')
-        .map(normalize_whitespace)
+        .map(|p| normalize_whitespace(&insert_missing_spaces(p)))
         .filter(|p| !p.is_empty())
         .collect()
+}
+
+/// Insert spaces that may be missing due to PDF text extraction stripping
+/// whitespace. Handles pointer operators and common C type keywords/qualifiers
+/// (e.g., `const`, `void`, `int`).
+///
+/// Examples:
+/// - `"constvoid*buf"` → `"const void* buf"`
+/// - `"intcount"` → `"int count"`
+fn insert_missing_spaces(s: &str) -> String {
+    // Insert space after * when immediately followed by a word character
+    // (e.g., "*buf" -> "* buf"), keeping * attached to the type on the left.
+    let re_after_star = Regex::new(r"\*(\w)").unwrap();
+    let result = re_after_star.replace_all(s, "* $1").to_string();
+
+    // Insert space before C type keywords/qualifiers when they are immediately
+    // preceded by a word character (e.g., "constvoid" -> "const void").
+    let re_mid = Regex::new(
+        r"(\w)(const|unsigned|signed|short|long|void|int|char|float|double)",
+    )
+    .unwrap();
+    let result = re_mid.replace_all(&result, "$1 $2").to_string();
+
+    // Insert space after C type keywords/qualifiers at the start of the string
+    // when immediately followed by a word character with no intervening space
+    // (e.g., "intcount" -> "int count").
+    let re_start = Regex::new(
+        r"^(const|unsigned|signed|short|long|void|int|char|float|double)(\w)",
+    )
+    .unwrap();
+    re_start.replace_all(&result, "$1 $2").to_string()
 }
 
 /// Remove line numbers and normalize the text extracted from the PDF.
