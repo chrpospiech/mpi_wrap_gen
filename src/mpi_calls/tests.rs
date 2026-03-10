@@ -160,3 +160,37 @@ fn test_normalize_whitespace() {
     let input = "  const void*   buf  ";
     assert_eq!(normalize_whitespace(input), "const void* buf");
 }
+
+#[test]
+fn test_insert_missing_spaces_pointer() {
+    // Space is inserted after * when immediately followed by a word character.
+    assert_eq!(insert_missing_spaces("void*buf"), "void* buf");
+}
+
+#[test]
+fn test_insert_missing_spaces_const_void() {
+    // Full example from the docstring.
+    let result = normalize_whitespace(&insert_missing_spaces("constvoid*buf"));
+    assert_eq!(result, "const void* buf");
+}
+
+#[test]
+fn test_insert_missing_spaces_int_identifier() {
+    // Keyword at start of string followed directly by an identifier.
+    let result = normalize_whitespace(&insert_missing_spaces("intcount"));
+    assert_eq!(result, "int count");
+}
+
+#[test]
+fn test_parse_parameters_missing_spaces() {
+    // Verify parse_parameters applies space insertion across comma-separated params.
+    let params = parse_parameters("constvoid*buf,intcount");
+    assert_eq!(params, vec!["const void* buf", "int count"]);
+}
+
+#[test]
+fn test_insert_missing_spaces_already_spaced() {
+    // Already-correct input must not be changed.
+    let result = normalize_whitespace(&insert_missing_spaces("const void* buf"));
+    assert_eq!(result, "const void* buf");
+}
