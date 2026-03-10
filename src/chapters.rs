@@ -16,194 +16,259 @@
 // Description: ~/tools/Rust/mpi_wrap_gen/src/chapters.rs
 // Author: Dr. Christoph Pospiech
 
-use anyhow::Result;
-use pdf_oxide::object::{Object, ObjectRef};
-use pdf_oxide::Destination;
-use pdf_oxide::PdfDocument;
+use anyhow::{Context, Result};
+use lopdf::{Document, Object, ObjectId};
 use regex::Regex;
 use std::collections::HashMap;
 
 #[cfg(test)]
 mod tests;
 
-const CHAPTER_REGEX: &str = r"^chapter\.(\d+)$";
+const CHAPTER_REGEX: &str = r"^(\d+)\s+.+";
 
-pub fn get_page_indices_for_chapters(doc: &mut PdfDocument) -> Result<HashMap<i32, usize>> {
-    let page_ref_to_index = build_page_ref_to_index_map(doc)?;
-    let mut chapter_indices = HashMap::new();
-    let chapter_regex = Regex::new(CHAPTER_REGEX)?;
+/// Finds the 1-based page indices where each chapter starts by walking the
+/// PDF outline (bookmark) tree. Outline entries whose title matches
+/// "<N> <title>" (e.g. "3 Point-to-Point Communication") are resolved to
+/// their target page, which is then mapped to a 1-based page number.
+///
+/// Args:
+///     doc: A reference to the lopdf PDF document.
+///
+/// Returns:
+///     A HashMap where the keys are chapter numbers and the values are the
+///     1-based page indices where each chapter starts.
+pub fn find_chapter_pages(doc: &Document) -> Result<HashMap<u32, usize>> {
+    let re = Regex::new(CHAPTER_REGEX)?;
 
-    if let Some(outline) = doc.get_outline()? {
-        for item in &outline {
-            if let Some(Destination::Named(name)) = &item.dest {
-                if let Some(caps) = chapter_regex.captures(name) {
-                    if let Some(page_index) =
-                        resolve_named_destination_page_index(doc, &page_ref_to_index, name)?
-                    {
-                        if let Some(chapter_number) = caps
-                            .get(1)
-                            .and_then(|m: regex::Match<'_>| m.as_str().parse::<i32>().ok())
-                        {
-                            chapter_indices.insert(chapter_number, page_index);
-                        }
-                    }
-                }
+    // Build a mapping from page object ID to 1-based page number
+    let page_id_to_num: HashMap<ObjectId, usize> = doc
+        .page_iter()
+        .enumerate()
+        .map(|(i, id)| (id, i + 1))
+        .collect();
+
+    // Build a mapping from named destination strings to page arrays (if present)
+    let named_dests = build_named_dests(doc).unwrap_or_default();
+
+    let mut chapters = HashMap::new();
+
+    let catalog = doc.catalog().context("Failed to get PDF catalog")?;
+    let outlines_ref = catalog
+        .get(b"Outlines")
+        .context("No /Outlines in catalog")?;
+    let outlines_dict = doc
+        .dereference(outlines_ref)?
+        .1
+        .as_dict()
+        .context("Failed to dereference /Outlines")?
+        .clone();
+
+    // Get the first top-level outline entry
+    let first_ref = outlines_dict
+        .get(b"First")
+        .context("No /First in /Outlines")?;
+
+    let mut current_obj = Some(first_ref.clone());
+
+    while let Some(ref obj) = current_obj {
+        // Resolve to actual object if it's a reference
+        let (_obj_id, resolved) = doc.dereference(obj)?;
+        let dict = resolved.as_dict().context("Outline entry is not a dict")?;
+
+        // Extract the title — may be inline or an indirect reference
+        let title = extract_title(doc, dict).unwrap_or_default();
+
+        if let Some(cap) = re.captures(&title) {
+            let chapter_num: u32 = cap.get(1).context("No capture group")?.as_str().parse()?;
+
+            // Resolve destination to a page number
+            if let Some(page_num) = resolve_dest_to_page(doc, dict, &page_id_to_num, &named_dests) {
+                chapters.insert(chapter_num, page_num);
+            }
+        }
+
+        // Move to the next sibling
+        current_obj = dict.get(b"Next").ok().cloned();
+    }
+
+    if chapters.is_empty() {
+        anyhow::bail!("No chapters found in PDF outlines");
+    }
+
+    Ok(chapters)
+}
+
+/// Extract the title string from an outline entry dictionary.
+/// Handles both inline strings and indirect references.
+fn extract_title(doc: &Document, dict: &lopdf::Dictionary) -> Option<String> {
+    let title_obj = dict.get(b"Title").ok()?;
+    match title_obj {
+        Object::String(bytes, _) => Some(String::from_utf8_lossy(bytes).to_string()),
+        Object::Reference(r) => {
+            let resolved = doc.get_object(*r).ok()?;
+            match resolved {
+                Object::String(bytes, _) => Some(String::from_utf8_lossy(bytes).to_string()),
+                _ => None,
+            }
+        }
+        _ => None,
+    }
+}
+
+/// Build a lookup table from named destination strings to their destination
+/// arrays by inspecting /Catalog -> /Names -> /Dests.
+/// Handles /Names arrays (leaf nodes), /Kids trees (intermediate nodes),
+/// and /D entries within destination dictionaries.
+fn build_named_dests(doc: &Document) -> Result<HashMap<String, Vec<Object>>> {
+    let mut map = HashMap::new();
+
+    let catalog = doc.catalog().context("No catalog")?;
+    let names_ref = catalog.get(b"Names").context("No /Names")?;
+    let names_dict = doc
+        .dereference(names_ref)?
+        .1
+        .as_dict()
+        .context("Failed to dereference /Names")?
+        .clone();
+    let dests_ref = names_dict.get(b"Dests").context("No /Dests")?;
+    let dests_obj = doc.dereference(dests_ref)?.1;
+    let dests_dict = dests_obj
+        .as_dict()
+        .context("Failed to dereference /Dests")?
+        .clone();
+
+    // Recursively collect named destinations from the name tree
+    collect_name_tree_entries(doc, &dests_dict, &mut map)?;
+
+    Ok(map)
+}
+
+/// Recursively collect entries from a PDF name tree node.
+/// Name trees can have /Names (leaf) and/or /Kids (intermediate) entries.
+fn collect_name_tree_entries(
+    doc: &Document,
+    node: &lopdf::Dictionary,
+    map: &mut HashMap<String, Vec<Object>>,
+) -> Result<()> {
+    // Process /Names array if present (leaf node)
+    if let Ok(names_obj) = node.get(b"Names") {
+        let names_array = names_obj.as_array().context("/Names is not an array")?;
+        for pair in names_array.chunks(2) {
+            if pair.len() != 2 {
+                continue;
+            }
+            let name = match &pair[0] {
+                Object::String(bytes, _) => String::from_utf8_lossy(bytes).to_string(),
+                _ => continue,
+            };
+            if let Some(dest_arr) = resolve_dest_value(doc, &pair[1]) {
+                map.insert(name, dest_arr);
             }
         }
     }
 
-    Ok(chapter_indices)
-}
-
-fn build_page_ref_to_index_map(doc: &mut PdfDocument) -> Result<HashMap<ObjectRef, usize>> {
-    let mut page_ref_to_index = HashMap::new();
-    let catalog = doc.catalog()?;
-    let pages_ref = catalog
-        .as_dict()
-        .and_then(|dict| dict.get("Pages"))
-        .and_then(Object::as_reference)
-        .ok_or_else(|| anyhow::anyhow!("Catalog is missing /Pages reference"))?;
-
-    collect_page_refs(doc, pages_ref, &mut page_ref_to_index)?;
-    Ok(page_ref_to_index)
-}
-
-fn collect_page_refs(
-    doc: &mut PdfDocument,
-    node_ref: ObjectRef,
-    page_ref_to_index: &mut HashMap<ObjectRef, usize>,
-) -> Result<()> {
-    let node_obj = doc.load_object(node_ref)?;
-    let Some(node_dict) = node_obj.as_dict() else {
-        return Ok(());
-    };
-
-    if node_dict.get("Type").and_then(Object::as_name) == Some("Page") {
-        let index = page_ref_to_index.len();
-        page_ref_to_index.insert(node_ref, index);
-        return Ok(());
-    }
-
-    if let Some(Object::Array(kids)) = node_dict.get("Kids") {
-        for kid in kids {
-            if let Some(kid_ref) = kid.as_reference() {
-                collect_page_refs(doc, kid_ref, page_ref_to_index)?;
-            }
+    // Process /Kids array if present (intermediate node)
+    if let Ok(kids_obj) = node.get(b"Kids") {
+        let kids_array = kids_obj.as_array().context("/Kids is not an array")?;
+        for kid_ref in kids_array {
+            let kid_obj = match kid_ref {
+                Object::Reference(r) => doc.get_object(*r)?,
+                other => other,
+            };
+            let kid_dict = kid_obj.as_dict().context("Kid is not a dict")?;
+            collect_name_tree_entries(doc, kid_dict, map)?;
         }
     }
 
     Ok(())
 }
 
-fn resolve_named_destination_page_index(
-    doc: &mut PdfDocument,
-    page_ref_to_index: &HashMap<ObjectRef, usize>,
-    name: &str,
-) -> Result<Option<usize>> {
-    let Some(dest_obj) = find_named_destination_object(doc, name)? else {
-        return Ok(None);
+/// Resolve a destination value from the name tree.
+/// The value can be:
+/// - A direct array: [page_ref /Fit ...]
+/// - A reference to an array
+/// - A dictionary with a /D key containing the array
+/// - A reference to such a dictionary
+fn resolve_dest_value(doc: &Document, value: &Object) -> Option<Vec<Object>> {
+    // Dereference if needed
+    let resolved = match value {
+        Object::Reference(r) => doc.get_object(*r).ok()?.clone(),
+        other => other.clone(),
     };
 
-    let Some(page_ref) = destination_object_to_page_ref(doc, &dest_obj)? else {
-        return Ok(None);
-    };
-
-    Ok(page_ref_to_index.get(&page_ref).copied())
-}
-
-fn find_named_destination_object(doc: &mut PdfDocument, name: &str) -> Result<Option<Object>> {
-    let catalog = doc.catalog()?;
-    let Some(catalog_dict) = catalog.as_dict() else {
-        return Ok(None);
-    };
-
-    if let Some(dests_obj) = catalog_dict.get("Dests") {
-        let dests = dereference_object(doc, dests_obj)?;
-        if let Some(dests_dict) = dests.as_dict() {
-            if let Some(dest_obj) = dests_dict.get(name) {
-                return Ok(Some(dest_obj.clone()));
-            }
-        }
-    }
-
-    if let Some(names_obj) = catalog_dict.get("Names") {
-        let names = dereference_object(doc, names_obj)?;
-        if let Some(names_dict) = names.as_dict() {
-            if let Some(dests_obj) = names_dict.get("Dests") {
-                return find_in_name_tree(doc, dests_obj, name);
-            }
-        }
-    }
-
-    Ok(None)
-}
-
-fn find_in_name_tree(
-    doc: &mut PdfDocument,
-    tree_obj: &Object,
-    target: &str,
-) -> Result<Option<Object>> {
-    let tree = dereference_object(doc, tree_obj)?;
-    let Some(tree_dict) = tree.as_dict() else {
-        return Ok(None);
-    };
-
-    if let Some(Object::Array(entries)) = tree_dict.get("Names") {
-        for pair in entries.chunks_exact(2) {
-            let Some(key) = object_to_name_key(&pair[0]) else {
-                continue;
-            };
-            if key == target {
-                return Ok(Some(pair[1].clone()));
-            }
-        }
-    }
-
-    if let Some(Object::Array(kids)) = tree_dict.get("Kids") {
-        for kid in kids {
-            if let Some(found) = find_in_name_tree(doc, kid, target)? {
-                return Ok(Some(found));
-            }
-        }
-    }
-
-    Ok(None)
-}
-
-fn destination_object_to_page_ref(
-    doc: &mut PdfDocument,
-    obj: &Object,
-) -> Result<Option<ObjectRef>> {
-    match obj {
-        Object::Reference(obj_ref) => {
-            let resolved = doc.load_object(*obj_ref)?;
-            destination_object_to_page_ref(doc, &resolved)
-        }
-        Object::Array(arr) => Ok(arr.first().and_then(Object::as_reference)),
+    match &resolved {
+        Object::Array(arr) => Some(arr.clone()),
         Object::Dictionary(dict) => {
-            if let Some(d_obj) = dict.get("D") {
-                destination_object_to_page_ref(doc, d_obj)
-            } else if let Some(dest_obj) = dict.get("Dest") {
-                destination_object_to_page_ref(doc, dest_obj)
+            // Some PDFs wrap the dest array in a dict with /D key
+            if let Ok(d) = dict.get(b"D") {
+                match d {
+                    Object::Array(arr) => Some(arr.clone()),
+                    Object::Reference(r) => {
+                        let obj = doc.get_object(*r).ok()?;
+                        obj.as_array().ok().cloned()
+                    }
+                    _ => None,
+                }
             } else {
-                Ok(None)
+                None
             }
         }
-        _ => Ok(None),
+        _ => None,
     }
 }
 
-fn dereference_object(doc: &mut PdfDocument, obj: &Object) -> Result<Object> {
-    match obj {
-        Object::Reference(obj_ref) => Ok(doc.load_object(*obj_ref)?),
-        _ => Ok(obj.clone()),
+/// Resolve an outline entry's destination to a 1-based page number.
+/// Handles /Dest (direct array or named string) and /A (GoTo action) entries.
+fn resolve_dest_to_page(
+    doc: &Document,
+    dict: &lopdf::Dictionary,
+    page_id_to_num: &HashMap<ObjectId, usize>,
+    named_dests: &HashMap<String, Vec<Object>>,
+) -> Option<usize> {
+    // Try /Dest first
+    if let Ok(dest) = dict.get(b"Dest") {
+        return page_ref_from_dest(doc, dest, page_id_to_num, named_dests);
     }
+
+    // Try /A (action) with /S /GoTo and /D
+    if let Ok(action_obj) = dict.get(b"A") {
+        let (_, action_resolved) = doc.dereference(action_obj).ok()?;
+        let action_dict = action_resolved.as_dict().ok()?;
+
+        if let Ok(dest) = action_dict.get(b"D") {
+            return page_ref_from_dest(doc, dest, page_id_to_num, named_dests);
+        }
+    }
+
+    None
 }
 
-fn object_to_name_key(obj: &Object) -> Option<String> {
-    match obj {
-        Object::String(bytes) => Some(String::from_utf8_lossy(bytes).to_string()),
-        Object::Name(name) => Some(name.clone()),
+/// Extract a page reference from a destination object.
+/// Handles direct arrays, references to arrays, and named string destinations.
+fn page_ref_from_dest(
+    doc: &Document,
+    dest: &Object,
+    page_id_to_num: &HashMap<ObjectId, usize>,
+    named_dests: &HashMap<String, Vec<Object>>,
+) -> Option<usize> {
+    // First dereference if it's a reference
+    let resolved = match dest {
+        Object::Reference(r) => doc.get_object(*r).ok()?.clone(),
+        other => other.clone(),
+    };
+
+    let arr = match &resolved {
+        Object::Array(arr) => arr.clone(),
+        Object::String(name_bytes, _) => {
+            let name = String::from_utf8_lossy(name_bytes).to_string();
+            named_dests.get(&name)?.clone()
+        }
+        _ => return None,
+    };
+
+    // The first element of the dest array is a page reference
+    match arr.first()? {
+        Object::Reference(page_ref) => page_id_to_num.get(page_ref).copied(),
         _ => None,
     }
 }

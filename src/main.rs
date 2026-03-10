@@ -17,10 +17,11 @@
 // Author: Dr. Christoph Pospiech
 
 use anyhow::Result;
-use pdf_oxide::PdfDocument;
+use lopdf::Document;
 
 pub(crate) mod chapters;
 pub(crate) mod cmdline;
+pub(crate) mod mpi_calls;
 
 fn main() -> Result<()> {
     let args = cmdline::parse_args()?;
@@ -31,15 +32,18 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
-    let mut doc = PdfDocument::open(&args.input_file)?;
+    let doc = Document::load(&args.input_file)?;
     if args.verbose {
-        println!("PDF opened successfully: {:?}", &doc);
+        println!("PDF opened successfully.");
     }
 
-    match chapters::get_page_indices_for_chapters(&mut doc) {
+    match chapters::find_chapter_pages(&doc) {
         Ok(chapter_indices) => println!("Chapter indices: {:?}", chapter_indices),
         Err(e) => println!("Failed to extract chapter indices: {}", e),
     }
+
+    let mpi_calls = mpi_calls::extract_mpi_calls(&doc, 54, 60)?;
+    println!("Extracted MPI calls: {:?}", mpi_calls);
 
     println!("Hello, world!");
     Ok(())
