@@ -1,61 +1,155 @@
 %PDF-1.3
-%¿÷¢þ
+%“Œ‹ž ReportLab Generated PDF document (opensource)
 1 0 obj
-<< /Names 2 0 R /Outlines 3 0 R /Pages 4 0 R /Type /Catalog >>
+<<
+/F1 2 0 R
+>>
 endobj
 2 0 obj
-<< /Dests 5 0 R >>
+<<
+/BaseFont /Helvetica /Encoding /WinAnsiEncoding /Name /F1 /Subtype /Type1 /Type /Font
+>>
 endobj
 3 0 obj
-<< /Count 4 /First 6 0 R /Last 7 0 R /Type /Outlines >>
+<<
+/Contents 15 0 R /MediaBox [ 0 0 612 792 ] /Parent 14 0 R /Resources <<
+/Font 1 0 R /ProcSet [ /PDF /Text /ImageB /ImageC /ImageI ]
+>> /Rotate 0 /Trans <<
+
+>> 
+  /Type /Page
+>>
 endobj
 4 0 obj
-<< /Count 4 /Kids [ 8 0 R 9 0 R 10 0 R 11 0 R ] /Type /Pages >>
+<<
+/Contents 16 0 R /MediaBox [ 0 0 612 792 ] /Parent 14 0 R /Resources <<
+/Font 1 0 R /ProcSet [ /PDF /Text /ImageB /ImageC /ImageI ]
+>> /Rotate 0 /Trans <<
+
+>> 
+  /Type /Page
+>>
 endobj
 5 0 obj
-<< /Names [ (chapter.1) [ 8 0 R /Fit ] (chapter.2) [ 9 0 R /Fit ] (chapter.3) [ 10 0 R /Fit ] (chapter.4) [ 11 0 R /Fit ] ] >>
+<<
+/Contents 17 0 R /MediaBox [ 0 0 612 792 ] /Parent 14 0 R /Resources <<
+/Font 1 0 R /ProcSet [ /PDF /Text /ImageB /ImageC /ImageI ]
+>> /Rotate 0 /Trans <<
+
+>> 
+  /Type /Page
+>>
 endobj
 6 0 obj
-<< /Dest (chapter.1) /Next 12 0 R /Parent 3 0 R /Title (Chapter 1) >>
+<<
+/Contents 18 0 R /MediaBox [ 0 0 612 792 ] /Parent 14 0 R /Resources <<
+/Font 1 0 R /ProcSet [ /PDF /Text /ImageB /ImageC /ImageI ]
+>> /Rotate 0 /Trans <<
+
+>> 
+  /Type /Page
+>>
 endobj
 7 0 obj
-<< /Dest (chapter.4) /Parent 3 0 R /Prev 13 0 R /Title (Chapter 4) >>
+<<
+/Outlines 9 0 R /PageMode /UseNone /Pages 14 0 R /Type /Catalog
+>>
 endobj
 8 0 obj
-<< /MediaBox [ 0 0 612 792 ] /Parent 4 0 R /Type /Page >>
+<<
+/Author (anonymous) /CreationDate (D:20260310120900+01'00') /Creator (anonymous) /Keywords () /ModDate (D:20260310120900+01'00') /Producer (ReportLab PDF Library - \(opensource\)) 
+  /Subject (unspecified) /Title (untitled) /Trapped /False
+>>
 endobj
 9 0 obj
-<< /MediaBox [ 0 0 612 792 ] /Parent 4 0 R /Type /Page >>
+<<
+/Count 4 /First 10 0 R /Last 13 0 R /Type /Outlines
+>>
 endobj
 10 0 obj
-<< /MediaBox [ 0 0 612 792 ] /Parent 4 0 R /Type /Page >>
+<<
+/Dest [ 3 0 R /Fit ] /Next 11 0 R /Parent 9 0 R /Title (1 Introduction)
+>>
 endobj
 11 0 obj
-<< /MediaBox [ 0 0 612 792 ] /Parent 4 0 R /Type /Page >>
+<<
+/Dest [ 4 0 R /Fit ] /Next 12 0 R /Parent 9 0 R /Prev 10 0 R /Title (2 Terms and Conventions)
+>>
 endobj
 12 0 obj
-<< /Dest (chapter.2) /Next 13 0 R /Parent 3 0 R /Prev 6 0 R /Title (Chapter 2) >>
+<<
+/Dest [ 5 0 R /Fit ] /Next 13 0 R /Parent 9 0 R /Prev 11 0 R /Title (3 Point-to-Point Communication)
+>>
 endobj
 13 0 obj
-<< /Dest (chapter.3) /Next 7 0 R /Parent 3 0 R /Prev 12 0 R /Title (Chapter 3) >>
+<<
+/Dest [ 6 0 R /Fit ] /Parent 9 0 R /Prev 12 0 R /Title (4 Datatypes)
+>>
+endobj
+14 0 obj
+<<
+/Count 4 /Kids [ 3 0 R 4 0 R 5 0 R 6 0 R ] /Type /Pages
+>>
+endobj
+15 0 obj
+<<
+/Filter [ /ASCII85Decode /FlateDecode ] /Length 117
+>>
+stream
+GapQh0E=F,0U\H3T\pNYT^QKk?tc>IP,;W#U1^23ihPEM_?CZ51'*4N=m0!2`!rD0Ql?'gJO2o1JqftNB3n/,IS+<p8S3FCVF!h>6AQCJ\H3QI9m7Il~>endstream
+endobj
+16 0 obj
+<<
+/Filter [ /ASCII85Decode /FlateDecode ] /Length 127
+>>
+stream
+GapQh0E=F,0U\H3T\pNYT^QKk?tc>IP,;W#U1^23ihPEM_?CZ51'*4N=m0!2`!rD0Ql?'gJO2o1Jd,%qC/JlR6=O8YJocBI=__87Aq"'kVF!h>6AQCJT)of/9>;Hs~>endstream
+endobj
+17 0 obj
+<<
+/Filter [ /ASCII85Decode /FlateDecode ] /Length 132
+>>
+stream
+Gaq3]0a`Fb'LR(?O\pgIIkBlckiC[k0-CFl6JJ?nhmNfR&Aj'Q+Hrb"EPTf^2ZbGt"k&qGmo[-s\C-eGWLJ?3ho2OW-.nn4E!5L%Ld@8W,rkXDCX-UGDnn<Ac#Zi;/t="?~>endstream
+endobj
+18 0 obj
+<<
+/Filter [ /ASCII85Decode /FlateDecode ] /Length 114
+>>
+stream
+GapQh0E=F,0U\H3T\pNYT^QKk?tc>IP,;W#U1^23ihPEM_?CZ51'*4N=m0!2`!rD0Ql?'gJO2o1Jqf,694CJ%8S(2&Z)0iYQ9pBC8?Dq0!;Ms!*<~>endstream
 endobj
 xref
-0 14
+0 19
 0000000000 65535 f 
-0000000015 00000 n 
-0000000093 00000 n 
-0000000127 00000 n 
-0000000198 00000 n 
-0000000277 00000 n 
-0000000419 00000 n 
-0000000504 00000 n 
+0000000061 00000 n 
+0000000092 00000 n 
+0000000199 00000 n 
+0000000394 00000 n 
 0000000589 00000 n 
-0000000662 00000 n 
-0000000735 00000 n 
-0000000809 00000 n 
-0000000883 00000 n 
-0000000981 00000 n 
-trailer << /Root 1 0 R /Size 14 /ID [<cc4ee84514ee83d8f0ae2024b0a15a9c><cc4ee84514ee83d8f0ae2024b0a15a9c>] >>
+0000000784 00000 n 
+0000000979 00000 n 
+0000001064 00000 n 
+0000001325 00000 n 
+0000001398 00000 n 
+0000001492 00000 n 
+0000001608 00000 n 
+0000001731 00000 n 
+0000001822 00000 n 
+0000001900 00000 n 
+0000002108 00000 n 
+0000002326 00000 n 
+0000002549 00000 n 
+trailer
+<<
+/ID 
+[<30d91f1ed8041da6d1fac9cb1a910336><30d91f1ed8041da6d1fac9cb1a910336>]
+% ReportLab generated PDF document -- digest (opensource)
+
+/Info 8 0 R
+/Root 7 0 R
+/Size 19
+>>
 startxref
-1079
+2754
 %%EOF
