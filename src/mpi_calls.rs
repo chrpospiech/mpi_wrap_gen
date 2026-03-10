@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 // File: mpi_calls.rs
-// Description: ~/tools/Rust/mpi_wrap_gen/src/mpi_calls/mod.rs
+// Description: ~/tools/Rust/mpi_wrap_gen/src/mpi_calls.rs
 // Author: Dr. Christoph Pospiech
 
 use anyhow::Result;
