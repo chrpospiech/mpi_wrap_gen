@@ -18,6 +18,12 @@ fn test_extract_mpi_calls_finds_calls() {
         !calls.is_empty(),
         "Expected at least one MPI call to be found"
     );
+    assert_eq!(
+        calls.len(),
+        8,
+        "Expected to find 8 MPI calls, found: {:?}",
+        calls.iter().map(|(n, _)| n).collect::<Vec<_>>()
+    );
 }
 
 #[test]
