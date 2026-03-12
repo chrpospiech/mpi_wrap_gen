@@ -26,10 +26,26 @@ fn test_find_chapter_pages_correct_page_numbers() {
     let doc = Document::load(test_pdf_path()).expect("Failed to load test PDF");
     let chapters = find_chapter_pages(&doc).expect("Failed to extract chapters");
 
-    assert_eq!(chapters.get(&1), Some(&1), "Chapter 1 should be on page 1");
-    assert_eq!(chapters.get(&2), Some(&2), "Chapter 2 should be on page 2");
-    assert_eq!(chapters.get(&3), Some(&3), "Chapter 3 should be on page 3");
-    assert_eq!(chapters.get(&4), Some(&4), "Chapter 4 should be on page 4");
+    assert_eq!(
+        chapters.get(&1).map(|v| v.0),
+        Some(1),
+        "Chapter 1 should be on page 1"
+    );
+    assert_eq!(
+        chapters.get(&2).map(|v| v.0),
+        Some(2),
+        "Chapter 2 should be on page 2"
+    );
+    assert_eq!(
+        chapters.get(&3).map(|v| v.0),
+        Some(3),
+        "Chapter 3 should be on page 3"
+    );
+    assert_eq!(
+        chapters.get(&4).map(|v| v.0),
+        Some(4),
+        "Chapter 4 should be on page 4"
+    );
 }
 
 #[test]

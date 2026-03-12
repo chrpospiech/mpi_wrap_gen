@@ -101,19 +101,15 @@ fn insert_missing_spaces(s: &str) -> String {
 
     // Insert space before C type keywords/qualifiers when they are immediately
     // preceded by a word character (e.g., "constvoid" -> "const void").
-    let re_mid = Regex::new(
-        r"(\w)(const|unsigned|signed|short|long|void|int|char|float|double)",
-    )
-    .unwrap();
+    let re_mid =
+        Regex::new(r"(\w)(const|unsigned|signed|short|long|void|int|char|float|double)").unwrap();
     let result = re_mid.replace_all(&result, "$1 $2").to_string();
 
     // Insert space after C type keywords/qualifiers at the start of the string
     // when immediately followed by a word character with no intervening space
     // (e.g., "intcount" -> "int count").
-    let re_start = Regex::new(
-        r"^(const|unsigned|signed|short|long|void|int|char|float|double)(\w)",
-    )
-    .unwrap();
+    let re_start =
+        Regex::new(r"^(const|unsigned|signed|short|long|void|int|char|float|double)(\w)").unwrap();
     re_start.replace_all(&result, "$1 $2").to_string()
 }
 
