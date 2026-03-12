@@ -40,16 +40,18 @@ fn main() -> Result<()> {
     let chapter_indices = chapters::find_chapter_pages(&doc)?;
     println!("Chapter indices: {:?}", chapter_indices);
 
-    let ch3_start: u32 = (*chapter_indices
+    let ch3_start: u32 = (chapter_indices
         .get(&3)
-        .ok_or_else(|| anyhow::anyhow!("Chapter 3 not found in PDF outlines"))?)
-    .try_into()
-    .context("Chapter 3 page number out of range")?;
-    let ch4_start: u32 = (*chapter_indices
+        .ok_or_else(|| anyhow::anyhow!("Chapter 3 not found in PDF outlines"))?
+        .0)
+        .try_into()
+        .context("Chapter 3 page number out of range")?;
+    let ch4_start: u32 = (chapter_indices
         .get(&4)
-        .ok_or_else(|| anyhow::anyhow!("Chapter 4 not found in PDF outlines"))?)
-    .try_into()
-    .context("Chapter 4 page number out of range")?;
+        .ok_or_else(|| anyhow::anyhow!("Chapter 4 not found in PDF outlines"))?
+        .0)
+        .try_into()
+        .context("Chapter 4 page number out of range")?;
 
     let mpi_calls = mpi_calls::extract_mpi_calls(&doc, ch3_start, ch4_start)?;
     println!("Extracted MPI calls: {:?}", mpi_calls);

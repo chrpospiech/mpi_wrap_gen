@@ -24,7 +24,7 @@ use std::collections::HashMap;
 #[cfg(test)]
 mod tests;
 
-const CHAPTER_REGEX: &str = r"^(\d+)\s+.+";
+const CHAPTER_REGEX: &str = r"^(\d+)\s+(.+)";
 
 /// Finds the 1-based page indices where each chapter starts by walking the
 /// PDF outline (bookmark) tree. Outline entries whose title matches
@@ -35,9 +35,9 @@ const CHAPTER_REGEX: &str = r"^(\d+)\s+.+";
 ///     doc: A reference to the lopdf PDF document.
 ///
 /// Returns:
-///     A HashMap where the keys are chapter numbers and the values are the
-///     1-based page indices where each chapter starts.
-pub fn find_chapter_pages(doc: &Document) -> Result<HashMap<u32, usize>> {
+///     A HashMap where the keys are chapter numbers and the values are tuples
+///     of the 1-based page index and the chapter title string.
+pub fn find_chapter_pages(doc: &Document) -> Result<HashMap<u32, (usize, String)>> {
     let re = Regex::new(CHAPTER_REGEX)?;
 
     // Build a mapping from page object ID to 1-based page number
@@ -79,11 +79,30 @@ pub fn find_chapter_pages(doc: &Document) -> Result<HashMap<u32, usize>> {
         let title = extract_title(doc, dict).unwrap_or_default();
 
         if let Some(cap) = re.captures(&title) {
-            let chapter_num: u32 = cap.get(1).context("No capture group")?.as_str().parse()?;
+            let chapter_num: u32 = cap
+                .get(1)
+                .with_context(|| {
+                    format!(
+                        "Missing capture group 1 (chapter number) in outline title {:?}; expected format \"<N> <title>\" matching regex {}",
+                        title, CHAPTER_REGEX
+                    )
+                })?
+                .as_str()
+                .parse()?;
+            let chapter_title = cap
+                .get(2)
+                .with_context(|| {
+                    format!(
+                        "Missing capture group 2 (chapter title) in outline title {:?}; expected format \"<N> <title>\" matching regex {}",
+                        title, CHAPTER_REGEX
+                    )
+                })?
+                .as_str()
+                .to_string();
 
             // Resolve destination to a page number
             if let Some(page_num) = resolve_dest_to_page(doc, dict, &page_id_to_num, &named_dests) {
-                chapters.insert(chapter_num, page_num);
+                chapters.insert(chapter_num, (page_num, chapter_title));
             }
         }
 
