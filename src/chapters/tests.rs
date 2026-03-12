@@ -60,13 +60,13 @@ fn test_find_chapter_pages_correct_page_numbers() {
     );
     assert_eq!(
         chapters.get(&3).map(|v| v.1.as_str()),
-        Some("Getting Started"),
-        "Chapter 3 should have title 'Getting Started'"
+        Some("Point-to-Point Communication"),
+        "Chapter 3 should have title 'Point-to-Point Communication'"
     );
     assert_eq!(
         chapters.get(&4).map(|v| v.1.as_str()),
-        Some("Advanced Topics"),
-        "Chapter 4 should have title 'Advanced Topics'"
+        Some("Datatypes"),
+        "Chapter 4 should have title 'Datatypes'"
     );
 }
 
