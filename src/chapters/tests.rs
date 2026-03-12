@@ -46,6 +46,28 @@ fn test_find_chapter_pages_correct_page_numbers() {
         Some(4),
         "Chapter 4 should be on page 4"
     );
+
+    // Also verify that the chapter titles are correctly extracted.
+    assert_eq!(
+        chapters.get(&1).map(|v| v.1.as_str()),
+        Some("Introduction"),
+        "Chapter 1 should have title 'Introduction'"
+    );
+    assert_eq!(
+        chapters.get(&2).map(|v| v.1.as_str()),
+        Some("Terms and Conventions"),
+        "Chapter 2 should have title 'Terms and Conventions'"
+    );
+    assert_eq!(
+        chapters.get(&3).map(|v| v.1.as_str()),
+        Some("Getting Started"),
+        "Chapter 3 should have title 'Getting Started'"
+    );
+    assert_eq!(
+        chapters.get(&4).map(|v| v.1.as_str()),
+        Some("Advanced Topics"),
+        "Chapter 4 should have title 'Advanced Topics'"
+    );
 }
 
 #[test]
