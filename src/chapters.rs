@@ -35,7 +35,7 @@ pub fn get_chapter_page(map: &ChapterMap, chapter: u32) -> Result<u32> {
         .ok_or_else(|| anyhow::anyhow!("Chapter {} not found in PDF outlines", chapter))?
         .0
         .try_into()
-        .context(format!("Chapter {} page number out of range", chapter))
+        .with_context(|| format!("Chapter {} page number out of range", chapter))
 }
 
 /// Finds the 1-based page indices where each chapter starts by walking the
