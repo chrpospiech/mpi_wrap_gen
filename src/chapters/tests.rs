@@ -100,6 +100,14 @@ fn test_get_chapter_page_missing_chapter() {
     assert!(get_chapter_page(&map, 99).is_err());
 }
 
+#[cfg(target_pointer_width = "64")]
+#[test]
+fn test_get_chapter_page_out_of_range() {
+    let mut map: ChapterMap = HashMap::new();
+    map.insert(1, (usize::MAX, "Introduction".to_string()));
+    assert!(get_chapter_page(&map, 1).is_err());
+}
+
 #[test]
 fn test_find_chapter_pages_no_extra_chapters() {
     let doc = Document::load(test_pdf_path()).expect("Failed to load test PDF");
