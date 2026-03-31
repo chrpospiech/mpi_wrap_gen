@@ -16,7 +16,8 @@
 // Description: ~/tools/Rust/mpi_wrap_gen/src/main.rs
 // Author: Dr. Christoph Pospiech
 
-use anyhow::{Context, Result};
+use anyhow::Result;
+use chapters::ChapterMap;
 use lopdf::Document;
 
 pub(crate) mod chapters;
@@ -37,21 +38,11 @@ fn main() -> Result<()> {
         println!("PDF opened successfully.");
     }
 
-    let chapter_indices = chapters::find_chapter_pages(&doc)?;
+    let chapter_indices: ChapterMap = chapters::find_chapter_pages(&doc)?;
     println!("Chapter indices: {:?}", chapter_indices);
 
-    let ch3_start: u32 = (chapter_indices
-        .get(&3)
-        .ok_or_else(|| anyhow::anyhow!("Chapter 3 not found in PDF outlines"))?
-        .0)
-        .try_into()
-        .context("Chapter 3 page number out of range")?;
-    let ch4_start: u32 = (chapter_indices
-        .get(&4)
-        .ok_or_else(|| anyhow::anyhow!("Chapter 4 not found in PDF outlines"))?
-        .0)
-        .try_into()
-        .context("Chapter 4 page number out of range")?;
+    let ch3_start = chapters::get_chapter_page(&chapter_indices, 3)?;
+    let ch4_start = chapters::get_chapter_page(&chapter_indices, 4)?;
 
     let mpi_calls = mpi_calls::extract_mpi_calls(&doc, ch3_start, ch4_start)?;
     println!("Extracted MPI calls: {:?}", mpi_calls);

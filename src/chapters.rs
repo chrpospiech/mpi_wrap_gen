@@ -24,7 +24,19 @@ use std::collections::HashMap;
 #[cfg(test)]
 mod tests;
 
+pub type ChapterMap = HashMap<u32, (usize, String)>;
+
 const CHAPTER_REGEX: &str = r"^(\d+)\s+(.+)";
+
+/// Looks up a chapter in the `ChapterMap` and returns its 1-based page number
+/// as a `u32`.
+pub fn get_chapter_page(map: &ChapterMap, chapter: u32) -> Result<u32> {
+    map.get(&chapter)
+        .ok_or_else(|| anyhow::anyhow!("Chapter {} not found in PDF outlines", chapter))?
+        .0
+        .try_into()
+        .context(format!("Chapter {} page number out of range", chapter))
+}
 
 /// Finds the 1-based page indices where each chapter starts by walking the
 /// PDF outline (bookmark) tree. Outline entries whose title matches
@@ -35,9 +47,9 @@ const CHAPTER_REGEX: &str = r"^(\d+)\s+(.+)";
 ///     doc: A reference to the lopdf PDF document.
 ///
 /// Returns:
-///     A HashMap where the keys are chapter numbers and the values are tuples
+///     A ChapterMap where the keys are chapter numbers and the values are tuples
 ///     of the 1-based page index and the chapter title string.
-pub fn find_chapter_pages(doc: &Document) -> Result<HashMap<u32, (usize, String)>> {
+pub fn find_chapter_pages(doc: &Document) -> Result<ChapterMap> {
     let re = Regex::new(CHAPTER_REGEX)?;
 
     // Build a mapping from page object ID to 1-based page number

@@ -85,6 +85,22 @@ fn test_find_chapter_pages_returns_hashmap_with_correct_keys() {
 }
 
 #[test]
+fn test_get_chapter_page_valid() {
+    let mut map: ChapterMap = HashMap::new();
+    map.insert(1, (1, "Introduction".to_string()));
+    map.insert(3, (42, "Point-to-Point Communication".to_string()));
+
+    assert_eq!(get_chapter_page(&map, 1).unwrap(), 1);
+    assert_eq!(get_chapter_page(&map, 3).unwrap(), 42);
+}
+
+#[test]
+fn test_get_chapter_page_missing_chapter() {
+    let map: ChapterMap = HashMap::new();
+    assert!(get_chapter_page(&map, 99).is_err());
+}
+
+#[test]
 fn test_find_chapter_pages_no_extra_chapters() {
     let doc = Document::load(test_pdf_path()).expect("Failed to load test PDF");
     let chapters = find_chapter_pages(&doc).expect("Failed to extract chapters");
