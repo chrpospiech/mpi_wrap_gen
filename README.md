@@ -62,11 +62,10 @@ mpi_wrap_gen /path/to/mpi31-report.pdf
 src/
 ├── main.rs         # Entry point: loads PDF, orchestrates extraction
 ├── cmdline.rs      # CLI argument parsing (clap)
-├── chapters.rs     # PDF outline traversal, chapter-page mapping
-└── mpi_calls.rs    # MPI function signature extraction and parsing
-examples/
-├── LMX_mpitrace_ids.h      # Example generated identifier header
-└── LMX_mpitrace_labels.c   # Example generated label array
+├── chapters.rs     # PDF outline traversal, chapter-page mapping and tests
+└── mpi_calls.rs    # MPI function signature extraction, parsing, and tests
+test_data/
+└── ...             # Sample PDFs and fixtures used in tests
 ```
 
 ## License
