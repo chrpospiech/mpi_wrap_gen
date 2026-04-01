@@ -37,7 +37,7 @@ mpi_wrap_gen [OPTIONS] [INPUT_FILE]
 
 | Option | Description |
 |--------|-------------|
-| `-v`, `--verbose` | Enable verbose output (default: true) |
+| `-v`, `--verbose` | Enable verbose output (default: false) |
 | `-D`, `--dry-run` | Perform a dry run without making changes |
 
 ### Arguments
@@ -50,6 +50,7 @@ Note: The CLI may fall back to an implementation-defined default path for the MP
 but this path is environment-specific and may not exist on your system. It is recommended to
 always provide `INPUT_FILE` explicitly as the path to your local copy of the MPI standard
 (for example, `mpi31-report.pdf` in your project or downloads directory).
+
 ### Example
 
 ```bash
