@@ -29,7 +29,7 @@ use clap::Parser;
 )]
 pub struct CliArgs {
     /// Verbose output
-    #[arg(short = 'v', long, default_value_t = true)]
+    #[arg(short = 'v', long, default_value_t = false)]
     pub verbose: bool,
 
     /// Perform a dry run without making actual changes
