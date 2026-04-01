@@ -14,7 +14,7 @@ This tool replaces an earlier Perl-based workflow that relied on a plain-text co
 
 - Extracts MPI function signatures directly from the MPI standard PDF
 - Identifies chapter boundaries via PDF outline (bookmark) tree
-- Parses function names and parameter lists from Chapter 3 onward
+- Parses function names and parameter lists from Chapter 3 of the MPI standard
 - Generates C header and source files for MPI tracing
 
 ## Requirements
