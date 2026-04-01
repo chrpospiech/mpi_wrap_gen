@@ -44,8 +44,12 @@ mpi_wrap_gen [OPTIONS] [INPUT_FILE]
 
 | Argument | Description |
 |----------|-------------|
-| `INPUT_FILE` | Path to the MPI standard PDF (default: `mpi31-report.pdf`) |
+| `INPUT_FILE` | Path to the MPI standard PDF |
 
+Note: The CLI may fall back to an implementation-defined default path for the MPI standard PDF,
+but this path is environment-specific and may not exist on your system. It is recommended to
+always provide `INPUT_FILE` explicitly as the path to your local copy of the MPI standard
+(for example, `mpi31-report.pdf` in your project or downloads directory).
 ### Example
 
 ```bash
