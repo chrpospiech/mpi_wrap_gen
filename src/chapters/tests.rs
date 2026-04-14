@@ -17,6 +17,7 @@
 // Author: Dr. Christoph Pospiech
 
 use super::*;
+use anyhow::Result;
 use lopdf::Document;
 use std::path::PathBuf;
 
@@ -27,9 +28,9 @@ fn test_pdf_path() -> PathBuf {
 }
 
 #[test]
-fn test_find_chapter_pages_loads_all_chapters() {
-    let doc = Document::load(test_pdf_path()).expect("Failed to load test PDF");
-    let chapters = find_chapter_pages(&doc).expect("Failed to extract chapters");
+fn test_find_chapter_pages_loads_all_chapters() -> Result<()> {
+    let doc = Document::load(test_pdf_path())?;
+    let chapters = find_chapter_pages(&doc)?;
 
     assert_eq!(
         chapters.len(),
@@ -37,12 +38,13 @@ fn test_find_chapter_pages_loads_all_chapters() {
         "Expected 4 chapters, got {}",
         chapters.len()
     );
+    Ok(())
 }
 
 #[test]
-fn test_find_chapter_pages_correct_page_numbers() {
-    let doc = Document::load(test_pdf_path()).expect("Failed to load test PDF");
-    let chapters = find_chapter_pages(&doc).expect("Failed to extract chapters");
+fn test_find_chapter_pages_correct_page_numbers() -> Result<()> {
+    let doc = Document::load(test_pdf_path())?;
+    let chapters = find_chapter_pages(&doc)?;
 
     assert_eq!(
         chapters.get(&1).map(|v| v.0),
@@ -86,12 +88,13 @@ fn test_find_chapter_pages_correct_page_numbers() {
         Some("Datatypes"),
         "Chapter 4 should have title 'Datatypes'"
     );
+    Ok(())
 }
 
 #[test]
-fn test_find_chapter_pages_returns_hashmap_with_correct_keys() {
-    let doc = Document::load(test_pdf_path()).expect("Failed to load test PDF");
-    let chapters = find_chapter_pages(&doc).expect("Failed to extract chapters");
+fn test_find_chapter_pages_returns_hashmap_with_correct_keys() -> Result<()> {
+    let doc = Document::load(test_pdf_path())?;
+    let chapters = find_chapter_pages(&doc)?;
 
     for i in 1..=4 {
         assert!(
@@ -100,37 +103,42 @@ fn test_find_chapter_pages_returns_hashmap_with_correct_keys() {
             i
         );
     }
+    Ok(())
 }
 
 #[test]
-fn test_get_chapter_page_valid() {
+fn test_get_chapter_page_valid() -> Result<()> {
     let mut map: ChapterMap = HashMap::new();
     map.insert(1, (1, "Introduction".to_string()));
     map.insert(3, (42, "Point-to-Point Communication".to_string()));
 
     assert_eq!(get_chapter_page(&map, 1).unwrap(), 1);
     assert_eq!(get_chapter_page(&map, 3).unwrap(), 42);
+    Ok(())
 }
 
 #[test]
-fn test_get_chapter_page_missing_chapter() {
+fn test_get_chapter_page_missing_chapter() -> Result<()> {
     let map: ChapterMap = HashMap::new();
     assert!(get_chapter_page(&map, 99).is_err());
+    Ok(())
 }
 
 #[cfg(target_pointer_width = "64")]
 #[test]
-fn test_get_chapter_page_out_of_range() {
+fn test_get_chapter_page_out_of_range() -> Result<()> {
     let mut map: ChapterMap = HashMap::new();
     map.insert(1, (usize::MAX, "Introduction".to_string()));
     assert!(get_chapter_page(&map, 1).is_err());
+    Ok(())
 }
 
 #[test]
-fn test_find_chapter_pages_no_extra_chapters() {
-    let doc = Document::load(test_pdf_path()).expect("Failed to load test PDF");
-    let chapters = find_chapter_pages(&doc).expect("Failed to extract chapters");
+fn test_find_chapter_pages_no_extra_chapters() -> Result<()> {
+    let doc = Document::load(test_pdf_path())?;
+    let chapters = find_chapter_pages(&doc)?;
 
     assert!(!chapters.contains_key(&0), "Should not contain chapter 0");
     assert!(!chapters.contains_key(&5), "Should not contain chapter 5");
+    Ok(())
 }
