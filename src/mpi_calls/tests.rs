@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// File: cmdline.rs
-// Description: ~/tools/Rust/mpi_wrap_gen/src/cmdline.rs
+// File: tests.rs
+// Description: ~/tools/Rust/mpi_wrap_gen/src/mpi_calls/tests.rs
 // Author: Dr. Christoph Pospiech
 
 use super::*;
