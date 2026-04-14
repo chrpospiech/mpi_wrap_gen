@@ -17,7 +17,6 @@
 // Author: Dr. Christoph Pospiech
 
 use super::*;
-use anyhow::Result;
 use lopdf::Document;
 use std::path::PathBuf;
 
