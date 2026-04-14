@@ -129,16 +129,37 @@ pub fn find_chapter_pages(doc: &Document) -> Result<ChapterMap> {
     Ok(chapters)
 }
 
+/// Decode a PDF string from its raw bytes.
+/// If the bytes start with the UTF-16BE BOM (0xFE 0xFF), decode as UTF-16BE;
+/// otherwise fall back to UTF-8 lossy conversion.
+fn decode_pdf_string(bytes: &[u8]) -> String {
+    if bytes.len() >= 2 && bytes[0] == 0xFE && bytes[1] == 0xFF {
+        let mut pairs = bytes[2..].chunks_exact(2);
+        let u16s: Vec<u16> = pairs
+            .by_ref()
+            .map(|pair| u16::from_be_bytes([pair[0], pair[1]]))
+            .collect();
+        let mut decoded = String::from_utf16_lossy(&u16s);
+        if !pairs.remainder().is_empty() {
+            decoded.push('\u{FFFD}');
+        }
+        decoded
+    } else {
+        String::from_utf8_lossy(bytes).to_string()
+    }
+}
+
 /// Extract the title string from an outline entry dictionary.
-/// Handles both inline strings and indirect references.
+/// Handles both inline strings and indirect references, as well as
+/// UTF-16BE encoded titles (common in LaTeX-generated PDFs).
 fn extract_title(doc: &Document, dict: &lopdf::Dictionary) -> Option<String> {
     let title_obj = dict.get(b"Title").ok()?;
     match title_obj {
-        Object::String(bytes, _) => Some(String::from_utf8_lossy(bytes).to_string()),
+        Object::String(bytes, _) => Some(decode_pdf_string(bytes)),
         Object::Reference(r) => {
             let resolved = doc.get_object(*r).ok()?;
             match resolved {
-                Object::String(bytes, _) => Some(String::from_utf8_lossy(bytes).to_string()),
+                Object::String(bytes, _) => Some(decode_pdf_string(bytes)),
                 _ => None,
             }
         }
