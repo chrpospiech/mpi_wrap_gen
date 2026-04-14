@@ -1,0 +1,39 @@
+\documentclass[letterpaper]{report}
+
+\usepackage[T1]{fontenc}
+\usepackage{helvet}
+\renewcommand{\familydefault}{\sfdefault}
+
+\usepackage[bookmarks=true,bookmarksnumbered=true]{hyperref}
+\usepackage{bookmark}
+
+% Make generated PDFs reproducible across machines and build times.
+\ifdefined\pdfinfoomitdate
+\pdfinfoomitdate=1
+\fi
+\ifdefined\pdftrailerid
+\pdftrailerid{}
+\fi
+\ifdefined\pdfsuppressptexinfo
+\pdfsuppressptexinfo15
+\fi
+% Format chapter headings as "1 Introduction" (no "Chapter" prefix)
+\usepackage{titlesec}
+\titleformat{\chapter}[hang]{\huge\bfseries}{\thechapter}{1em}{}
+
+% Remove page numbers to match the original
+\pagestyle{empty}
+\usepackage{etoolbox}
+\patchcmd{\chapter}{\thispagestyle{plain}}{\thispagestyle{empty}}{}{}
+
+\begin{document}
+
+\chapter{Introduction}
+
+\chapter{Terms and Conventions}
+
+\chapter{Point-to-Point Communication}
+
+\chapter{Datatypes}
+
+\end{document}
