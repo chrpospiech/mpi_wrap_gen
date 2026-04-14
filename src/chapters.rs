@@ -134,11 +134,16 @@ pub fn find_chapter_pages(doc: &Document) -> Result<ChapterMap> {
 /// otherwise fall back to UTF-8 lossy conversion.
 fn decode_pdf_string(bytes: &[u8]) -> String {
     if bytes.len() >= 2 && bytes[0] == 0xFE && bytes[1] == 0xFF {
-        let u16s: Vec<u16> = bytes[2..]
-            .chunks_exact(2)
+        let mut pairs = bytes[2..].chunks_exact(2);
+        let u16s: Vec<u16> = pairs
+            .by_ref()
             .map(|pair| u16::from_be_bytes([pair[0], pair[1]]))
             .collect();
-        String::from_utf16_lossy(&u16s)
+        let mut decoded = String::from_utf16_lossy(&u16s);
+        if !pairs.remainder().is_empty() {
+            decoded.push('\u{FFFD}');
+        }
+        decoded
     } else {
         String::from_utf8_lossy(bytes).to_string()
     }
