@@ -22,6 +22,7 @@ use lopdf::Document;
 
 pub(crate) mod chapters;
 pub(crate) mod cmdline;
+pub(crate) mod config;
 pub(crate) mod mpi_calls;
 
 fn main() -> Result<()> {
@@ -33,7 +34,12 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
-    let doc = Document::load(&args.input_file)?;
+    let config = config::read_config(&args.config_file)?;
+    if args.verbose {
+        config::print_config(&config);
+    }
+
+    let doc = Document::load(&config.mpi_pdf)?;
     if args.verbose {
         println!("PDF opened successfully.");
     }
