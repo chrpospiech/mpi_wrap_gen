@@ -36,8 +36,7 @@ pub struct CliArgs {
     #[arg(short = 'D', long, default_value_t = false)]
     pub dry_run: bool,
 
-    /// Configuration file to process
-    #[arg(default_value = concat!(env!("CARGO_MANIFEST_DIR"), "/test_data/config_xmp.yml"))]
+    /// Configuration file to process (must be provided by the user)
     pub config_file: String,
 }
 
