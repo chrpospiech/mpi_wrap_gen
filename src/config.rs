@@ -40,7 +40,7 @@ pub struct Config {
 
 /// This function reads the configuration from a YAML
 /// file and returns a Config struct.
-/// It uses the `serde_yaml` crate to parse the YAML file and
+/// It uses the `serde_yml` crate to parse the YAML file and
 /// the `anyhow` crate for error handling.
 pub fn read_config(config_path: &str) -> Result<Config> {
     let config_content = std::fs::read_to_string(config_path)
