@@ -12,3 +12,6 @@ lopdf = "0.40.0"
 regex = "1.12.3"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_yml = "0.0.12"
+
+[dev-dependencies]
+tempfile = "3"
