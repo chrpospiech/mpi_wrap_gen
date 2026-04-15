@@ -36,9 +36,9 @@ pub struct CliArgs {
     #[arg(short = 'D', long, default_value_t = false)]
     pub dry_run: bool,
 
-    /// Input file to process
-    #[arg(default_value = "/home/cp/Documents/MPI/mpi31-report.pdf")]
-    pub input_file: String,
+    /// Configuration file to process
+    #[arg(default_value = concat!(env!("CARGO_MANIFEST_DIR"), "/test_data/config_xmp.yml"))]
+    pub config_file: String,
 }
 
 pub fn parse_args() -> Result<CliArgs> {
@@ -52,7 +52,7 @@ pub fn echo_args(args: &CliArgs) -> Result<()> {
     if args.verbose || args.dry_run {
         println!("Verbose: {}", args.verbose);
         println!("Dry run: {}", args.dry_run);
-        println!("Input file: {}", args.input_file);
+        println!("Configuration file: {}", args.config_file);
     };
     Ok(())
 }
