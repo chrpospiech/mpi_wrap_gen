@@ -21,7 +21,7 @@ use anyhow::Result;
 use dynfmt::{Format, PythonFormat};
 
 #[cfg(test)]
-mod tests;
+mod generate_output;
 
 /// Generates an output string based on a template. The template is defined as a
 /// string with placeholders that can be replaced with actual values. The function
