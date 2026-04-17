@@ -22,7 +22,10 @@ use regex::Regex;
 use std::collections::HashMap;
 
 #[cfg(test)]
-mod tests;
+mod chapter_pages;
+
+#[cfg(test)]
+mod chapter_titles;
 
 pub type ChapterMap = HashMap<u32, (usize, String)>;
 
