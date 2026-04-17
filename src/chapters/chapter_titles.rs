@@ -52,9 +52,12 @@ fn test_get_chapter_title_returns_clone() -> Result<()> {
     let mut map: ChapterMap = std::collections::HashMap::new();
     map.insert(1, (1, "Introduction".to_string()));
 
-    let title = get_chapter_title(&map, 1)?;
-    // Calling again should return an equal but independent String
+    let mut title = get_chapter_title(&map, 1)?;
+    title.push_str(" modified");
+
+    // Calling again should return the original value, proving independence.
     let title2 = get_chapter_title(&map, 1)?;
-    assert_eq!(title, title2);
+    assert_eq!(title2, "Introduction");
+    assert_ne!(title, title2);
     Ok(())
 }
