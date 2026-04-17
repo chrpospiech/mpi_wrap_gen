@@ -45,7 +45,9 @@ mod generate_output;
 ///   If an error occurs during formatting, the Result will contain an error message.
 ///
 /// Example:
-/// ```
+/// ```no_run
+/// use mpi_wrap_gen::template::generate_output;
+///
 /// let template = "Chapter %(chapter_number)d: %(chapter_title)s ";
 /// let chapter_number = 3;
 /// let chapter_title = "Point-to-Point Communication";
@@ -56,7 +58,7 @@ mod generate_output;
 ///                           "dest".to_string(),
 ///                           "tag".to_string(),
 ///                           "comm".to_string()]);
-/// let result = generate_output(template, chapter_number, chapter_title, mpi_call_info);
+/// let result = generate_output(template, chapter_number, chapter_title, &mpi_call_info);
 /// match result {
 ///     Ok(output) => println!("Generated output: {}", output),
 ///     Err(e) => eprintln!("Error generating output: {}", e),
