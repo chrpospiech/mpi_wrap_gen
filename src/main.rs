@@ -19,6 +19,7 @@
 use anyhow::Result;
 use chapters::ChapterMap;
 use lopdf::Document;
+use mpi_calls::MpiCallInfo;
 
 pub(crate) mod chapters;
 pub(crate) mod cmdline;
@@ -50,7 +51,7 @@ fn main() -> Result<()> {
     let ch3_start = chapters::get_chapter_page(&chapter_indices, 3)?;
     let ch4_start = chapters::get_chapter_page(&chapter_indices, 4)?;
 
-    let mpi_calls = mpi_calls::extract_mpi_calls(&doc, ch3_start, ch4_start)?;
+    let mpi_calls: Vec<MpiCallInfo> = mpi_calls::extract_mpi_calls(&doc, ch3_start, ch4_start)?;
     println!("Extracted MPI calls: {:?}", mpi_calls);
 
     println!("Hello, world!");

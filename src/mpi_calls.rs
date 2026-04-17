@@ -23,6 +23,8 @@ use regex::Regex;
 #[cfg(test)]
 mod tests;
 
+pub type MpiCallInfo = (String, Vec<String>);
+
 /// Extracts MPI call information from the PDF document and returns a vector of MPI call names
 /// and call parameters. The MPI calls are identified by searching for text elements that match
 /// the pattern "int MPI_[A-Z]\w+\(.*\)" in the PDF content streams. The closing bracket may
@@ -40,14 +42,15 @@ mod tests;
 ///     end_page: The 1-based (exclusive) index of the page at which to stop searching for MPI calls.
 ///
 /// Returns:
-///     A Result containing a vector of tuples, where each tuple consists of the MPI call name
-///     and a vector of its parameters. If an error occurs during PDF processing, the Result
+///     A Result containing a vector of [`MpiCallInfo`], where each entry is a tuple of
+///     `(call_name, parameters)`: the MPI call name (without the "MPI_" prefix) and a vector
+///     of its parameter strings. If an error occurs during PDF processing, the Result
 ///     will contain an error message.
 pub fn extract_mpi_calls(
     doc: &Document,
     start_page: u32,
     end_page: u32,
-) -> Result<Vec<(String, Vec<String>)>> {
+) -> Result<Vec<MpiCallInfo>> {
     let mut mpi_calls = Vec::new();
     // Use (?s) so . matches newlines; \s* to handle missing/present spaces
     let re = Regex::new(r"(?s)int\s*MPI_([A-Z]\w+)\s*\((.*?)\)")?;
