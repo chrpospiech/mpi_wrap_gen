@@ -54,6 +54,11 @@ fn main() -> Result<()> {
 
     let mpi_calls: Vec<MpiCallInfo> = mpi_calls::extract_mpi_calls(&doc, ch3_start, ch4_start)?;
 
+    if mpi_calls.is_empty() {
+        println!("No MPI calls found in chapter 3.");
+        return Ok(());
+    }
+
     let chapter_title = chapters::get_chapter_title(&chapter_indices, 3)?;
     let header_template =
         "\n\nExtracted MPI calls from chapter %(chapter_number)d: %(chapter_title)s\n";
