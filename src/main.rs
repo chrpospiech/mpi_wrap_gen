@@ -25,6 +25,7 @@ pub(crate) mod chapters;
 pub(crate) mod cmdline;
 pub(crate) mod config;
 pub(crate) mod mpi_calls;
+pub(crate) mod template;
 
 fn main() -> Result<()> {
     let args = cmdline::parse_args()?;
