@@ -42,8 +42,9 @@ pub type MpiCallInfo = (String, Vec<String>);
 ///     end_page: The 1-based (exclusive) index of the page at which to stop searching for MPI calls.
 ///
 /// Returns:
-///     A Result containing a vector of tuples, where each tuple consists of the MPI call name
-///     and a vector of its parameters. If an error occurs during PDF processing, the Result
+///     A Result containing a vector of [`MpiCallInfo`], where each entry is a tuple of
+///     `(call_name, parameters)`: the MPI call name (without the "MPI_" prefix) and a vector
+///     of its parameter strings. If an error occurs during PDF processing, the Result
 ///     will contain an error message.
 pub fn extract_mpi_calls(
     doc: &Document,
