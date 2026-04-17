@@ -22,7 +22,10 @@ use regex::Regex;
 use std::collections::HashMap;
 
 #[cfg(test)]
-mod tests;
+mod chapter_pages;
+
+#[cfg(test)]
+mod chapter_titles;
 
 pub type ChapterMap = HashMap<u32, (usize, String)>;
 
@@ -36,6 +39,15 @@ pub fn get_chapter_page(map: &ChapterMap, chapter: u32) -> Result<u32> {
         .0
         .try_into()
         .with_context(|| format!("Chapter {} page number out of range", chapter))
+}
+
+/// Retrieves the chapter title for a given chapter number from the `ChapterMap`.
+pub fn get_chapter_title(map: &ChapterMap, chapter: u32) -> Result<String> {
+    Ok(map
+        .get(&chapter)
+        .ok_or_else(|| anyhow::anyhow!("Chapter {} not found in PDF outlines", chapter))?
+        .1
+        .clone())
 }
 
 /// Finds the 1-based page indices where each chapter starts by walking the
