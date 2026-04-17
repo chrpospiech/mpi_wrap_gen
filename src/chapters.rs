@@ -38,6 +38,15 @@ pub fn get_chapter_page(map: &ChapterMap, chapter: u32) -> Result<u32> {
         .with_context(|| format!("Chapter {} page number out of range", chapter))
 }
 
+/// Retrieves the chapter title for a given chapter number from the `ChapterMap`.
+pub fn get_chapter_title(map: &ChapterMap, chapter: u32) -> Result<String> {
+    Ok(map
+        .get(&chapter)
+        .ok_or_else(|| anyhow::anyhow!("Chapter {} not found in PDF outlines", chapter))?
+        .1
+        .clone())
+}
+
 /// Finds the 1-based page indices where each chapter starts by walking the
 /// PDF outline (bookmark) tree. Outline entries whose title matches
 /// "<N> <title>" (e.g. "3 Point-to-Point Communication") are resolved to
