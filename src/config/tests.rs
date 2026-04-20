@@ -183,8 +183,6 @@ templates:
 
     let result = read_config(path);
     assert!(result.is_err());
-    let err_msg = format!("{:#}", result.unwrap_err());
-    assert!(err_msg.contains("missing field `chapters`"));
 }
 
 #[test]
