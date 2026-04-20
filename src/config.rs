@@ -36,6 +36,7 @@ pub struct Config {
     pub mpi_pdf: PathBuf,
     pub output_file: PathBuf,
     pub templates: Templates,
+    pub chapters: Vec<u32>,
 }
 
 /// This function reads the configuration from a YAML
@@ -58,4 +59,5 @@ pub fn print_config(config: &Config) {
     println!("Chapter Init Template:\n{}", config.templates.ch_init);
     println!("Chapter Body Template:\n{}", config.templates.ch_body);
     println!("Footer Template:\n{}", config.templates.footer);
+    println!("Chapters: {:?}", config.chapters);
 }
