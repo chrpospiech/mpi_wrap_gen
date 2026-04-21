@@ -95,6 +95,8 @@ pub fn extract_and_generate_listings(
             continue; // Skip to next chapter if no MPI calls found
         }
 
+        let chapter_title = get_chapter_title(&chapter_indices, chapter)?;
+
         // Add chapter init template
         if args.verbose {
             println!(
@@ -105,7 +107,7 @@ pub fn extract_and_generate_listings(
         output += &generate_output(
             &config.templates.ch_init,
             chapter,
-            &get_chapter_title(&chapter_indices, chapter)?,
+            &chapter_title,
             &mpi_calls[0],
         )?;
 
@@ -120,7 +122,7 @@ pub fn extract_and_generate_listings(
             output += &generate_output(
                 &config.templates.ch_body,
                 chapter,
-                &get_chapter_title(&chapter_indices, chapter)?,
+                &chapter_title,
                 &mpi_call,
             )?;
         }
