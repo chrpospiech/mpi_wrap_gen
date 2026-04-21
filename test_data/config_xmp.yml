@@ -33,11 +33,11 @@ templates:
     // These are the initial lines of the file.
 
   ch_init: |
-    // This is the begin for functions from chapter {chapter} of the MPI standard.
+    // This is the begin for functions from chapter %(chapter_number)d of the MPI standard.
 
   ch_body: |
-    // The body of the wrapper function will be generated here.
-    // It will include the call to the corresponding MPI function.
-
+    // Call: %(mpi_call_name)s.
   footer: |
     // This marks the end of the file.
+
+chapters: [ 2, 3, 4, 5 ]
