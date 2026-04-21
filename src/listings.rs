@@ -71,8 +71,12 @@ pub fn extract_and_generate_listings(
     for &chapter in &config.chapters {
         let ch_start = get_chapter_page(&chapter_indices, chapter)
             .with_context(|| format!("Chapter {} not found in PDF document.", chapter))?;
-        let ch_end = get_chapter_page(&chapter_indices, chapter + 1)
-            .unwrap_or_else(|_| (doc.get_pages().len() + 1) as u32); // If next chapter not found, use end of document
+        let ch_end = chapter_indices
+            .keys()
+            .filter_map(|&candidate_chapter| get_chapter_page(&chapter_indices, candidate_chapter).ok())
+            .filter(|&page| page > ch_start)
+            .min()
+            .unwrap_or_else(|| (doc.get_pages().len() + 1) as u32); // If no later chapter is found, use end of document
 
         if args.verbose {
             println!(
