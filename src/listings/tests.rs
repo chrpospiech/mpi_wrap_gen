@@ -148,11 +148,10 @@ fn test_verbose_flag_does_not_panic() -> Result<()> {
     Ok(())
 }
 
-/// When the PDF contains MPI calls on the pages covered by the requested
-/// chapter range, both the chapter-init and body templates must appear in
-/// the output and contain the correct chapter number.
+/// When the PDF contains MPI calls but no chapter outlines, listing
+/// generation must fail cleanly instead of panicking.
 #[test]
-fn test_output_contains_init_and_body_for_mpi_calls() -> Result<()> {
+fn test_returns_error_for_mpi_pdf_without_chapter_outlines() -> Result<()> {
     let doc = Document::load(mpi_pdf_path())?;
     // mpi_call_xmp.pdf has no chapter outlines, so build a ChapterMap
     // by calling the function with the full page range treated as one chapter.
