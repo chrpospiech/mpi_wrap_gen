@@ -17,13 +17,12 @@
 // Author: Dr. Christoph Pospiech
 
 use anyhow::Result;
-use chapters::ChapterMap;
 use lopdf::Document;
-use mpi_calls::MpiCallInfo;
 
 pub(crate) mod chapters;
 pub(crate) mod cmdline;
 pub(crate) mod config;
+pub(crate) mod listings;
 pub(crate) mod mpi_calls;
 pub(crate) mod template;
 
@@ -45,31 +44,8 @@ fn main() -> Result<()> {
     if args.verbose {
         println!("PDF opened successfully.");
     }
-
-    let chapter_indices: ChapterMap = chapters::find_chapter_pages(&doc)?;
-    println!("Chapter indices: {:?}", chapter_indices);
-
-    let ch3_start = chapters::get_chapter_page(&chapter_indices, 3)?;
-    let ch4_start = chapters::get_chapter_page(&chapter_indices, 4)?;
-
-    let mpi_calls: Vec<MpiCallInfo> = mpi_calls::extract_mpi_calls(&doc, ch3_start, ch4_start)?;
-
-    if mpi_calls.is_empty() {
-        println!("No MPI calls found in chapter 3.");
-        return Ok(());
-    }
-
-    let chapter_title = chapters::get_chapter_title(&chapter_indices, 3)?;
-    let header_template =
-        "\n\nExtracted MPI calls from chapter %(chapter_number)d: %(chapter_title)s\n";
-    let output = template::generate_output(header_template, 3, &chapter_title, &mpi_calls[0])?;
-    println!("{}", output);
-    let item_template = "MPI call: MPI_%(mpi_call_name)s\n   with parameters: %(mpi_call_params)s";
-    for mpi_call in mpi_calls {
-        let output = template::generate_output(item_template, 3, &chapter_title, &mpi_call)?;
-        println!("{}", output);
-    }
-
-    println!("Hello, world!");
+    let output = listings::extract_and_generate_listings(&doc, &args, &config)?;
+    std::fs::write(&config.output_file, output)?;
+    println!("Output written to {}", config.output_file.display());
     Ok(())
 }
