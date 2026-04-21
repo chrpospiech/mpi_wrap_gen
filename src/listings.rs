@@ -24,6 +24,9 @@ use crate::template::generate_output;
 use anyhow::{Context, Result};
 use lopdf::Document;
 
+#[cfg(test)]
+mod tests;
+
 /// This function extracts the MPI call information from the PDF document for
 /// the specified list of chapters as listed in the configuration. Using the
 /// templates from the configuration, a single document is generated and written
