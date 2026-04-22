@@ -1,0 +1,314 @@
+// Copyright 2026 mpi_wrap_gen C. Pospiech
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// File: functional_tests.rs
+// Description: ~/tools/Rust/mpi_wrap_gen/src/listings/functional_tests.rs
+// Author: Dr. Christoph Pospiech
+
+use crate::cmdline::CliArgs;
+use crate::config::{Config, Templates};
+use crate::listings::extract_and_generate_listings;
+use anyhow::Result;
+use lopdf::Document;
+use std::path::PathBuf;
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+/// test_outline.pdf structure (pages 1–5):
+///   Chapter 1 – "Introduction"                 (page 1) – no MPI calls
+///   Chapter 2 – "Terms and Conventions"        (page 2) – no MPI calls
+///   Chapter 3 – "Point-to-Point Communication" (page 3) – Send, Isend, Recv  (3 calls)
+///   Chapter 4 – "Datatypes"                    (page 4) – no MPI calls
+///   Chapter 5 – "Collective Communication"     (page 5) – Barrier, Bcast, Scatter, Scatterv (4 calls)
+fn outline_pdf_path() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("test_data")
+        .join("test_outline.pdf")
+}
+
+/// Build a `Config` with simple, recognisable templates for the given chapter list.
+fn make_config(chapters: Vec<u32>) -> Config {
+    Config {
+        mpi_pdf: PathBuf::from("dummy.pdf"),
+        output_file: PathBuf::from("dummy_output.c"),
+        templates: Templates {
+            header: "HEADER\n".to_string(),
+            ch_init: "INIT %(chapter_number)d %(chapter_title)s %(mpi_call_name)s\n".to_string(),
+            ch_body: "BODY %(mpi_call_name)s\n".to_string(),
+            footer: "FOOTER\n".to_string(),
+        },
+        chapters,
+    }
+}
+
+fn quiet_args() -> CliArgs {
+    CliArgs::default()
+}
+
+fn verbose_args() -> CliArgs {
+    CliArgs {
+        verbose: true,
+        ..CliArgs::default()
+    }
+}
+
+// ── Tests ─────────────────────────────────────────────────────────────────────
+
+/// When a chapter with MPI calls is requested the output must still begin with
+/// the header and end with the footer.
+#[test]
+fn test_chapter_with_mpi_calls_has_header_and_footer() -> Result<()> {
+    let doc = Document::load(outline_pdf_path())?;
+    let config = make_config(vec![3]);
+    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    assert!(
+        output.starts_with("HEADER\n"),
+        "output should start with header, got: {output:?}"
+    );
+    assert!(
+        output.ends_with("FOOTER\n"),
+        "output should end with footer, got: {output:?}"
+    );
+    Ok(())
+}
+
+/// Chapter 3 contains Send, Isend, and Recv – all three names must appear in
+/// the generated output.
+#[test]
+fn test_chapter_3_output_contains_all_mpi_call_names() -> Result<()> {
+    let doc = Document::load(outline_pdf_path())?;
+    let config = make_config(vec![3]);
+    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    assert!(
+        output.contains("Send"),
+        "output should contain MPI_Send, got: {output:?}"
+    );
+    assert!(
+        output.contains("Isend"),
+        "output should contain MPI_Isend, got: {output:?}"
+    );
+    assert!(
+        output.contains("Recv"),
+        "output should contain MPI_Recv, got: {output:?}"
+    );
+    Ok(())
+}
+
+/// The ch_init template must be instantiated exactly once for chapter 3,
+/// using the first MPI call found in that chapter (Send).
+#[test]
+fn test_ch_init_appears_exactly_once_for_chapter_3() -> Result<()> {
+    let doc = Document::load(outline_pdf_path())?;
+    let config = make_config(vec![3]);
+    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let init_count = output.lines().filter(|l| l.starts_with("INIT")).count();
+    assert_eq!(
+        init_count, 1,
+        "ch_init should appear exactly once for chapter 3, got: {output:?}"
+    );
+    Ok(())
+}
+
+/// The ch_init line for chapter 3 must contain the chapter number, title, and
+/// the name of the first MPI call (Send).
+#[test]
+fn test_ch_init_content_for_chapter_3() -> Result<()> {
+    let doc = Document::load(outline_pdf_path())?;
+    let config = make_config(vec![3]);
+    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    assert!(
+        output.contains("INIT 3 Point-to-Point Communication Send\n"),
+        "ch_init line should contain chapter number, title, and first call name, got: {output:?}"
+    );
+    Ok(())
+}
+
+/// Chapter 3 has exactly 3 MPI calls, so the ch_body template must be
+/// instantiated 3 times.
+#[test]
+fn test_ch_body_count_matches_chapter_3_mpi_calls() -> Result<()> {
+    let doc = Document::load(outline_pdf_path())?;
+    let config = make_config(vec![3]);
+    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let body_count = output.lines().filter(|l| l.starts_with("BODY")).count();
+    assert_eq!(
+        body_count, 3,
+        "chapter 3 should produce 3 BODY entries (Send, Isend, Recv), got: {output:?}"
+    );
+    Ok(())
+}
+
+/// The chapter title "Point-to-Point Communication" must be substituted into
+/// the ch_init output for chapter 3.
+#[test]
+fn test_chapter_title_substituted_in_output() -> Result<()> {
+    let doc = Document::load(outline_pdf_path())?;
+    let config = make_config(vec![3]);
+    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    assert!(
+        output.contains("Point-to-Point Communication"),
+        "output should contain the chapter title, got: {output:?}"
+    );
+    Ok(())
+}
+
+/// The chapter number must be substituted into the ch_init output for chapter 3.
+#[test]
+fn test_chapter_number_substituted_in_output() -> Result<()> {
+    let doc = Document::load(outline_pdf_path())?;
+    let config = make_config(vec![3]);
+    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    assert!(
+        output.contains("INIT 3 "),
+        "ch_init line should contain the chapter number 3, got: {output:?}"
+    );
+    Ok(())
+}
+
+/// Chapter 5 (Collective Communication) has exactly 4 MPI calls, so the
+/// ch_body template must be instantiated 4 times.
+#[test]
+fn test_ch_body_count_matches_chapter_5_mpi_calls() -> Result<()> {
+    let doc = Document::load(outline_pdf_path())?;
+    let config = make_config(vec![5]);
+    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let body_count = output.lines().filter(|l| l.starts_with("BODY")).count();
+    assert_eq!(
+        body_count, 4,
+        "chapter 5 should produce 4 BODY entries (Barrier, Bcast, Scatter, Scatterv), got: {output:?}"
+    );
+    Ok(())
+}
+
+/// Chapter 5 must produce output containing the names of all four collective
+/// communication functions.
+#[test]
+fn test_chapter_5_contains_collective_call_names() -> Result<()> {
+    let doc = Document::load(outline_pdf_path())?;
+    let config = make_config(vec![5]);
+    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    assert!(
+        output.contains("Barrier"),
+        "output should contain MPI_Barrier, got: {output:?}"
+    );
+    assert!(
+        output.contains("Bcast"),
+        "output should contain MPI_Bcast, got: {output:?}"
+    );
+    assert!(
+        output.contains("Scatter"),
+        "output should contain MPI_Scatter, got: {output:?}"
+    );
+    assert!(
+        output.contains("Scatterv"),
+        "output should contain MPI_Scatterv, got: {output:?}"
+    );
+    Ok(())
+}
+
+/// When chapters 3 and 5 are both requested the output must contain exactly
+/// 2 INIT lines and 7 BODY lines (3 + 4).
+#[test]
+fn test_multiple_chapters_combined_call_counts() -> Result<()> {
+    let doc = Document::load(outline_pdf_path())?;
+    let config = make_config(vec![3, 5]);
+    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let init_count = output.lines().filter(|l| l.starts_with("INIT")).count();
+    let body_count = output.lines().filter(|l| l.starts_with("BODY")).count();
+    assert_eq!(
+        init_count, 2,
+        "should have 2 INIT entries for 2 chapters with MPI calls, got: {output:?}"
+    );
+    assert_eq!(
+        body_count, 7,
+        "should have 7 BODY entries total (3 from ch3 + 4 from ch5), got: {output:?}"
+    );
+    Ok(())
+}
+
+/// When chapters 3 and 5 are both requested the chapter 3 content must appear
+/// before chapter 5 content in the output.
+#[test]
+fn test_multiple_chapters_appear_in_requested_order() -> Result<()> {
+    let doc = Document::load(outline_pdf_path())?;
+    let config = make_config(vec![3, 5]);
+    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let pos_ch3 = output
+        .find("Point-to-Point Communication")
+        .expect("chapter 3 title should appear in output");
+    let pos_ch5 = output
+        .find("Collective Communication")
+        .expect("chapter 5 title should appear in output");
+    assert!(
+        pos_ch3 < pos_ch5,
+        "chapter 3 content should precede chapter 5 content in the output"
+    );
+    Ok(())
+}
+
+/// When a chapter without MPI calls (chapter 1) is listed alongside a chapter
+/// that has calls (chapter 3), only chapter 3 must contribute INIT and BODY
+/// entries.
+#[test]
+fn test_chapter_without_mpi_calls_skipped_in_mixed_list() -> Result<()> {
+    let doc = Document::load(outline_pdf_path())?;
+    let config = make_config(vec![1, 3]);
+    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let init_count = output.lines().filter(|l| l.starts_with("INIT")).count();
+    let body_count = output.lines().filter(|l| l.starts_with("BODY")).count();
+    assert_eq!(
+        init_count, 1,
+        "only chapter 3 should contribute an INIT entry, got: {output:?}"
+    );
+    assert_eq!(
+        body_count, 3,
+        "only chapter 3's 3 calls should produce BODY entries, got: {output:?}"
+    );
+    Ok(())
+}
+
+/// The output sections must appear in the correct order:
+/// HEADER → ch_init → ch_body × n → FOOTER.
+#[test]
+fn test_output_section_order() -> Result<()> {
+    let doc = Document::load(outline_pdf_path())?;
+    let config = make_config(vec![3]);
+    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let header_pos = output.find("HEADER").expect("HEADER must be present");
+    let init_pos = output.find("INIT").expect("INIT must be present");
+    let body_pos = output.find("BODY").expect("BODY must be present");
+    let footer_pos = output.find("FOOTER").expect("FOOTER must be present");
+    assert!(header_pos < init_pos, "HEADER must come before INIT");
+    assert!(init_pos < body_pos, "INIT must come before first BODY");
+    assert!(
+        body_pos < footer_pos,
+        "BODY entries must come before FOOTER"
+    );
+    Ok(())
+}
+
+/// Running with the verbose flag must produce identical output to quiet mode –
+/// verbose output goes to stdout only and must not alter the returned string.
+#[test]
+fn test_verbose_mode_produces_identical_output_to_quiet_mode() -> Result<()> {
+    let doc = Document::load(outline_pdf_path())?;
+    let config = make_config(vec![3]);
+    let quiet_output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let verbose_output = extract_and_generate_listings(&doc, &verbose_args(), &config)?;
+    assert_eq!(
+        quiet_output, verbose_output,
+        "verbose mode should not change the returned output string"
+    );
+    Ok(())
+}

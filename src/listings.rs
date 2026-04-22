@@ -27,6 +27,9 @@ use lopdf::Document;
 #[cfg(test)]
 mod error_tests;
 
+#[cfg(test)]
+mod functional_tests;
+
 /// This function extracts the MPI call information from the PDF document for
 /// the specified list of chapters as listed in the configuration. Using the
 /// templates from the configuration, a single document is generated and written
