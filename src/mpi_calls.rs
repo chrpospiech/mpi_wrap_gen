@@ -23,6 +23,9 @@ use regex::Regex;
 #[cfg(test)]
 mod mpi_call_xmp_tests;
 
+#[cfg(test)]
+mod test_outline_tests;
+
 pub type MpiCallInfo = (String, Vec<String>);
 
 /// Extracts MPI call information from the PDF document and returns a vector of MPI call names
