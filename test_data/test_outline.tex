@@ -30,10 +30,130 @@
 
 \chapter{Introduction}
 
+This is a shortened version of the MPI standard, containing only the sections
+relevant to the test suite. It is not intended to be a complete reference for MPI.
+
 \chapter{Terms and Conventions}
 
 \chapter{Point-to-Point Communication}
 
+This chapter contains some of the most commonly used MPI functions, such
+as \texttt{MPI\_Send} and \texttt{MPI\_Recv}. The full list of point-to-point
+communication functions can be found in the official MPI standard.
+
+The MPI function \texttt{MPI\_Send} is used to send a message from one process to another.
+It takes the following parameters:
+
+\begin{verbatim}
+int MPI_Send(const void* buf, int count, MPI_Datatype datatype,
+int dest, int tag, MPI_Comm comm)
+\end{verbatim}
+
+\texttt{buf} is a pointer to the data to be sent, \texttt{count} is the number
+of elements in the data, \texttt{datatype} is the type of the data,
+\texttt{dest} is the rank of the destination process, \texttt{tag}
+is an integer tag to identify the message, and \texttt{comm} is the communicator.
+
+The non-blocking version of this function is \texttt{MPI\_Isend},
+which allows the sender to continue executing while the message is being sent.
+
+\begin{verbatim}
+int MPI_Isend(const void* buf, int count, MPI_Datatype datatype,
+int dest, int tag, MPI_Comm comm, MPI_Request* request)
+\end{verbatim}
+
+\texttt{buf} is a pointer to the data to be sent, \texttt{count} is the number
+of elements in the data, \texttt{datatype} is the type of the data,
+\texttt{dest} is the rank of the destination process, \texttt{tag}
+is an integer tag to identify the message, \texttt{comm} is the communicator,
+and \texttt{request} is a handle to the request object.
+The sender can use the request object to check the status of the non-blocking send
+operation.
+
+The MPI function \texttt{MPI\_Recv} is used to receive a message from another process.
+It takes the following parameters:
+
+\begin{verbatim}
+int MPI_Recv(void* buf, int count, MPI_Datatype datatype,
+int source, int tag, MPI_Comm comm, MPI_Status* status)
+\end{verbatim}
+
+\texttt{buf} is a pointer to the buffer where the received data will be stored,
+\texttt{count} is the maximum number of elements that can be received,
+\texttt{datatype} is the type of the data, \texttt{source} is the rank
+of the source process, \texttt{tag} is an integer tag to identify the message,
+\texttt{comm} is the communicator, and \texttt{status} is a pointer to a status
+object that will be filled with information about the received message.
+The receiver can use the status object to check the source, tag,
+and error code of the received message.
+
 \chapter{Datatypes}
+
+\chapter{Collective Communication}
+
+The simplest collective communication function is \texttt{MPI\_Barrier}, which blocks
+until all processes in the communicator have reached the barrier.
+It takes the following parameters:
+
+\begin{verbatim}
+int MPI_Barrier(MPI_Comm comm)
+\end{verbatim}
+
+\texttt{comm} is the communicator that defines the group of processes that must
+reach the barrier before any of them can proceed.
+
+Another collective communication function is \texttt{MPI\_Bcast},
+which broadcasts a message from one process to all other processes in the communicator.
+It takes the following parameters:
+
+\begin{verbatim}
+int MPI_Bcast(void* buffer, int count, MPI_Datatype datatype,
+int root, MPI_Comm comm)
+\end{verbatim}
+
+\texttt{buffer} is a pointer to the data to be broadcasted, \texttt{count} is the number
+of elements in the data, \texttt{datatype} is the type of the data, \texttt{root} is the rank
+of the root process that initiates the broadcast, and \texttt{comm} is the communicator.
+
+Sending different data to different processes can be achieved using the \texttt{MPI\_Scatter}
+function, which distributes distinct pieces of data from one process
+to all other processes in the communicator. It takes the following parameters:
+
+\begin{verbatim}
+int MPI_Scatter(const void* sendbuf,
+int sendcount, MPI_Datatype sendtype,
+void* recvbuf, int recvcount, MPI_Datatype recvtype,
+int root, MPI_Comm comm)
+\end{verbatim}
+
+\texttt{sendbuf} is a pointer to the data to be sent, \texttt{sendcount} is the number
+of elements to send to each process, \texttt{sendtype} is the type of the data to send,
+\texttt{recvbuf} is a pointer to the buffer where the received data will be stored,
+\texttt{recvcount} is the number of elements to receive, \texttt{recvtype} is the type
+of the received data, \texttt{root} is the rank of the root process that initiates the scatter,
+and \texttt{comm} is the communicator.
+
+If the messages being set to different processes have different sizes,
+the \texttt{MPI\_Scatterv} function can be used instead, which allows
+for varying counts and displacements for each process.
+It takes the following parameters:
+
+\begin{verbatim}
+int MPI_Scatterv(const void* sendbuf,
+const int* sendcounts, const int* displs,
+MPI_Datatype sendtype,
+void* recvbuf, int recvcount,
+MPI_Datatype recvtype, int root, MPI_Comm comm)
+\end{verbatim}
+
+\texttt{sendbuf} is a pointer to the data to be sent,
+\texttt{sendcounts} is an array specifying the number
+of elements to send to each process, \texttt{displs} is an
+array specifying the displacement (offset) of the data to
+send to each process, \texttt{sendtype} is the type of the data to send,
+\texttt{recvbuf} is a pointer to the buffer where the received data
+will be stored, \texttt{recvcount} is the number of elements to receive,
+\texttt{recvtype} is the type of the received data, \texttt{root} is the rank
+of the root process that initiates the scatter, and \texttt{comm} is the communicator.
 
 \end{document}
