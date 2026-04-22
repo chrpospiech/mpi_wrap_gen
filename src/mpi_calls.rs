@@ -21,7 +21,7 @@ use lopdf::Document;
 use regex::Regex;
 
 #[cfg(test)]
-mod tests;
+mod mpi_call_xmp_tests;
 
 pub type MpiCallInfo = (String, Vec<String>);
 
