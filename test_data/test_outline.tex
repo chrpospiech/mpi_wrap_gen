@@ -133,7 +133,7 @@ of elements to send to each process, \texttt{sendtype} is the type of the data t
 of the received data, \texttt{root} is the rank of the root process that initiates the scatter,
 and \texttt{comm} is the communicator.
 
-If the messages being set to different processes have different sizes,
+If the messages being sent to different processes have different sizes,
 the \texttt{MPI\_Scatterv} function can be used instead, which allows
 for varying counts and displacements for each process.
 It takes the following parameters:
