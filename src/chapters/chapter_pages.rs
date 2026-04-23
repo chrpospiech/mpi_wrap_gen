@@ -33,8 +33,8 @@ fn test_find_chapter_pages_loads_all_chapters() -> Result<()> {
 
     assert_eq!(
         chapters.len(),
-        4,
-        "Expected 4 chapters, got {}",
+        5,
+        "Expected 5 chapters, got {}",
         chapters.len()
     );
     Ok(())
@@ -65,6 +65,11 @@ fn test_find_chapter_pages_correct_page_numbers() -> Result<()> {
         Some(4),
         "Chapter 4 should be on page 4"
     );
+    assert_eq!(
+        chapters.get(&5).map(|v| v.0),
+        Some(5),
+        "Chapter 5 should be on page 5"
+    );
 
     // Also verify that the chapter titles are correctly extracted.
     assert_eq!(
@@ -87,6 +92,11 @@ fn test_find_chapter_pages_correct_page_numbers() -> Result<()> {
         Some("Datatypes"),
         "Chapter 4 should have title 'Datatypes'"
     );
+    assert_eq!(
+        chapters.get(&5).map(|v| v.1.as_str()),
+        Some("Collective Communication"),
+        "Chapter 5 should have title 'Collective Communication'"
+    );
     Ok(())
 }
 
@@ -95,7 +105,7 @@ fn test_find_chapter_pages_returns_hashmap_with_correct_keys() -> Result<()> {
     let doc = Document::load(test_pdf_path())?;
     let chapters = find_chapter_pages(&doc)?;
 
-    for i in 1..=4 {
+    for i in 1..=5 {
         assert!(
             chapters.contains_key(&i),
             "Expected chapter {} to be present",
@@ -138,6 +148,6 @@ fn test_find_chapter_pages_no_extra_chapters() -> Result<()> {
     let chapters = find_chapter_pages(&doc)?;
 
     assert!(!chapters.contains_key(&0), "Should not contain chapter 0");
-    assert!(!chapters.contains_key(&5), "Should not contain chapter 5");
+    assert!(!chapters.contains_key(&6), "Should not contain chapter 6");
     Ok(())
 }

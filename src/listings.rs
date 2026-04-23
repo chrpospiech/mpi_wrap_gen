@@ -25,7 +25,10 @@ use anyhow::{Context, Result};
 use lopdf::Document;
 
 #[cfg(test)]
-mod tests;
+mod error_tests;
+
+#[cfg(test)]
+mod functional_tests;
 
 /// This function extracts the MPI call information from the PDF document for
 /// the specified list of chapters as listed in the configuration. Using the
@@ -73,7 +76,9 @@ pub fn extract_and_generate_listings(
             .with_context(|| format!("Chapter {} not found in PDF document.", chapter))?;
         let ch_end = chapter_indices
             .keys()
-            .filter_map(|&candidate_chapter| get_chapter_page(&chapter_indices, candidate_chapter).ok())
+            .filter_map(|&candidate_chapter| {
+                get_chapter_page(&chapter_indices, candidate_chapter).ok()
+            })
             .filter(|&page| page > ch_start)
             .min()
             .unwrap_or_else(|| (doc.get_pages().len() + 1) as u32); // If no later chapter is found, use end of document
