@@ -28,7 +28,7 @@ fn test_pdf_path() -> PathBuf {
 
 #[test]
 fn test_extract_mpi_calls_finds_calls() -> Result<()> {
-    let doc = Document::load(test_pdf_path()).expect("Failed to load test PDF");
+    let doc = Document::load(test_pdf_path())?;
     let num_pages = doc.page_iter().count() as u32;
     let calls = extract_mpi_calls(&doc, 1, num_pages + 1)?;
 
@@ -47,7 +47,7 @@ fn test_extract_mpi_calls_finds_calls() -> Result<()> {
 
 #[test]
 fn test_extract_mpi_calls_returns_call_names() -> Result<()> {
-    let doc = Document::load(test_pdf_path()).expect("Failed to load test PDF");
+    let doc = Document::load(test_pdf_path())?;
     let num_pages = doc.page_iter().count() as u32;
     let calls = extract_mpi_calls(&doc, 1, num_pages + 1)?;
 
@@ -65,7 +65,7 @@ fn test_extract_mpi_calls_returns_call_names() -> Result<()> {
 
 #[test]
 fn test_extract_mpi_calls_returns_parameters() -> Result<()> {
-    let doc = Document::load(test_pdf_path()).expect("Failed to load test PDF");
+    let doc = Document::load(test_pdf_path())?;
     let num_pages = doc.page_iter().count() as u32;
     let calls = extract_mpi_calls(&doc, 1, num_pages + 1)?;
 
@@ -89,7 +89,7 @@ fn test_extract_mpi_calls_returns_parameters() -> Result<()> {
 
 #[test]
 fn test_extract_mpi_calls_finds_send() -> Result<()> {
-    let doc = Document::load(test_pdf_path()).expect("Failed to load test PDF");
+    let doc = Document::load(test_pdf_path())?;
     let num_pages = doc.page_iter().count() as u32;
     let calls = extract_mpi_calls(&doc, 1, num_pages + 1)?;
 
@@ -116,7 +116,7 @@ fn test_extract_mpi_calls_finds_send() -> Result<()> {
 
 #[test]
 fn test_extract_mpi_calls_finds_recv() -> Result<()> {
-    let doc = Document::load(test_pdf_path()).expect("Failed to load test PDF");
+    let doc = Document::load(test_pdf_path())?;
     let num_pages = doc.page_iter().count() as u32;
     let calls = extract_mpi_calls(&doc, 1, num_pages + 1)?;
 
@@ -138,7 +138,7 @@ fn test_extract_mpi_calls_finds_recv() -> Result<()> {
 
 #[test]
 fn test_extract_mpi_calls_send_has_six_parameters() -> Result<()> {
-    let doc = Document::load(test_pdf_path()).expect("Failed to load test PDF");
+    let doc = Document::load(test_pdf_path())?;
     let num_pages = doc.page_iter().count() as u32;
     let calls = extract_mpi_calls(&doc, 1, num_pages + 1)?;
 
@@ -156,7 +156,7 @@ fn test_extract_mpi_calls_send_has_six_parameters() -> Result<()> {
 
 #[test]
 fn test_extract_mpi_calls_finds_barrier() -> Result<()> {
-    let doc = Document::load(test_pdf_path()).expect("Failed to load test PDF");
+    let doc = Document::load(test_pdf_path())?;
     let num_pages = doc.page_iter().count() as u32;
     let calls = extract_mpi_calls(&doc, 1, num_pages + 1)?;
 
@@ -184,7 +184,7 @@ fn test_extract_mpi_calls_finds_barrier() -> Result<()> {
 
 #[test]
 fn test_extract_mpi_calls_finds_bcast() -> Result<()> {
-    let doc = Document::load(test_pdf_path()).expect("Failed to load test PDF");
+    let doc = Document::load(test_pdf_path())?;
     let num_pages = doc.page_iter().count() as u32;
     let calls = extract_mpi_calls(&doc, 1, num_pages + 1)?;
 
@@ -217,7 +217,7 @@ fn test_extract_mpi_calls_finds_bcast() -> Result<()> {
 
 #[test]
 fn test_extract_mpi_calls_finds_scatter() -> Result<()> {
-    let doc = Document::load(test_pdf_path()).expect("Failed to load test PDF");
+    let doc = Document::load(test_pdf_path())?;
     let num_pages = doc.page_iter().count() as u32;
     let calls = extract_mpi_calls(&doc, 1, num_pages + 1)?;
 
@@ -250,7 +250,7 @@ fn test_extract_mpi_calls_finds_scatter() -> Result<()> {
 
 #[test]
 fn test_extract_mpi_calls_finds_scatterv() -> Result<()> {
-    let doc = Document::load(test_pdf_path()).expect("Failed to load test PDF");
+    let doc = Document::load(test_pdf_path())?;
     let num_pages = doc.page_iter().count() as u32;
     let calls = extract_mpi_calls(&doc, 1, num_pages + 1)?;
 
@@ -281,7 +281,7 @@ fn test_extract_mpi_calls_finds_scatterv() -> Result<()> {
 
 #[test]
 fn test_extract_mpi_calls_empty_range() -> Result<()> {
-    let doc = Document::load(test_pdf_path()).expect("Failed to load test PDF");
+    let doc = Document::load(test_pdf_path())?;
     let calls = extract_mpi_calls(&doc, 4, 4)?;
 
     assert!(calls.is_empty(), "Empty page range should return no calls");
@@ -290,7 +290,7 @@ fn test_extract_mpi_calls_empty_range() -> Result<()> {
 
 #[test]
 fn test_extract_mpi_calls_invalid_page_range() -> Result<()> {
-    let doc = Document::load(test_pdf_path()).expect("Failed to load test PDF");
+    let doc = Document::load(test_pdf_path())?;
     let calls = extract_mpi_calls(&doc, 100, 200)?;
 
     assert!(
