@@ -37,11 +37,10 @@ chapters:
   - 4
   - 5
 "#
-    )
-    .unwrap();
-    let path = tmpfile.path().to_str().unwrap();
+    )?;
+    let path = tmpfile.path().to_string_lossy();
 
-    let config = read_config(path)?;
+    let config = read_config(path.as_ref())?;
     assert_eq!(config.mpi_pdf, std::path::PathBuf::from("mpi31-report.pdf"));
     assert_eq!(
         config.output_file,
