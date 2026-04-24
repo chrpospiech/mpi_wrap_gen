@@ -77,11 +77,12 @@ templates:
 
 Templates use Python-style format strings (`%(name)type`):
 
-| Placeholder          | Type    | Description                                 |
-|----------------------|---------|---------------------------------------------|
-| `%(chapter_number)d` | integer | Chapter number                              |
-| `%(chapter_title)s`  | string  | Chapter title from the PDF outline          |
-| `%(mpi_call_name)s`  | string  | MPI function name without the `MPI_` prefix |
+| Placeholder             | Type    | Description                                 |
+|-------------------------|---------|---------------------------------------------|
+| `%(chapter_number)d`    | integer | Chapter number                              |
+| `%(chapter_title)s`     | string  | Chapter title from the PDF outline          |
+| `%(mpi_call_name)s`     | string  | MPI function name without the `MPI_` prefix |
+| `%(mpi_call_params)s`   | string  | MPI function parameter list                 |
 
 The `header` template is emitted once at the start of the output. For each chapter
 with MPI calls, `ch_init` is emitted once (using the first call found), followed by
