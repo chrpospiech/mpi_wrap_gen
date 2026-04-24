@@ -21,8 +21,8 @@ use std::io::Write;
 use tempfile::NamedTempFile;
 
 #[test]
-fn test_read_config_valid_file() {
-    let mut tmpfile = NamedTempFile::new().expect("Failed to create temp file");
+fn test_read_config_valid_file() -> Result<()> {
+    let mut tmpfile = NamedTempFile::new()?;
     write!(
         tmpfile,
         r#"mpi_pdf: "mpi31-report.pdf"
@@ -37,11 +37,10 @@ chapters:
   - 4
   - 5
 "#
-    )
-    .unwrap();
-    let path = tmpfile.path().to_str().unwrap();
+    )?;
+    let path = tmpfile.path().to_string_lossy();
 
-    let config = read_config(path).expect("Failed to read config");
+    let config = read_config(path.as_ref())?;
     assert_eq!(config.mpi_pdf, std::path::PathBuf::from("mpi31-report.pdf"));
     assert_eq!(
         config.output_file,
@@ -55,6 +54,7 @@ chapters:
     assert!(config.templates.ch_body.contains("MPI function"));
     assert!(config.templates.footer.contains("end of the file"));
     assert_eq!(config.chapters, vec![3, 4, 5]);
+    Ok(())
 }
 
 #[test]
@@ -66,8 +66,8 @@ fn test_read_config_nonexistent_file() {
 }
 
 #[test]
-fn test_read_config_invalid_yaml() {
-    let mut tmpfile = NamedTempFile::new().expect("Failed to create temp file");
+fn test_read_config_invalid_yaml() -> Result<()> {
+    let mut tmpfile = NamedTempFile::new()?;
     writeln!(tmpfile, "not: [valid: yaml: {{}}").unwrap();
     let path = tmpfile.path().to_str().unwrap();
 
@@ -75,21 +75,23 @@ fn test_read_config_invalid_yaml() {
     assert!(result.is_err());
     let err_msg = format!("{:#}", result.unwrap_err());
     assert!(err_msg.contains("Failed to parse config file"));
+    Ok(())
 }
 
 #[test]
-fn test_read_config_missing_fields() {
-    let mut tmpfile = NamedTempFile::new().expect("Failed to create temp file");
+fn test_read_config_missing_fields() -> Result<()> {
+    let mut tmpfile = NamedTempFile::new()?;
     writeln!(tmpfile, "mpi_pdf: /some/path.pdf").unwrap();
     let path = tmpfile.path().to_str().unwrap();
 
     let result = read_config(path);
     assert!(result.is_err());
+    Ok(())
 }
 
 #[test]
-fn test_read_config_minimal_valid() {
-    let mut tmpfile = NamedTempFile::new().expect("Failed to create temp file");
+fn test_read_config_minimal_valid() -> Result<()> {
+    let mut tmpfile = NamedTempFile::new()?;
     write!(
         tmpfile,
         r#"mpi_pdf: "/tmp/mpi.pdf"
@@ -105,7 +107,7 @@ chapters: []
     .unwrap();
     let path = tmpfile.path().to_str().unwrap();
 
-    let config = read_config(path).expect("Failed to read minimal config");
+    let config = read_config(path)?;
     assert_eq!(config.mpi_pdf, std::path::PathBuf::from("/tmp/mpi.pdf"));
     assert_eq!(config.output_file, std::path::PathBuf::from("out.c"));
     assert_eq!(config.templates.header, "H");
@@ -113,11 +115,12 @@ chapters: []
     assert_eq!(config.templates.ch_body, "B");
     assert_eq!(config.templates.footer, "F");
     assert!(config.chapters.is_empty());
+    Ok(())
 }
 
 #[test]
-fn test_read_config_chapters_list() {
-    let mut tmpfile = NamedTempFile::new().expect("Failed to create temp file");
+fn test_read_config_chapters_list() -> Result<()> {
+    let mut tmpfile = NamedTempFile::new()?;
     write!(
         tmpfile,
         r#"mpi_pdf: "mpi.pdf"
@@ -137,14 +140,15 @@ chapters:
     .unwrap();
     let path = tmpfile.path().to_str().unwrap();
 
-    let config = read_config(path).expect("Failed to read config with chapters");
+    let config = read_config(path)?;
     assert_eq!(config.chapters, vec![1, 7, 12, 99]);
     assert_eq!(config.chapters.len(), 4);
+    Ok(())
 }
 
 #[test]
-fn test_read_config_chapters_inline_syntax() {
-    let mut tmpfile = NamedTempFile::new().expect("Failed to create temp file");
+fn test_read_config_chapters_inline_syntax() -> Result<()> {
+    let mut tmpfile = NamedTempFile::new()?;
     write!(
         tmpfile,
         r#"mpi_pdf: "mpi.pdf"
@@ -160,13 +164,14 @@ chapters: [3, 4, 5, 6]
     .unwrap();
     let path = tmpfile.path().to_str().unwrap();
 
-    let config = read_config(path).expect("Failed to read config with inline chapters");
+    let config = read_config(path)?;
     assert_eq!(config.chapters, vec![3, 4, 5, 6]);
+    Ok(())
 }
 
 #[test]
-fn test_read_config_missing_chapters_field() {
-    let mut tmpfile = NamedTempFile::new().expect("Failed to create temp file");
+fn test_read_config_missing_chapters_field() -> Result<()> {
+    let mut tmpfile = NamedTempFile::new()?;
     write!(
         tmpfile,
         r#"mpi_pdf: "mpi.pdf"
@@ -183,11 +188,12 @@ templates:
 
     let result = read_config(path);
     assert!(result.is_err());
+    Ok(())
 }
 
 #[test]
-fn test_read_config_single_chapter() {
-    let mut tmpfile = NamedTempFile::new().expect("Failed to create temp file");
+fn test_read_config_single_chapter() -> Result<()> {
+    let mut tmpfile = NamedTempFile::new()?;
     write!(
         tmpfile,
         r#"mpi_pdf: "mpi.pdf"
@@ -204,15 +210,17 @@ chapters:
     .unwrap();
     let path = tmpfile.path().to_str().unwrap();
 
-    let config = read_config(path).expect("Failed to read config with single chapter");
+    let config = read_config(path)?;
     assert_eq!(config.chapters, vec![42]);
+    Ok(())
 }
 
 #[test]
-fn test_read_config_empty_file() {
-    let tmpfile = NamedTempFile::new().expect("Failed to create temp file");
+fn test_read_config_empty_file() -> Result<()> {
+    let tmpfile = NamedTempFile::new()?;
     let path = tmpfile.path().to_str().unwrap();
 
     let result = read_config(path);
     assert!(result.is_err());
+    Ok(())
 }
