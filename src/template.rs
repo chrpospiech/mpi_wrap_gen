@@ -70,17 +70,15 @@ pub fn generate_output(
     chapter_title: &str,
     mpi_call_info: &MpiCallInfo,
 ) -> Result<String> {
+    let mpi_call_name_lc = mpi_call_info.0.to_lowercase();
     let vars = std::collections::HashMap::<String, String>::from([
         ("chapter_number".to_string(), chapter_number.to_string()),
         ("chapter_title".to_string(), chapter_title.to_string()),
         ("mpi_call_name".to_string(), mpi_call_info.0.clone()),
-        (
-            "mpi_call_name_lc".to_string(),
-            mpi_call_info.0.to_lowercase(),
-        ),
+        ("mpi_call_name_lc".to_string(), mpi_call_name_lc.clone()),
         (
             "mpi_call_name_id".to_string(),
-            format!("{}_id", mpi_call_info.0.to_lowercase()),
+            format!("{}_id", mpi_call_name_lc),
         ),
         (
             "mpi_call_params".to_string(),
