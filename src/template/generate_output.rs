@@ -113,6 +113,24 @@ fn test_empty_params() -> Result<()> {
 }
 
 #[test]
+fn test_mpi_call_name_lc_substitution() -> Result<()> {
+    let template = "%(mpi_call_name_lc)s";
+    let info = sample_call_info();
+    let output = generate_output(template, 1, "Title", &info)?;
+    assert_eq!(output, "send");
+    Ok(())
+}
+
+#[test]
+fn test_mpi_call_name_id_substitution() -> Result<()> {
+    let template = "%(mpi_call_name_id)s";
+    let info = sample_call_info();
+    let output = generate_output(template, 1, "Title", &info)?;
+    assert_eq!(output, "send_id");
+    Ok(())
+}
+
+#[test]
 fn test_invalid_placeholder_returns_error() {
     let template = "%(unknown_key)s";
     let info = sample_call_info();
