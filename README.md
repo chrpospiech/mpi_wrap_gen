@@ -83,7 +83,7 @@ Templates use Python-style format strings (`%(name)type`):
 | `%(chapter_title)s`     | string  | Chapter title from the PDF outline          |
 | `%(mpi_call_name)s`     | string  | MPI function name without the `MPI_` prefix |
 | `%(mpi_call_name_lc)s`  | string  | %(mpi_call_name)s converted to lower case   |
-| `%(mpi_call_name_id)s`  | string  | %(mpi_call_name_lc)s + "_id".as_String()    |
+| `%(mpi_call_name_id)s`  | string  | `%(mpi_call_name_lc)s` with an `_id` suffix |
 | `%(mpi_call_params)s`   | string  | MPI function parameter list                 |
 
 The `header` template is emitted once at the start of the output. For each chapter
