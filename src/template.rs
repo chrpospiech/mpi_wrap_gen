@@ -75,6 +75,14 @@ pub fn generate_output(
         ("chapter_title".to_string(), chapter_title.to_string()),
         ("mpi_call_name".to_string(), mpi_call_info.0.clone()),
         (
+            "mpi_call_name_lc".to_string(),
+            mpi_call_info.0.to_lowercase(),
+        ),
+        (
+            "mpi_call_name_id".to_string(),
+            format!("{}_id", mpi_call_info.0.to_lowercase()),
+        ),
+        (
             "mpi_call_params".to_string(),
             format!("{:?}", mpi_call_info.1),
         ),
