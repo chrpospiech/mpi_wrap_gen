@@ -38,7 +38,7 @@ fn test_create_barrier_names_count_matches_extract() -> Result<()> {
     let (start, end) = full_page_range(&doc);
 
     let original = extract_mpi_calls(&doc, start, end)?;
-    let barrier = create_barrier_names(&doc, start, end)?;
+    let barrier = create_barrier_names(original.clone());
 
     assert_eq!(
         original.len(),
@@ -53,7 +53,8 @@ fn test_create_barrier_names_all_names_have_barrier_suffix() -> Result<()> {
     let doc = Document::load(test_pdf_path())?;
     let (start, end) = full_page_range(&doc);
 
-    let barrier = create_barrier_names(&doc, start, end)?;
+    let original = extract_mpi_calls(&doc, start, end)?;
+    let barrier = create_barrier_names(original);
 
     assert!(
         !barrier.is_empty(),
@@ -75,7 +76,7 @@ fn test_create_barrier_names_prefix_matches_original_call_name() -> Result<()> {
     let (start, end) = full_page_range(&doc);
 
     let original = extract_mpi_calls(&doc, start, end)?;
-    let barrier = create_barrier_names(&doc, start, end)?;
+    let barrier = create_barrier_names(original.clone());
 
     for ((orig_name, _), (barrier_name, _)) in original.iter().zip(barrier.iter()) {
         let expected = format!("{}_barrier", orig_name);
@@ -94,7 +95,7 @@ fn test_create_barrier_names_preserves_parameters() -> Result<()> {
     let (start, end) = full_page_range(&doc);
 
     let original = extract_mpi_calls(&doc, start, end)?;
-    let barrier = create_barrier_names(&doc, start, end)?;
+    let barrier = create_barrier_names(original.clone());
 
     for ((_, orig_params), (barrier_name, barrier_params)) in original.iter().zip(barrier.iter()) {
         assert_eq!(
@@ -111,7 +112,8 @@ fn test_create_barrier_names_finds_send_barrier() -> Result<()> {
     let doc = Document::load(test_pdf_path())?;
     let (start, end) = full_page_range(&doc);
 
-    let barrier = create_barrier_names(&doc, start, end)?;
+    let original = extract_mpi_calls(&doc, start, end)?;
+    let barrier = create_barrier_names(original);
 
     let send_barrier: Vec<_> = barrier
         .iter()
@@ -138,25 +140,19 @@ fn test_create_barrier_names_finds_send_barrier() -> Result<()> {
 }
 
 #[test]
-fn test_create_barrier_names_empty_range() -> Result<()> {
-    let doc = Document::load(test_pdf_path())?;
-    let barrier = create_barrier_names(&doc, 5, 5)?;
-
+fn test_create_barrier_names_empty_input() {
+    let barrier = create_barrier_names(vec![]);
     assert!(
         barrier.is_empty(),
-        "Empty page range should return no barrier names"
+        "Empty input should return no barrier names"
     );
-    Ok(())
 }
 
 #[test]
-fn test_create_barrier_names_invalid_page_range() -> Result<()> {
-    let doc = Document::load(test_pdf_path())?;
-    let barrier = create_barrier_names(&doc, 100, 200)?;
-
-    assert!(
-        barrier.is_empty(),
-        "Out-of-range pages should return no barrier names"
-    );
-    Ok(())
+fn test_create_barrier_names_single_entry() {
+    let input = vec![("Send".to_string(), vec!["int count".to_string()])];
+    let barrier = create_barrier_names(input);
+    assert_eq!(barrier.len(), 1);
+    assert_eq!(barrier[0].0, "Send_barrier");
+    assert_eq!(barrier[0].1, vec!["int count".to_string()]);
 }

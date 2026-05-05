@@ -67,8 +67,7 @@ pub fn extract_and_generate_listings(
     let chapter_indices: ChapterMap = find_chapter_pages(doc)?;
     let mut output = String::new();
     let mut collective_chapter = 0;
-    let mut collective_start = 0;
-    let mut collective_end = 0;
+    let mut collective_mpi_calls: Vec<MpiCallInfo> = Vec::new();
 
     // Add header template
     if args.verbose {
@@ -107,17 +106,13 @@ pub fn extract_and_generate_listings(
 
         let chapter_title = get_chapter_title(&chapter_indices, chapter)?;
         // Check if chapter title contains "collective" (case-insensitive) to identify collective chapters.
-        // Keep the first matching chapter id, and widen the remembered page range so that
-        // later matching chapters do not overwrite earlier ones.
+        // Accumulate MPI calls from all matching chapters so that barrier names can be derived
+        // from the already-extracted data without re-scanning the PDF.
         if chapter_title.to_lowercase().contains("collective") {
             if collective_chapter == 0 {
                 collective_chapter = chapter;
-                collective_start = ch_start;
-                collective_end = ch_end;
-            } else {
-                collective_start = collective_start.min(ch_start);
-                collective_end = collective_end.max(ch_end);
             }
+            collective_mpi_calls.extend(mpi_calls.iter().cloned());
         }
 
         // Add chapter init template
@@ -155,16 +150,13 @@ pub fn extract_and_generate_listings(
     if collective_chapter != 0 {
         if args.verbose {
             println!(
-                "Extracting barrier MPI calls for chapter {}: pages {} to {}",
-                collective_chapter,
-                collective_start,
-                collective_end - 1
+                "Generating barrier MPI calls for collective chapter {}",
+                collective_chapter
             );
         }
-        let mpi_calls: Vec<MpiCallInfo> =
-            create_barrier_names(doc, collective_start, collective_end)?;
+        let barrier_mpi_calls: Vec<MpiCallInfo> = create_barrier_names(collective_mpi_calls);
 
-        if !mpi_calls.is_empty() {
+        if !barrier_mpi_calls.is_empty() {
             let chapter_title = get_chapter_title(&chapter_indices, collective_chapter)?;
 
             // Add barrier chapter init template
@@ -178,10 +170,10 @@ pub fn extract_and_generate_listings(
                 &config.templates.bar_init,
                 collective_chapter,
                 &chapter_title,
-                &mpi_calls[0],
+                &barrier_mpi_calls[0],
             )?;
 
-            for mpi_call in mpi_calls {
+            for mpi_call in barrier_mpi_calls {
                 // Add barrier chapter body template with MPI call information
                 if args.verbose {
                     println!(
