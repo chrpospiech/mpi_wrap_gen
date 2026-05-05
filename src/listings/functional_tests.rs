@@ -46,6 +46,9 @@ fn make_config(chapters: Vec<u32>) -> Config {
             header: "HEADER\n".to_string(),
             ch_init: "INIT %(chapter_number)d %(chapter_title)s %(mpi_call_name)s\n".to_string(),
             ch_body: "BODY %(mpi_call_name)s\n".to_string(),
+            bar_init: "BAR_INIT %(chapter_number)d %(chapter_title)s %(mpi_call_name)s\n"
+                .to_string(),
+            bar_body: "BAR_BODY %(mpi_call_name)s\n".to_string(),
             footer: "FOOTER\n".to_string(),
         },
         chapters,
@@ -309,6 +312,161 @@ fn test_verbose_mode_produces_identical_output_to_quiet_mode() -> Result<()> {
     assert_eq!(
         quiet_output, verbose_output,
         "verbose mode should not change the returned output string"
+    );
+    Ok(())
+}
+
+// ── Barrier / Collective-chapter tests ────────────────────────────────────────
+
+/// Chapter 5 ("Collective Communication") must cause a BAR_INIT entry to appear
+/// in the output because its title matches the "collective" keyword.
+#[test]
+fn test_collective_chapter_produces_bar_init() -> Result<()> {
+    let doc = Document::load(outline_pdf_path())?;
+    let config = make_config(vec![5]);
+    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    assert!(
+        output.contains("BAR_INIT"),
+        "output for collective chapter 5 should contain BAR_INIT, got: {output:?}"
+    );
+    Ok(())
+}
+
+/// Chapter 5 must cause BAR_BODY entries to appear in the output.
+#[test]
+fn test_collective_chapter_produces_bar_body() -> Result<()> {
+    let doc = Document::load(outline_pdf_path())?;
+    let config = make_config(vec![5]);
+    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    assert!(
+        output.contains("BAR_BODY"),
+        "output for collective chapter 5 should contain BAR_BODY entries, got: {output:?}"
+    );
+    Ok(())
+}
+
+/// Chapter 5 has 4 collective calls, so the BAR_BODY template must be instantiated
+/// exactly 4 times (one per barrier-named call).
+#[test]
+fn test_collective_chapter_bar_body_count_matches_call_count() -> Result<()> {
+    let doc = Document::load(outline_pdf_path())?;
+    let config = make_config(vec![5]);
+    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let bar_body_count = output.lines().filter(|l| l.starts_with("BAR_BODY")).count();
+    assert_eq!(
+        bar_body_count, 4,
+        "chapter 5 should produce 4 BAR_BODY entries, got: {output:?}"
+    );
+    Ok(())
+}
+
+/// BAR_INIT must appear exactly once, even when chapter 5 is the only chapter.
+#[test]
+fn test_bar_init_appears_exactly_once_for_chapter_5() -> Result<()> {
+    let doc = Document::load(outline_pdf_path())?;
+    let config = make_config(vec![5]);
+    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let bar_init_count = output.lines().filter(|l| l.starts_with("BAR_INIT")).count();
+    assert_eq!(
+        bar_init_count, 1,
+        "BAR_INIT should appear exactly once for collective chapter 5, got: {output:?}"
+    );
+    Ok(())
+}
+
+/// The BAR_INIT line for chapter 5 must contain the chapter number, title, and
+/// the name of the first barrier call ("Barrier_barrier").
+#[test]
+fn test_bar_init_content_for_chapter_5() -> Result<()> {
+    let doc = Document::load(outline_pdf_path())?;
+    let config = make_config(vec![5]);
+    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    assert!(
+        output.contains("BAR_INIT 5 Collective Communication Barrier_barrier\n"),
+        "BAR_INIT line should contain chapter number, title, and first barrier call name, got: {output:?}"
+    );
+    Ok(())
+}
+
+/// Every BAR_BODY line must reference a call name that ends with "_barrier".
+#[test]
+fn test_bar_body_names_all_have_barrier_suffix() -> Result<()> {
+    let doc = Document::load(outline_pdf_path())?;
+    let config = make_config(vec![5]);
+    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    for line in output.lines().filter(|l| l.starts_with("BAR_BODY")) {
+        assert!(
+            line.contains("_barrier"),
+            "BAR_BODY line should reference a '_barrier'-suffixed call name, got: {line:?}"
+        );
+    }
+    Ok(())
+}
+
+/// A non-collective chapter (chapter 3, "Point-to-Point Communication") must
+/// not produce any BAR_INIT or BAR_BODY entries.
+#[test]
+fn test_non_collective_chapter_produces_no_bar_output() -> Result<()> {
+    let doc = Document::load(outline_pdf_path())?;
+    let config = make_config(vec![3]);
+    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    assert!(
+        !output.contains("BAR_INIT"),
+        "non-collective chapter 3 should not produce BAR_INIT, got: {output:?}"
+    );
+    assert!(
+        !output.contains("BAR_BODY"),
+        "non-collective chapter 3 should not produce BAR_BODY, got: {output:?}"
+    );
+    Ok(())
+}
+
+/// When chapters 3 and 5 are combined, there must be exactly 1 BAR_INIT and
+/// 4 BAR_BODY entries (only chapter 5 is collective).
+#[test]
+fn test_multiple_chapters_bar_section_counts() -> Result<()> {
+    let doc = Document::load(outline_pdf_path())?;
+    let config = make_config(vec![3, 5]);
+    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let bar_init_count = output.lines().filter(|l| l.starts_with("BAR_INIT")).count();
+    let bar_body_count = output.lines().filter(|l| l.starts_with("BAR_BODY")).count();
+    assert_eq!(
+        bar_init_count, 1,
+        "combined chapters 3+5 should have 1 BAR_INIT entry, got: {output:?}"
+    );
+    assert_eq!(
+        bar_body_count, 4,
+        "combined chapters 3+5 should have 4 BAR_BODY entries (all from ch5), got: {output:?}"
+    );
+    Ok(())
+}
+
+/// The output for chapter 5 must appear in the correct order:
+/// HEADER → INIT → BODY × 4 → BAR_INIT → BAR_BODY × 4 → FOOTER.
+#[test]
+fn test_output_section_order_with_collective_chapter() -> Result<()> {
+    let doc = Document::load(outline_pdf_path())?;
+    let config = make_config(vec![5]);
+    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let header_pos = output.find("HEADER").expect("HEADER must be present");
+    let init_pos = output.find("INIT").expect("INIT must be present");
+    let body_pos = output.find("BODY").expect("BODY must be present");
+    let bar_init_pos = output.find("BAR_INIT").expect("BAR_INIT must be present");
+    let bar_body_pos = output.find("BAR_BODY").expect("BAR_BODY must be present");
+    let footer_pos = output.find("FOOTER").expect("FOOTER must be present");
+    assert!(header_pos < init_pos, "HEADER must come before INIT");
+    assert!(init_pos < body_pos, "INIT must come before first BODY");
+    assert!(
+        body_pos < bar_init_pos,
+        "BODY entries must come before BAR_INIT"
+    );
+    assert!(
+        bar_init_pos < bar_body_pos,
+        "BAR_INIT must come before first BAR_BODY"
+    );
+    assert!(
+        bar_body_pos < footer_pos,
+        "BAR_BODY entries must come before FOOTER"
     );
     Ok(())
 }

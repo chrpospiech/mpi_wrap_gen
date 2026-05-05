@@ -19,7 +19,7 @@
 use crate::chapters::{find_chapter_pages, get_chapter_page, get_chapter_title, ChapterMap};
 use crate::cmdline::CliArgs;
 use crate::config::Config;
-use crate::mpi_calls::{create_barrier_names, MpiCallInfo};
+use crate::mpi_calls::{create_barrier_names, extract_mpi_calls, MpiCallInfo};
 use crate::template::generate_output;
 use anyhow::{Context, Result};
 use lopdf::Document;
@@ -33,8 +33,10 @@ mod functional_tests;
 /// This function extracts the MPI call information from the PDF document for
 /// the specified list of chapters as listed in the configuration. Using the
 /// templates from the configuration, a single document is generated and written
-/// to a string variable. This string can then be written to a file or printed
-/// to the console.
+/// to a string variable. If the list of chapters contain a chapter dealing
+/// with collective operations, the generated output will include a section for
+/// collective operations. The generated output is returned as a string.
+/// This string can then be written to a file or printed to the console.
 ///
 /// Arguments:
 /// - `doc`: The PDF document to extract the MPI call information from.
@@ -64,6 +66,9 @@ pub fn extract_and_generate_listings(
     }
     let chapter_indices: ChapterMap = find_chapter_pages(doc)?;
     let mut output = String::new();
+    let mut collective_chapter = 0;
+    let mut collective_start = 0;
+    let mut collective_end = 0;
 
     // Add header template
     if args.verbose {
@@ -91,9 +96,7 @@ pub fn extract_and_generate_listings(
                 ch_end - 1
             );
         }
-        // Temporarily replacing the original call to extract_mpi_calls
-        // with a call to create_barrier_names to avoid an error message.
-        let mpi_calls: Vec<MpiCallInfo> = create_barrier_names(doc, ch_start, ch_end)?;
+        let mpi_calls: Vec<MpiCallInfo> = extract_mpi_calls(doc, ch_start, ch_end)?;
 
         if mpi_calls.is_empty() {
             if args.verbose {
@@ -103,6 +106,12 @@ pub fn extract_and_generate_listings(
         }
 
         let chapter_title = get_chapter_title(&chapter_indices, chapter)?;
+        // Check if chapter title contains "collective" (case-insensitive) to identify collective chapter
+        if chapter_title.to_lowercase().contains("collective") {
+            collective_chapter = chapter;
+            collective_start = ch_start;
+            collective_end = ch_end;
+        }
 
         // Add chapter init template
         if args.verbose {
@@ -133,6 +142,58 @@ pub fn extract_and_generate_listings(
                 &mpi_call,
             )?;
         }
+    }
+
+    // If a collective chapter was found, add the collective operations section
+    if collective_chapter != 0 {
+        if args.verbose {
+            println!(
+                "Extracting barrier MPI calls for chapter {}: pages {} to {}",
+                collective_chapter,
+                collective_start,
+                collective_end - 1
+            );
+        }
+        let mpi_calls: Vec<MpiCallInfo> =
+            create_barrier_names(doc, collective_start, collective_end)?;
+
+        if !mpi_calls.is_empty() {
+            let chapter_title = get_chapter_title(&chapter_indices, collective_chapter)?;
+
+            // Add barrier chapter init template
+            if args.verbose {
+                println!(
+                    "Adding barrier chapter init template for chapter {} to output.",
+                    collective_chapter
+                );
+            }
+            output += &generate_output(
+                &config.templates.bar_init,
+                collective_chapter,
+                &chapter_title,
+                &mpi_calls[0],
+            )?;
+
+            for mpi_call in mpi_calls {
+                // Add barrier chapter body template with MPI call information
+                if args.verbose {
+                    println!(
+                        "Adding barrier body template for MPI call {} to output.",
+                        mpi_call.0
+                    );
+                }
+                output += &generate_output(
+                    &config.templates.bar_body,
+                    collective_chapter,
+                    &chapter_title,
+                    &mpi_call,
+                )?;
+            }
+        } else if args.verbose {
+            println!("No MPI calls found in chapter {}.", collective_chapter);
+        }
+    } else if args.verbose {
+        println!("No collective chapter found, skipping collective operations section.");
     }
 
     // Add footer template

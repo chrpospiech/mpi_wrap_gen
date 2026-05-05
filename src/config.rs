@@ -28,6 +28,8 @@ pub struct Templates {
     pub header: String,
     pub ch_init: String,
     pub ch_body: String,
+    pub bar_init: String,
+    pub bar_body: String,
     pub footer: String,
 }
 
@@ -58,6 +60,8 @@ pub fn print_config(config: &Config) {
     println!("Header Template:\n{}", config.templates.header);
     println!("Chapter Init Template:\n{}", config.templates.ch_init);
     println!("Chapter Body Template:\n{}", config.templates.ch_body);
+    println!("Barrier Init Template:\n{}", config.templates.bar_init);
+    println!("Barrier Body Template:\n{}", config.templates.bar_body);
     println!("Footer Template:\n{}", config.templates.footer);
     println!("Chapters: {:?}", config.chapters);
 }
