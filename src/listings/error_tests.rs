@@ -46,6 +46,9 @@ fn make_config(chapters: Vec<u32>) -> Config {
             header: "HEADER\n".to_string(),
             ch_init: "INIT %(chapter_number)d %(chapter_title)s %(mpi_call_name)s\n".to_string(),
             ch_body: "BODY %(mpi_call_name)s\n".to_string(),
+            bar_init: "BAR_INIT %(chapter_number)d %(chapter_title)s %(mpi_call_name)s\n"
+                .to_string(),
+            bar_body: "BAR_BODY %(mpi_call_name)s\n".to_string(),
             footer: "FOOTER\n".to_string(),
         },
         chapters,
