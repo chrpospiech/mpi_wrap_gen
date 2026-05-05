@@ -92,6 +92,13 @@ The `header` template is emitted once at the start of the output. For each chapt
 with MPI calls, `ch_init` is emitted once (using the first call found), followed by
 `ch_body` once per MPI call. The `footer` template is emitted once at the end.
 
+If any of the processed chapters has a title containing the word "collective"
+(case-insensitive), a barrier section is appended before the footer. `bar_init` is
+emitted once for that section (using the first barrier call found), followed by
+`bar_body` once per barrier call. In the barrier templates, `%(mpi_call_name)s`
+contains the MPI function name with the `_barrier` suffix already appended
+(e.g. `Bcast_barrier`).
+
 ## Project Structure
 
 ```text
