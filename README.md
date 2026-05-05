@@ -71,7 +71,7 @@ templates:
   ch_init: "/* List of MPI calls for chapter  %(chapter_number)d %(chapter_title)s*/\n"
   ch_body: "  /*  MPI_%(mpi_call_name)s */\n"
   bar_init: "/* List of barier calls for chapter  %(chapter_number)d %(chapter_title)s*/\n"
-  bar_body: "  /*  MPI_%(mpi_call_name)s_barrier */\n"
+  bar_body: "  /*  MPI_%(mpi_call_name)s */\n"
   footer: "/* end of file */\n"
 ```
 
