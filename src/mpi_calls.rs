@@ -83,20 +83,30 @@ pub fn extract_mpi_calls(
     Ok(mpi_calls)
 }
 
-/// Maps a vector of MPI call information to a new vector where each call name
-/// has the `_barrier` suffix appended to it.
+/// Calls extract_mpi_calls but maps the result of type Vec<MpiCallInfo> to a new
+/// Vec<MpiCallInfo> with the first tuple entry being the concatenation of
+/// the original tuple entry and the string "_barrier".
 ///
 /// Args:
-///     mpi_calls: A vector of MPI call information to transform.
+///     doc: A reference to the lopdf PDF document from which to extract MPI call information.
+///     start_page: The 1-based index of the page from which to start searching for MPI calls.
+///     end_page: The 1-based (exclusive) index of the page at which to stop searching for MPI calls.
 ///
 /// Returns:
-///     A new vector of [`MpiCallInfo`] where each call name has `_barrier` appended
-///     and all parameters are preserved unchanged.
-pub fn create_barrier_names(mpi_calls: Vec<MpiCallInfo>) -> Vec<MpiCallInfo> {
-    mpi_calls
+///     A Result containing a vector of [`MpiCallInfo`], where each entry is a tuple of
+///     `(call_name, parameters)`: the MPI call name (without the "MPI_" prefix) and a vector
+///     of its parameter strings. If an error occurs during PDF processing, the Result
+///     will contain an error message.
+pub fn create_barrier_names(
+    doc: &Document,
+    start_page: u32,
+    end_page: u32,
+) -> Result<Vec<MpiCallInfo>> {
+    let barrier_calls = extract_mpi_calls(doc, start_page, end_page)?
         .into_iter()
         .map(|(call_name, params)| (format!("{}_barrier", call_name), params))
-        .collect()
+        .collect::<Vec<MpiCallInfo>>();
+    Ok(barrier_calls)
 }
 
 /// Parse the parameter string from an MPI call signature.
