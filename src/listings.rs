@@ -106,18 +106,11 @@ pub fn extract_and_generate_listings(
         }
 
         let chapter_title = get_chapter_title(&chapter_indices, chapter)?;
-        // Check if chapter title contains "collective" (case-insensitive) to identify collective chapters.
-        // Keep the first matching chapter id, and widen the remembered page range so that
-        // later matching chapters do not overwrite earlier ones.
+        // Check if chapter title contains "collective" (case-insensitive) to identify collective chapter
         if chapter_title.to_lowercase().contains("collective") {
-            if collective_chapter == 0 {
-                collective_chapter = chapter;
-                collective_start = ch_start;
-                collective_end = ch_end;
-            } else {
-                collective_start = collective_start.min(ch_start);
-                collective_end = collective_end.max(ch_end);
-            }
+            collective_chapter = chapter;
+            collective_start = ch_start;
+            collective_end = ch_end;
         }
 
         // Add chapter init template
