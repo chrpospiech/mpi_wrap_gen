@@ -111,7 +111,7 @@ pub fn extract_and_generate_listings(
         if chapter_title.to_lowercase().contains("collective") {
             if collective_chapter != 0 {
                 bail!(
-                    "Multiple collective chapters found: chapter {} (\"{}\") and chapter {} (\"{}\"). Only one collective chapter is supported.",
+                    "Multiple collective chapters found:\n  chapter {} (\"{}\")\n  chapter {} (\"{}\")\nOnly one collective chapter is supported.",
                     collective_chapter,
                     collective_chapter_title,
                     chapter,

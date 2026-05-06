@@ -210,8 +210,16 @@ fn test_multiple_collective_chapters_returns_error() -> Result<()> {
     );
     let msg = format!("{}", result.unwrap_err());
     assert!(
-        msg.contains("Multiple collective chapters"),
+        msg.contains("Multiple collective chapters found:"),
         "unexpected error message: {msg}"
+    );
+    assert!(
+        msg.contains("chapter 1"),
+        "error message should mention chapter 1: {msg}"
+    );
+    assert!(
+        msg.contains("chapter 2"),
+        "error message should mention chapter 2: {msg}"
     );
     Ok(())
 }
