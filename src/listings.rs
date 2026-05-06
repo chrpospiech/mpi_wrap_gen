@@ -21,7 +21,7 @@ use crate::cmdline::CliArgs;
 use crate::config::Config;
 use crate::mpi_calls::{create_barrier_names, extract_mpi_calls, MpiCallInfo};
 use crate::template::generate_output;
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use lopdf::Document;
 
 #[cfg(test)]
@@ -55,7 +55,7 @@ pub fn extract_and_generate_listings(
     config: &Config,
 ) -> Result<String> {
     if config.chapters.is_empty() {
-        anyhow::bail!("No chapters specified in the configuration.");
+        bail!("No chapters specified in the configuration.");
     }
 
     if args.verbose {
@@ -108,6 +108,11 @@ pub fn extract_and_generate_listings(
         let chapter_title = get_chapter_title(&chapter_indices, chapter)?;
         // Check if chapter title contains "collective" (case-insensitive) to identify collective chapter
         if chapter_title.to_lowercase().contains("collective") {
+            if collective_chapter != 0 {
+                bail!(
+                    "Multiple collective chapters found. Only one collective chapter is supported."
+                );
+            }
             collective_chapter = chapter;
             collective_start = ch_start;
             collective_end = ch_end;
