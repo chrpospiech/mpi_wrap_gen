@@ -37,6 +37,12 @@ fn mpi_pdf_path() -> PathBuf {
         .join("mpi_call_xmp.pdf")
 }
 
+fn two_collective_chapters_pdf_path() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("test_data")
+        .join("two_collective_chapters.pdf")
+}
+
 /// Build a `Config` with simple, valid templates for the given chapter list.
 fn make_config(chapters: Vec<u32>) -> Config {
     Config {
@@ -183,6 +189,37 @@ fn test_output_is_header_plus_footer_only_when_no_mpi_calls() -> Result<()> {
     assert_eq!(
         output, "HEADER\nFOOTER\n",
         "output should be exactly header+footer when no MPI calls found"
+    );
+    Ok(())
+}
+
+/// When the chapter list includes two chapters whose titles both contain
+/// "collective", the function must bail with the "Multiple collective
+/// chapters" error on the second one.
+#[test]
+fn test_multiple_collective_chapters_returns_error() -> Result<()> {
+    let doc = Document::load(two_collective_chapters_pdf_path())?;
+    // Both chapter 1 ("Collective Communication") and chapter 2
+    // ("More Collective Operations") contain "collective" in their titles
+    // and have MPI calls, so processing chapter 2 must trigger the guard.
+    let config = make_config(vec![1, 2]);
+    let result = extract_and_generate_listings(&doc, &quiet_args(), &config);
+    assert!(
+        result.is_err(),
+        "expected error for multiple collective chapters"
+    );
+    let msg = format!("{}", result.unwrap_err());
+    assert!(
+        msg.contains("Multiple collective chapters found:"),
+        "unexpected error message: {msg}"
+    );
+    assert!(
+        msg.contains("chapter 1"),
+        "error message should mention chapter 1: {msg}"
+    );
+    assert!(
+        msg.contains("chapter 2"),
+        "error message should mention chapter 2: {msg}"
     );
     Ok(())
 }
