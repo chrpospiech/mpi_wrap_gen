@@ -67,6 +67,7 @@ pub fn extract_and_generate_listings(
     let chapter_indices: ChapterMap = find_chapter_pages(doc)?;
     let mut output = String::new();
     let mut collective_chapter = 0;
+    let mut collective_chapter_title = String::new();
     let mut collective_start = 0;
     let mut collective_end = 0;
 
@@ -110,10 +111,15 @@ pub fn extract_and_generate_listings(
         if chapter_title.to_lowercase().contains("collective") {
             if collective_chapter != 0 {
                 bail!(
-                    "Multiple collective chapters found. Only one collective chapter is supported."
+                    "Multiple collective chapters found: chapter {} (\"{}\") and chapter {} (\"{}\"). Only one collective chapter is supported.",
+                    collective_chapter,
+                    collective_chapter_title,
+                    chapter,
+                    chapter_title
                 );
             }
             collective_chapter = chapter;
+            collective_chapter_title = chapter_title.clone();
             collective_start = ch_start;
             collective_end = ch_end;
         }
