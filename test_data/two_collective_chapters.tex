@@ -1,0 +1,65 @@
+\documentclass[letterpaper]{report}
+
+\usepackage[T1]{fontenc}
+\usepackage{helvet}
+\renewcommand{\familydefault}{\sfdefault}
+
+\usepackage[bookmarks=true,bookmarksnumbered=true]{hyperref}
+\usepackage{bookmark}
+
+% Make generated PDFs reproducible across machines and build times.
+\ifdefined\pdfinfoomitdate
+\pdfinfoomitdate=1
+\fi
+\ifdefined\pdftrailerid
+\pdftrailerid{}
+\fi
+\ifdefined\pdfsuppressptexinfo
+\pdfsuppressptexinfo15
+\fi
+% Format chapter headings as "1 Introduction" (no "Chapter" prefix)
+\usepackage{titlesec}
+\titleformat{\chapter}[hang]{\huge\bfseries}{\thechapter}{1em}{}
+
+% Remove page numbers to match the original
+\pagestyle{empty}
+\usepackage{etoolbox}
+\patchcmd{\chapter}{\thispagestyle{plain}}{\thispagestyle{empty}}{}{}
+
+\begin{document}
+
+\chapter{Collective Communication}
+
+The simplest collective communication function is \texttt{MPI\_Barrier}, which blocks
+until all processes in the communicator have reached the barrier.
+
+\begin{verbatim}
+int MPI_Barrier(MPI_Comm comm)
+\end{verbatim}
+
+The broadcast function \texttt{MPI\_Bcast} sends data from one process to all others.
+
+\begin{verbatim}
+int MPI_Bcast(void* buffer, int count, MPI_Datatype datatype,
+int root, MPI_Comm comm)
+\end{verbatim}
+
+\chapter{More Collective Operations}
+
+The gather function \texttt{MPI\_Gather} collects data from all processes.
+
+\begin{verbatim}
+int MPI_Gather(const void* sendbuf, int sendcount, MPI_Datatype sendtype,
+void* recvbuf, int recvcount, MPI_Datatype recvtype,
+int root, MPI_Comm comm)
+\end{verbatim}
+
+The scatter function distributes data from one process to all others.
+
+\begin{verbatim}
+int MPI_Scatter(const void* sendbuf, int sendcount, MPI_Datatype sendtype,
+void* recvbuf, int recvcount, MPI_Datatype recvtype,
+int root, MPI_Comm comm)
+\end{verbatim}
+
+\end{document}
