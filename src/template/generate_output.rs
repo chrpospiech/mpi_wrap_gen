@@ -131,6 +131,80 @@ fn test_mpi_call_name_id_substitution() -> Result<()> {
 }
 
 #[test]
+fn test_mpi_call_name_id_left_aligned_padding() -> Result<()> {
+    let template = "%(mpi_call_name_id)-20s";
+    let info = sample_call_info();
+    let output = generate_output(template, 1, "Title", &info)?;
+    // "send_id," is 8 chars, padded on the right to width 20
+    assert_eq!(output, "send_id,            ");
+    assert_eq!(output.len(), 20);
+    Ok(())
+}
+
+#[test]
+fn test_mpi_call_name_id_right_aligned_padding() -> Result<()> {
+    let template = "%(mpi_call_name_id)20s";
+    let info = sample_call_info();
+    let output = generate_output(template, 1, "Title", &info)?;
+    // "send_id," is 8 chars, padded on the left to width 20
+    assert_eq!(output, "            send_id,");
+    assert_eq!(output.len(), 20);
+    Ok(())
+}
+
+#[test]
+fn test_mpi_call_name_id_exact_width() -> Result<()> {
+    let template = "%(mpi_call_name_id)8s";
+    let info = sample_call_info();
+    let output = generate_output(template, 1, "Title", &info)?;
+    // "send_id," is exactly 8 chars — no padding applied
+    assert_eq!(output, "send_id,");
+    Ok(())
+}
+
+#[test]
+fn test_mpi_call_name_id_width_less_than_value() -> Result<()> {
+    let template = "%(mpi_call_name_id)5s";
+    let info = sample_call_info();
+    let output = generate_output(template, 1, "Title", &info)?;
+    // width < actual length: no truncation, value passed through unchanged
+    assert_eq!(output, "send_id,");
+    Ok(())
+}
+
+#[test]
+fn test_mpi_call_name_lc_left_aligned_padding() -> Result<()> {
+    let template = "%(mpi_call_name_lc)-10s";
+    let info = sample_call_info();
+    let output = generate_output(template, 1, "Title", &info)?;
+    // "send" is 4 chars, padded on the right to width 10
+    assert_eq!(output, "send      ");
+    assert_eq!(output.len(), 10);
+    Ok(())
+}
+
+#[test]
+fn test_mpi_call_name_left_aligned_padding() -> Result<()> {
+    let template = "%(mpi_call_name)-8s";
+    let info = sample_call_info();
+    let output = generate_output(template, 1, "Title", &info)?;
+    // "Send" is 4 chars, padded on the right to width 8
+    assert_eq!(output, "Send    ");
+    assert_eq!(output.len(), 8);
+    Ok(())
+}
+
+#[test]
+fn test_left_aligned_padding_in_context() -> Result<()> {
+    let template = "id=%(mpi_call_name_id)-10s;";
+    let info = sample_call_info();
+    let output = generate_output(template, 1, "Title", &info)?;
+    // "send_id," is 8 chars, padded on the right to width 10, wrapped in context
+    assert_eq!(output, "id=send_id,  ;");
+    Ok(())
+}
+
+#[test]
 fn test_invalid_placeholder_returns_error() {
     let template = "%(unknown_key)s";
     let info = sample_call_info();
