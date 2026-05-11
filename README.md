@@ -109,7 +109,7 @@ src/
 ├── chapters.rs      # PDF outline traversal, chapter-to-page mapping
 ├── mpi_calls.rs     # MPI function signature extraction and parameter parsing
 ├── listings.rs      # Orchestrates per-chapter extraction and output assembly
-└── template.rs      # Python-style template substitution (dynfmt)
+└── template.rs      # Python-style template substitution (dynfmt2)
 test_data/
 ├── mpi_call_xmp.pdf # Sample PDF for MPI call extraction tests
 └── test_outline.pdf # Sample PDF for chapter outline tests

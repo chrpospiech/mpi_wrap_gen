@@ -31,8 +31,9 @@ mod generate_output;
 ///
 /// The placeholders in the template should follow the old Python string formatting syntax
 /// as described in <https://docs.python.org/2/library/stdtypes.html#string-formatting-operations>
-/// `%(placeholder_name)[...]<d|i|o|x|s|...>` and will be processed by the `dynfmt` crate using
-/// the `PythonFormat` struct. The function will return a Result containing the formatted string.
+/// `%(placeholder_name)[...]<d|i|o|x|s|...>` and will be processed by the `dynfmt2` crate using
+/// the `PythonFormat` formatter, including the width and alignment handling covered by the
+/// regression tests. The function will return a Result containing the formatted string.
 ///
 /// Args:
 ///     template: A string containing the template with placeholders to be replaced.
