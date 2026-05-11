@@ -18,7 +18,7 @@
 
 use crate::mpi_calls::MpiCallInfo;
 use anyhow::Result;
-use dynfmt::{Format, PythonFormat};
+use dynfmt2::{Format, PythonFormat};
 
 #[cfg(test)]
 mod generate_output;
