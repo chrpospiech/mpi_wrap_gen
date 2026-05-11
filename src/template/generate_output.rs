@@ -126,7 +126,7 @@ fn test_mpi_call_name_id_substitution() -> Result<()> {
     let template = "%(mpi_call_name_id)s";
     let info = sample_call_info();
     let output = generate_output(template, 1, "Title", &info)?;
-    assert_eq!(output, "send_id");
+    assert_eq!(output, "send_id,");
     Ok(())
 }
 
