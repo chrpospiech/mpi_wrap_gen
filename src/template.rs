@@ -78,7 +78,7 @@ pub fn generate_output(
         ("mpi_call_name_lc".to_string(), mpi_call_name_lc.clone()),
         (
             "mpi_call_name_id".to_string(),
-            format!("{}_id", mpi_call_name_lc),
+            format!("{}_id,", mpi_call_name_lc),
         ),
         (
             "mpi_call_params".to_string(),
