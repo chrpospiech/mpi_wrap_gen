@@ -156,4 +156,15 @@ will be stored, \texttt{recvcount} is the number of elements to receive,
 \texttt{recvtype} is the type of the received data, \texttt{root} is the rank
 of the root process that initiates the scatter, and \texttt{comm} is the communicator.
 
+the following definition should not be included in the list of MPI functions.
+
+The \texttt{copy\_fn} function is invoked when a communicator is duplicated by
+\texttt{MPI\_COMM\_DUP}. \texttt{copy\_fn} should be of type \texttt{MPI\_Copy\_function}, which is defined as follows:
+
+\begin{verbatim}
+typedef int MPI_Copy_function(MPI_Comm oldcomm, int keyval,
+void *extra_state, void *attribute_val_in,
+void *attribute_val_out, int *flag)
+\end{verbatim}
+
 \end{document}
