@@ -20,6 +20,10 @@ use super::*;
 use lopdf::Document;
 use std::path::PathBuf;
 
+// Helper function to get the path to the test PDF file containing MPI call signatures.
+// The test PDF should be located in the `test_data` directory of the project and named `mpi_call_xmp.pdf`.
+// The file `mpi_call_xmp.pdf` is a subset of the MPI standard
+// <https://www.mpi-forum.org/docs/mpi-3.1/mpi31-report.pdf>.
 fn test_pdf_path() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("test_data")
@@ -38,8 +42,8 @@ fn test_extract_mpi_calls_finds_calls() -> Result<()> {
     );
     assert_eq!(
         calls.len(),
-        8,
-        "Expected to find 8 MPI calls, found: {:?}",
+        22,
+        "Expected to find 22 MPI calls, found: {:?}",
         calls.iter().map(|(n, _)| n).collect::<Vec<_>>()
     );
     Ok(())
