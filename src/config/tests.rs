@@ -303,7 +303,8 @@ chapters: []
     .unwrap();
     let path = tmpfile.path().to_str().unwrap();
 
-    let result = read_config(path);
-    assert!(result.is_err());
+    let config = read_config(path)?;
+    assert!(config.excludes.is_empty());
+    assert_eq!(config.excludes.len(), 0);
     Ok(())
 }
