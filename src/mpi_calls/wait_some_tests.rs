@@ -77,3 +77,30 @@ fn test_extract_mpi_calls_finds_waitsome() -> Result<()> {
     );
     Ok(())
 }
+
+#[test]
+fn test_extract_mpi_calls_finds_testsome() -> Result<()> {
+    let doc = Document::load(test_pdf_path())?;
+    let num_pages = doc.page_iter().count() as u32;
+    let calls = extract_mpi_calls(&doc, 1, num_pages + 1)?;
+
+    let testsome_calls: Vec<_> = calls
+        .iter()
+        .filter(|(name, _)| name == "Testsome")
+        .collect();
+    assert!(
+        !testsome_calls.is_empty(),
+        "Expected to find MPI_Testsome in test PDF, found: {:?}",
+        calls.iter().map(|(n, _)| n).collect::<Vec<_>>()
+    );
+
+    let (_, params) = &testsome_calls[0];
+    assert!(
+        params
+            .iter()
+            .any(|p| p.contains("int") && p.contains("array_of_indices")),
+        "MPI_Testsome should have an 'int array_of_indices' parameter, got: {:?}",
+        params
+    );
+    Ok(())
+}
