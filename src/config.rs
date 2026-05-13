@@ -39,6 +39,7 @@ pub struct Config {
     pub output_file: PathBuf,
     pub templates: Templates,
     pub chapters: Vec<u32>,
+    #[serde(default)]
     pub excludes: Vec<String>,
 }
 
