@@ -64,23 +64,28 @@ pub fn extract_mpi_calls(
     // Use (?s) so . matches newlines; \s* to handle missing/present spaces
     let re = Regex::new(r"(?s)int\s*MPI_([A-Z]\w+)\s*\((.*?)\)")?;
 
+    // Collect text from all pages first, then apply the regex to the combined
+    // text. This allows function signatures that span two pages to be matched.
+    let mut combined = String::new();
     for page_num in start_page..end_page {
         let text = doc.extract_text(&[page_num]).unwrap_or_default();
 
         // Remove line numbers that appear at start/end of lines (from PDF margins)
         let cleaned = clean_extracted_text(&text);
+        combined.push_str(&cleaned);
+        combined.push('\n');
+    }
 
-        for cap in re.captures_iter(&cleaned) {
-            let call_name = cap
-                .get(1)
-                .map(|m| m.as_str().to_string())
-                .unwrap_or_default();
-            let params_str = cap.get(2).map(|m| m.as_str()).unwrap_or("");
+    for cap in re.captures_iter(&combined) {
+        let call_name = cap
+            .get(1)
+            .map(|m| m.as_str().to_string())
+            .unwrap_or_default();
+        let params_str = cap.get(2).map(|m| m.as_str()).unwrap_or("");
 
-            let params: Vec<String> = parse_parameters(params_str);
+        let params: Vec<String> = parse_parameters(params_str);
 
-            mpi_calls.push((call_name, params));
-        }
+        mpi_calls.push((call_name, params));
     }
 
     Ok(mpi_calls)
