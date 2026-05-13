@@ -64,28 +64,62 @@ pub fn extract_mpi_calls(
     // Use (?s) so . matches newlines; \s* to handle missing/present spaces
     let re = Regex::new(r"(?s)int\s*MPI_([A-Z]\w+)\s*\((.*?)\)")?;
 
-    // Collect text from all pages first, then apply the regex to the combined
-    // text. This allows function signatures that span two pages to be matched.
-    let mut combined = String::new();
+    // Maximum number of bytes to carry over from the tail of the previous page
+    // so that function signatures spanning a page boundary are still matched
+    // without holding all page text in memory at once.
+    const CARRY_OVER_SIZE: usize = 2048;
+
+    // `carry_over` holds the tail of the previous page's cleaned text.  It is
+    // prepended to the current page's text so that the regex can match
+    // signatures whose opening "int MPI_…(" is on the previous page and whose
+    // closing ")" is on the current page.
+    let mut carry_over = String::new();
+
     for page_num in start_page..end_page {
         let text = doc.extract_text(&[page_num]).unwrap_or_default();
 
         // Remove line numbers that appear at start/end of lines (from PDF margins)
         let cleaned = clean_extracted_text(&text);
-        combined.push_str(&cleaned);
-        combined.push('\n');
-    }
 
-    for cap in re.captures_iter(&combined) {
-        let call_name = cap
-            .get(1)
-            .map(|m| m.as_str().to_string())
-            .unwrap_or_default();
-        let params_str = cap.get(2).map(|m| m.as_str()).unwrap_or("");
+        // Append a newline to form the complete page text; reuse it for both
+        // the search window and the next iteration's carry-over to avoid a
+        // redundant allocation.
+        let page_text = format!("{}\n", cleaned);
 
-        let params: Vec<String> = parse_parameters(params_str);
+        // Build the search window: tail of the previous page + current page text.
+        let window = format!("{}{}", carry_over, page_text);
+        let carry_len = carry_over.len();
 
-        mpi_calls.push((call_name, params));
+        // Collect matches. Skip any match whose full extent lies within the
+        // carry-over region — those signatures were already yielded when the
+        // previous page was processed.
+        for cap in re.captures_iter(&window) {
+            let m = cap.get(0).unwrap();
+            if m.end() <= carry_len {
+                continue;
+            }
+            let call_name = cap
+                .get(1)
+                .map(|m| m.as_str().to_string())
+                .unwrap_or_default();
+            let params_str = cap.get(2).map(|m| m.as_str()).unwrap_or("");
+            let params = parse_parameters(params_str);
+            mpi_calls.push((call_name, params));
+        }
+
+        // Update carry-over to the tail of the current page text so the next
+        // iteration can detect cross-boundary signatures.
+        if page_text.len() > CARRY_OVER_SIZE {
+            let mut split = page_text.len() - CARRY_OVER_SIZE;
+            // Advance to the next UTF-8 character boundary if needed.
+            // The bounds check guards against split advancing past the end.
+            while split < page_text.len() && !page_text.is_char_boundary(split) {
+                split += 1;
+            }
+            carry_over = page_text[split..].to_string();
+        } else {
+            carry_over = page_text;
+        }
     }
 
     Ok(mpi_calls)
