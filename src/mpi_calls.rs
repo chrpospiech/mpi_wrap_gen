@@ -98,6 +98,14 @@ pub fn extract_mpi_calls(
             if m.end() <= carry_len {
                 continue;
             }
+            // Skip typedef declarations (e.g., "typedef int MPI_Copy_function(...)").
+            // lopdf may strip spaces, so "typedef int MPI_" can appear as
+            // "typedefint MPI_", "typedef intMPI_", or "typedefintMPI_".
+            // Trimming the text preceding the match and checking for the
+            // "typedef" suffix covers all variants.
+            if window[..m.start()].trim_end().ends_with("typedef") {
+                continue;
+            }
             let call_name = cap
                 .get(1)
                 .map(|m| m.as_str().to_string())
