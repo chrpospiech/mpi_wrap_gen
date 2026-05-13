@@ -24,6 +24,9 @@ use regex::Regex;
 mod mpi_call_xmp_tests;
 
 #[cfg(test)]
+mod wait_some_tests;
+
+#[cfg(test)]
 mod test_outline_tests;
 
 #[cfg(test)]
