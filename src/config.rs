@@ -39,6 +39,7 @@ pub struct Config {
     pub output_file: PathBuf,
     pub templates: Templates,
     pub chapters: Vec<u32>,
+    pub excludes: Vec<String>,
 }
 
 /// This function reads the configuration from a YAML
@@ -64,4 +65,5 @@ pub fn print_config(config: &Config) {
     println!("Barrier Body Template:\n{}", config.templates.bar_body);
     println!("Footer Template:\n{}", config.templates.footer);
     println!("Chapters: {:?}", config.chapters);
+    println!("Excludes: {:?}", config.excludes);
 }

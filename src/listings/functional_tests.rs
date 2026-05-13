@@ -52,6 +52,7 @@ fn make_config(chapters: Vec<u32>) -> Config {
             footer: "FOOTER\n".to_string(),
         },
         chapters,
+        excludes: vec![],
     }
 }
 
