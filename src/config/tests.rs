@@ -38,6 +38,9 @@ chapters:
   - 3
   - 4
   - 5
+excludes:
+  - "MPI_Init"
+  - "MPI_Finalize"
 "#
     )?;
     let path = tmpfile.path().to_string_lossy();
@@ -58,6 +61,7 @@ chapters:
     assert!(config.templates.bar_body.contains("barrier MPI function"));
     assert!(config.templates.footer.contains("end of the file"));
     assert_eq!(config.chapters, vec![3, 4, 5]);
+    assert_eq!(config.excludes, vec!["MPI_Init", "MPI_Finalize"]);
     Ok(())
 }
 
@@ -108,6 +112,7 @@ templates:
   bar_body: "BB"
   footer: "F"
 chapters: []
+excludes: []
 "#
     )
     .unwrap();
@@ -123,6 +128,7 @@ chapters: []
     assert_eq!(config.templates.bar_body, "BB");
     assert_eq!(config.templates.footer, "F");
     assert!(config.chapters.is_empty());
+    assert!(config.excludes.is_empty());
     Ok(())
 }
 
@@ -145,6 +151,7 @@ chapters:
   - 7
   - 12
   - 99
+excludes: []
 "#
     )
     .unwrap();
@@ -171,6 +178,7 @@ templates:
   bar_body: "BB"
   footer: "F"
 chapters: [3, 4, 5, 6]
+excludes: []
 "#
     )
     .unwrap();
@@ -221,6 +229,7 @@ templates:
   footer: "F"
 chapters:
   - 42
+excludes: []
 "#
     )
     .unwrap();
@@ -238,5 +247,64 @@ fn test_read_config_empty_file() -> Result<()> {
 
     let result = read_config(path);
     assert!(result.is_err());
+    Ok(())
+}
+
+#[test]
+fn test_read_config_excludes() -> Result<()> {
+    let mut tmpfile = NamedTempFile::new()?;
+    write!(
+        tmpfile,
+        r#"mpi_pdf: "mpi.pdf"
+output_file: "out.c"
+templates:
+  header: "H"
+  ch_init: "I"
+  ch_body: "B"
+  bar_init: "BI"
+  bar_body: "BB"
+  footer: "F"
+chapters: []
+excludes:
+  - "MPI_Init"
+  - "MPI_Finalize"
+  - "MPI_Abort"
+"#
+    )
+    .unwrap();
+    let path = tmpfile.path().to_str().unwrap();
+
+    let config = read_config(path)?;
+    assert_eq!(
+        config.excludes,
+        vec!["MPI_Init", "MPI_Finalize", "MPI_Abort"]
+    );
+    assert_eq!(config.excludes.len(), 3);
+    Ok(())
+}
+
+#[test]
+fn test_read_config_missing_excludes_field() -> Result<()> {
+    let mut tmpfile = NamedTempFile::new()?;
+    write!(
+        tmpfile,
+        r#"mpi_pdf: "mpi.pdf"
+output_file: "out.c"
+templates:
+  header: "H"
+  ch_init: "I"
+  ch_body: "B"
+  bar_init: "BI"
+  bar_body: "BB"
+  footer: "F"
+chapters: []
+"#
+    )
+    .unwrap();
+    let path = tmpfile.path().to_str().unwrap();
+
+    let config = read_config(path)?;
+    assert!(config.excludes.is_empty());
+    assert_eq!(config.excludes.len(), 0);
     Ok(())
 }

@@ -23,12 +23,34 @@ use crate::mpi_calls::{create_barrier_names, extract_mpi_calls, MpiCallInfo};
 use crate::template::generate_output;
 use anyhow::{bail, Context, Result};
 use lopdf::Document;
+use std::collections::HashSet;
 
 #[cfg(test)]
 mod error_tests;
 
 #[cfg(test)]
 mod functional_tests;
+
+fn normalize_exclude_name(name: &str) -> String {
+    let normalized = name.trim().to_ascii_lowercase();
+    let without_prefix = normalized.strip_prefix("mpi_").unwrap_or(&normalized);
+    let without_suffix = without_prefix
+        .strip_suffix("_barrier")
+        .unwrap_or(without_prefix);
+    without_suffix.to_string()
+}
+
+fn create_exclude_set(config: &Config) -> HashSet<String> {
+    config
+        .excludes
+        .iter()
+        .map(|name| normalize_exclude_name(name))
+        .collect()
+}
+
+fn is_excluded(excludes: &HashSet<String>, mpi_call_name: &str) -> bool {
+    excludes.contains(&normalize_exclude_name(mpi_call_name))
+}
 
 /// This function extracts the MPI call information from the PDF document for
 /// the specified list of chapters as listed in the configuration. Using the
@@ -65,6 +87,7 @@ pub fn extract_and_generate_listings(
         );
     }
     let chapter_indices: ChapterMap = find_chapter_pages(doc)?;
+    let excludes = create_exclude_set(config);
     let mut output = String::new();
     let mut collective_chapter = 0;
     let mut collective_chapter_title = String::new();
@@ -105,6 +128,11 @@ pub fn extract_and_generate_listings(
             }
             continue; // Skip to next chapter if no MPI calls found
         }
+        let filtered_mpi_calls: Vec<MpiCallInfo> = mpi_calls
+            .iter()
+            .filter(|mpi_call| !is_excluded(&excludes, &mpi_call.0))
+            .cloned()
+            .collect();
 
         let chapter_title = get_chapter_title(&chapter_indices, chapter)?;
         // Check if chapter title contains "collective" (case-insensitive) to identify collective chapter
@@ -135,10 +163,10 @@ pub fn extract_and_generate_listings(
             &config.templates.ch_init,
             chapter,
             &chapter_title,
-            &mpi_calls[0],
+            filtered_mpi_calls.first().unwrap_or(&mpi_calls[0]),
         )?;
 
-        for mpi_call in mpi_calls {
+        for mpi_call in filtered_mpi_calls {
             // Add chapter body template with MPI call information
             if args.verbose {
                 println!(
@@ -167,6 +195,11 @@ pub fn extract_and_generate_listings(
         }
         let mpi_calls: Vec<MpiCallInfo> =
             create_barrier_names(doc, collective_start, collective_end)?;
+        let filtered_mpi_calls: Vec<MpiCallInfo> = mpi_calls
+            .iter()
+            .filter(|mpi_call| !is_excluded(&excludes, &mpi_call.0))
+            .cloned()
+            .collect();
 
         if !mpi_calls.is_empty() {
             let chapter_title = get_chapter_title(&chapter_indices, collective_chapter)?;
@@ -182,10 +215,10 @@ pub fn extract_and_generate_listings(
                 &config.templates.bar_init,
                 collective_chapter,
                 &chapter_title,
-                &mpi_calls[0],
+                filtered_mpi_calls.first().unwrap_or(&mpi_calls[0]),
             )?;
 
-            for mpi_call in mpi_calls {
+            for mpi_call in filtered_mpi_calls {
                 // Add barrier chapter body template with MPI call information
                 if args.verbose {
                     println!(

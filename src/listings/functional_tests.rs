@@ -52,6 +52,7 @@ fn make_config(chapters: Vec<u32>) -> Config {
             footer: "FOOTER\n".to_string(),
         },
         chapters,
+        excludes: vec![],
     }
 }
 
@@ -437,6 +438,207 @@ fn test_multiple_chapters_bar_section_counts() -> Result<()> {
     assert_eq!(
         bar_body_count, 4,
         "combined chapters 3+5 should have 4 BAR_BODY entries (all from ch5), got: {output:?}"
+    );
+    Ok(())
+}
+
+// ── Excludes tests ────────────────────────────────────────────────────────────
+
+/// A helper that builds a Config with an excludes list.
+fn make_config_with_excludes(chapters: Vec<u32>, excludes: Vec<&str>) -> Config {
+    let mut config = make_config(chapters);
+    config.excludes = excludes.into_iter().map(str::to_string).collect();
+    config
+}
+
+/// Excluding one call from chapter 3 must reduce the BODY count by one.
+#[test]
+fn test_exclude_one_call_reduces_body_count() -> Result<()> {
+    let doc = Document::load(outline_pdf_path())?;
+    let config = make_config_with_excludes(vec![3], vec!["Isend"]);
+    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let body_count = output.lines().filter(|l| l.starts_with("BODY")).count();
+    assert_eq!(
+        body_count, 2,
+        "excluding Isend from chapter 3 should leave 2 BODY entries (Send, Recv), got: {output:?}"
+    );
+    Ok(())
+}
+
+/// The excluded call name must not appear in any BODY line.
+#[test]
+fn test_excluded_call_name_absent_from_output() -> Result<()> {
+    let doc = Document::load(outline_pdf_path())?;
+    let config = make_config_with_excludes(vec![3], vec!["Isend"]);
+    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let body_lines: Vec<&str> = output.lines().filter(|l| l.starts_with("BODY")).collect();
+    assert!(
+        !body_lines.iter().any(|l| l.contains("Isend")),
+        "excluded call Isend must not appear in any BODY line, got: {body_lines:?}"
+    );
+    Ok(())
+}
+
+/// Non-excluded calls must still appear when one call is excluded.
+#[test]
+fn test_non_excluded_calls_still_present() -> Result<()> {
+    let doc = Document::load(outline_pdf_path())?;
+    let config = make_config_with_excludes(vec![3], vec!["Isend"]);
+    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    assert!(
+        output.contains("BODY Send\n"),
+        "Send should still appear in output, got: {output:?}"
+    );
+    assert!(
+        output.contains("BODY Recv\n"),
+        "Recv should still appear in output, got: {output:?}"
+    );
+    Ok(())
+}
+
+/// Excluding multiple calls at once must remove all of them.
+#[test]
+fn test_exclude_multiple_calls() -> Result<()> {
+    let doc = Document::load(outline_pdf_path())?;
+    let config = make_config_with_excludes(vec![3], vec!["Send", "Isend"]);
+    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let body_count = output.lines().filter(|l| l.starts_with("BODY")).count();
+    assert_eq!(
+        body_count, 1,
+        "excluding Send and Isend should leave 1 BODY entry (Recv), got: {output:?}"
+    );
+    assert!(
+        output.contains("BODY Recv\n"),
+        "Recv should be the only remaining BODY entry, got: {output:?}"
+    );
+    Ok(())
+}
+
+/// Excluding all calls in a chapter must leave no BODY entries but must still
+/// produce the INIT entry for that chapter.
+#[test]
+fn test_exclude_all_calls_leaves_only_init() -> Result<()> {
+    let doc = Document::load(outline_pdf_path())?;
+    let config = make_config_with_excludes(vec![3], vec!["Send", "Isend", "Recv"]);
+    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let body_count = output.lines().filter(|l| l.starts_with("BODY")).count();
+    let init_count = output.lines().filter(|l| l.starts_with("INIT")).count();
+    assert_eq!(
+        body_count, 0,
+        "excluding all calls should produce 0 BODY entries, got: {output:?}"
+    );
+    assert_eq!(
+        init_count, 1,
+        "INIT should still appear even when all calls are excluded, got: {output:?}"
+    );
+    Ok(())
+}
+
+/// A name in the excludes list that does not appear in the chapter must have
+/// no effect – all calls still appear in the output.
+#[test]
+fn test_exclude_nonexistent_call_has_no_effect() -> Result<()> {
+    let doc = Document::load(outline_pdf_path())?;
+    let config = make_config_with_excludes(vec![3], vec!["MPI_Nonexistent"]);
+    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let body_count = output.lines().filter(|l| l.starts_with("BODY")).count();
+    assert_eq!(
+        body_count, 3,
+        "an unmatched exclude should leave all 3 BODY entries intact, got: {output:?}"
+    );
+    Ok(())
+}
+
+/// An empty excludes list must produce the same output as make_config (no excludes).
+#[test]
+fn test_empty_excludes_list_has_no_effect() -> Result<()> {
+    let doc = Document::load(outline_pdf_path())?;
+    let config_no_excludes = make_config(vec![3]);
+    let config_empty_excludes = make_config_with_excludes(vec![3], vec![]);
+    let output_no = extract_and_generate_listings(&doc, &quiet_args(), &config_no_excludes)?;
+    let output_empty = extract_and_generate_listings(&doc, &quiet_args(), &config_empty_excludes)?;
+    assert_eq!(
+        output_no, output_empty,
+        "empty excludes list should produce identical output to no excludes"
+    );
+    Ok(())
+}
+
+/// Excludes must work across multiple chapters: excluding Send from chapter 3
+/// and Bcast from chapter 5 must reduce each chapter's BODY count by one.
+#[test]
+fn test_excludes_apply_across_multiple_chapters() -> Result<()> {
+    let doc = Document::load(outline_pdf_path())?;
+    let config = make_config_with_excludes(vec![3, 5], vec!["Send", "Bcast"]);
+    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let body_count = output.lines().filter(|l| l.starts_with("BODY")).count();
+    // chapter 3: 3 - 1 = 2; chapter 5: 4 - 1 = 3  → total 5
+    assert_eq!(
+        body_count, 5,
+        "excluding Send (ch3) and Bcast (ch5) should leave 5 BODY entries total, got: {output:?}"
+    );
+    Ok(())
+}
+
+/// Excludes should match case-insensitively and tolerate an optional MPI_ prefix.
+#[test]
+fn test_excludes_match_case_insensitively_with_optional_prefix() -> Result<()> {
+    let doc = Document::load(outline_pdf_path())?;
+    let config = make_config_with_excludes(vec![3], vec!["mpi_isend", "MPI_recv"]);
+    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let body_lines: Vec<&str> = output.lines().filter(|l| l.starts_with("BODY")).collect();
+    assert_eq!(
+        body_lines,
+        vec!["BODY Send"],
+        "normalized excludes should leave only Send, got: {body_lines:?}"
+    );
+    Ok(())
+}
+
+/// Excluding a collective call should also remove its generated barrier wrapper.
+#[test]
+fn test_excludes_apply_to_barrier_section() -> Result<()> {
+    let doc = Document::load(outline_pdf_path())?;
+    let config = make_config_with_excludes(vec![5], vec!["bcast"]);
+    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let body_lines: Vec<&str> = output.lines().filter(|l| l.starts_with("BODY")).collect();
+    let bar_body_lines: Vec<&str> = output
+        .lines()
+        .filter(|l| l.starts_with("BAR_BODY"))
+        .collect();
+    assert!(
+        !body_lines.iter().any(|line| line.contains("Bcast")),
+        "excluded collective call must not appear in BODY lines, got: {body_lines:?}"
+    );
+    assert!(
+        !bar_body_lines.iter().any(|line| line.contains("Bcast_barrier")),
+        "excluded collective call must not appear in BAR_BODY lines, got: {bar_body_lines:?}"
+    );
+    assert_eq!(
+        body_lines.len(),
+        3,
+        "excluding Bcast should leave 3 BODY entries, got: {body_lines:?}"
+    );
+    assert_eq!(
+        bar_body_lines.len(),
+        3,
+        "excluding Bcast should leave 3 BAR_BODY entries, got: {bar_body_lines:?}"
+    );
+    Ok(())
+}
+
+/// Verbose mode with an excluded call must still return the same output string
+/// as quiet mode (the skip message goes to stdout only).
+#[test]
+fn test_verbose_excludes_produces_identical_output_to_quiet() -> Result<()> {
+    let doc = Document::load(outline_pdf_path())?;
+    let config_quiet = make_config_with_excludes(vec![3], vec!["Isend"]);
+    let config_verbose = make_config_with_excludes(vec![3], vec!["Isend"]);
+    let quiet_output = extract_and_generate_listings(&doc, &quiet_args(), &config_quiet)?;
+    let verbose_output = extract_and_generate_listings(&doc, &verbose_args(), &config_verbose)?;
+    assert_eq!(
+        quiet_output, verbose_output,
+        "verbose mode with excludes should not change the returned output string"
     );
     Ok(())
 }
