@@ -95,6 +95,10 @@ The `header` template is emitted once at the start of the output. For each chapt
 with MPI calls, `ch_init` is emitted once (using the first call found), followed by
 `ch_body` once per MPI call. The `footer` template is emitted once at the end.
 
+`excludes` is optional. Entries are matched case-insensitively, accept either bare
+MPI names (`init`) or `MPI_`-prefixed names (`MPI_Init`), and also suppress matching
+`*_barrier` entries in the collective barrier section.
+
 If any of the processed chapters has a title containing the word "collective"
 (case-insensitive), a barrier section is appended before the footer. `bar_init` is
 emitted once for that section (using the first barrier call found), followed by

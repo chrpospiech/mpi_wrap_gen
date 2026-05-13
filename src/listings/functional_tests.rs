@@ -580,6 +580,53 @@ fn test_excludes_apply_across_multiple_chapters() -> Result<()> {
     Ok(())
 }
 
+/// Excludes should match case-insensitively and tolerate an optional MPI_ prefix.
+#[test]
+fn test_excludes_match_case_insensitively_with_optional_prefix() -> Result<()> {
+    let doc = Document::load(outline_pdf_path())?;
+    let config = make_config_with_excludes(vec![3], vec!["mpi_isend", "MPI_recv"]);
+    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let body_lines: Vec<&str> = output.lines().filter(|l| l.starts_with("BODY")).collect();
+    assert_eq!(
+        body_lines,
+        vec!["BODY Send"],
+        "normalized excludes should leave only Send, got: {body_lines:?}"
+    );
+    Ok(())
+}
+
+/// Excluding a collective call should also remove its generated barrier wrapper.
+#[test]
+fn test_excludes_apply_to_barrier_section() -> Result<()> {
+    let doc = Document::load(outline_pdf_path())?;
+    let config = make_config_with_excludes(vec![5], vec!["bcast"]);
+    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let body_lines: Vec<&str> = output.lines().filter(|l| l.starts_with("BODY")).collect();
+    let bar_body_lines: Vec<&str> = output
+        .lines()
+        .filter(|l| l.starts_with("BAR_BODY"))
+        .collect();
+    assert!(
+        !body_lines.iter().any(|line| line.contains("Bcast")),
+        "excluded collective call must not appear in BODY lines, got: {body_lines:?}"
+    );
+    assert!(
+        !bar_body_lines.iter().any(|line| line.contains("Bcast_barrier")),
+        "excluded collective call must not appear in BAR_BODY lines, got: {bar_body_lines:?}"
+    );
+    assert_eq!(
+        body_lines.len(),
+        3,
+        "excluding Bcast should leave 3 BODY entries, got: {body_lines:?}"
+    );
+    assert_eq!(
+        bar_body_lines.len(),
+        3,
+        "excluding Bcast should leave 3 BAR_BODY entries, got: {bar_body_lines:?}"
+    );
+    Ok(())
+}
+
 /// Verbose mode with an excluded call must still return the same output string
 /// as quiet mode (the skip message goes to stdout only).
 #[test]
