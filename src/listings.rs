@@ -139,6 +139,16 @@ pub fn extract_and_generate_listings(
         )?;
 
         for mpi_call in mpi_calls {
+            // Check whether the mpi call is in the excludes list
+            if config.excludes.contains(&mpi_call.0) {
+                if args.verbose {
+                    println!(
+                        "Skipping excluded MPI call {} in chapter {}.",
+                        mpi_call.0, chapter
+                    );
+                }
+                continue;
+            }
             // Add chapter body template with MPI call information
             if args.verbose {
                 println!(
