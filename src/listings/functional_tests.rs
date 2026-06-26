@@ -611,7 +611,9 @@ fn test_excludes_apply_to_barrier_section() -> Result<()> {
         "excluded collective call must not appear in BODY lines, got: {body_lines:?}"
     );
     assert!(
-        !bar_body_lines.iter().any(|line| line.contains("Bcast_barrier")),
+        !bar_body_lines
+            .iter()
+            .any(|line| line.contains("Bcast_barrier")),
         "excluded collective call must not appear in BAR_BODY lines, got: {bar_body_lines:?}"
     );
     assert_eq!(

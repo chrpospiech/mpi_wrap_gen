@@ -29,8 +29,13 @@ use std::collections::HashSet;
 mod error_tests;
 
 #[cfg(test)]
+mod find_collective;
+
+#[cfg(test)]
 mod functional_tests;
 
+/// Normalizes the MPI call name by removing the "mpi_" prefix and "_barrier" suffix, if present.
+/// This function is used to create a set of excluded MPI call names for filtering purposes.
 fn normalize_exclude_name(name: &str) -> String {
     let normalized = name.trim().to_ascii_lowercase();
     let without_prefix = normalized.strip_prefix("mpi_").unwrap_or(&normalized);
@@ -40,6 +45,8 @@ fn normalize_exclude_name(name: &str) -> String {
     without_suffix.to_string()
 }
 
+/// Creates a set of excluded MPI call names based on the configuration.
+/// This function normalizes the names by removing the "mpi_" prefix and "_barrier" suffix.
 fn create_exclude_set(config: &Config) -> HashSet<String> {
     config
         .excludes
@@ -48,8 +55,73 @@ fn create_exclude_set(config: &Config) -> HashSet<String> {
         .collect()
 }
 
+/// Checks if the given MPI call name is in the set of excluded names.
+/// This function normalizes the name by removing the "mpi_" prefix
+/// and "_barrier" suffix before checking.
 fn is_excluded(excludes: &HashSet<String>, mpi_call_name: &str) -> bool {
     excludes.contains(&normalize_exclude_name(mpi_call_name))
+}
+
+/// Inspects the chapter headers provided by a `ChapterMap` for the list
+/// `config.chapters` and returns the number of the chapter that contains
+/// the word "collective" (case-insensitive).
+/// If no chapter contains the word "collective" or if the list of chapters is empty,
+/// the function returns `None`.
+/// If multiple chapters contain the word "collective", the function returns an error.
+/// If exactly one chapter contains the word "collective",
+/// the function returns the chapter number.
+fn find_collective_chapter(
+    chapter_indices: &ChapterMap,
+    args: &CliArgs,
+    config: &Config,
+) -> Result<Option<u32>> {
+    let mut collective_chapter: Option<u32> = None;
+    if args.verbose {
+        println!(
+            "Searching for collective chapter in chapters: {:?}",
+            config.chapters
+        );
+    }
+
+    for &chapter in &config.chapters {
+        let title = get_chapter_title(chapter_indices, chapter)?;
+        if title.to_lowercase().contains("collective") {
+            if let Some(item) = collective_chapter {
+                let ch_found: u32 = chapter;
+                let title_found: &str = &title;
+                let ch_second: u32 = item;
+                let title_second: &str = &get_chapter_title(chapter_indices, ch_second)?;
+                let bail_msg = [
+                    "Multiple collective chapters found:".to_string(),
+                    format!("  chapter {} (\"{}\")", ch_second, &title_second),
+                    format!("  chapter {} (\"{}\")", ch_found, &title_found),
+                    "Only one collective chapter is supported.".to_string(),
+                ]
+                .join("\n");
+                bail!(bail_msg);
+            }
+            if let Some(col_item) = collective_chapter {
+                let ch_found: u32 = chapter;
+                let title_found: &str = &title;
+                let ch_second: u32 = col_item;
+                let title_second: &str = &get_chapter_title(chapter_indices, ch_second)?;
+                let bail_msg = [
+                    "Multiple collective chapters found:".to_string(),
+                    format!("  chapter {} (\"{}\")", ch_second, &title_second),
+                    format!("  chapter {} (\"{}\")", ch_found, &title_found),
+                    "Only one collective chapter is supported.".to_string(),
+                ]
+                .join("\n");
+                bail!(bail_msg);
+            }
+            collective_chapter = Some(chapter);
+        }
+    }
+
+    match collective_chapter {
+        Some(chapter) => Ok(Some(chapter)),
+        None => Ok(None),
+    }
 }
 
 /// This function extracts the MPI call information from the PDF document for
@@ -89,10 +161,6 @@ pub fn extract_and_generate_listings(
     let chapter_indices: ChapterMap = find_chapter_pages(doc)?;
     let excludes = create_exclude_set(config);
     let mut output = String::new();
-    let mut collective_chapter = 0;
-    let mut collective_chapter_title = String::new();
-    let mut collective_start = 0;
-    let mut collective_end = 0;
 
     // Add header template
     if args.verbose {
@@ -135,22 +203,6 @@ pub fn extract_and_generate_listings(
             .collect();
 
         let chapter_title = get_chapter_title(&chapter_indices, chapter)?;
-        // Check if chapter title contains "collective" (case-insensitive) to identify collective chapter
-        if chapter_title.to_lowercase().contains("collective") {
-            if collective_chapter != 0 {
-                bail!(
-                    "Multiple collective chapters found:\n  chapter {} (\"{}\")\n  chapter {} (\"{}\")\nOnly one collective chapter is supported.",
-                    collective_chapter,
-                    collective_chapter_title,
-                    chapter,
-                    chapter_title
-                );
-            }
-            collective_chapter = chapter;
-            collective_chapter_title = chapter_title.clone();
-            collective_start = ch_start;
-            collective_end = ch_end;
-        }
 
         // Add chapter init template
         if args.verbose {
@@ -184,7 +236,23 @@ pub fn extract_and_generate_listings(
     }
 
     // If a collective chapter was found, add the collective operations section
-    if collective_chapter != 0 {
+    let collective_chapter = find_collective_chapter(&chapter_indices, args, config)?;
+    if let Some(collective_chapter) = collective_chapter {
+        let collective_start = get_chapter_page(&chapter_indices, collective_chapter)
+            .with_context(|| {
+                format!(
+                    "Collective chapter {} not found in PDF document.",
+                    collective_chapter
+                )
+            })?;
+        let collective_end = chapter_indices
+            .keys()
+            .filter_map(|&candidate_chapter| {
+                get_chapter_page(&chapter_indices, candidate_chapter).ok()
+            })
+            .filter(|&page| page > collective_start)
+            .min()
+            .unwrap_or_else(|| (doc.get_pages().len() + 1) as u32);
         if args.verbose {
             println!(
                 "Extracting barrier MPI calls for chapter {}: pages {} to {}",
