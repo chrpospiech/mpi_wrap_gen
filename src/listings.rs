@@ -16,12 +16,12 @@
 // Description: ~/tools/Rust/mpi_wrap_gen/src/listings.rs
 // Author: Dr. Christoph Pospiech
 
-use crate::chapters::{find_chapter_pages, get_chapter_page, get_chapter_title, ChapterMap};
+use crate::chapters::{find_chapter_pages, get_chapter_title, ChapterMap};
 use crate::cmdline::CliArgs;
 use crate::config::Config;
-use crate::mpi_calls::{create_barrier_names, mpi_calls_for_page_range, MpiCallInfo};
+use crate::mpi_calls::{create_barrier_names, mpi_calls_for_chapter, MpiCallInfo};
 use crate::template::generate_output;
-use anyhow::{bail, Context, Result};
+use anyhow::{bail, Result};
 use lopdf::Document;
 use std::collections::HashSet;
 
@@ -169,26 +169,10 @@ pub fn extract_and_generate_listings(
     output.push_str(&config.templates.header);
 
     for &chapter in &config.chapters {
-        let ch_start = get_chapter_page(&chapter_indices, chapter)
-            .with_context(|| format!("Chapter {} not found in PDF document.", chapter))?;
-        let ch_end = chapter_indices
-            .keys()
-            .filter_map(|&candidate_chapter| {
-                get_chapter_page(&chapter_indices, candidate_chapter).ok()
-            })
-            .filter(|&page| page > ch_start)
-            .min()
-            .unwrap_or_else(|| (doc.get_pages().len() + 1) as u32); // If no later chapter is found, use end of document
-
         if args.verbose {
-            println!(
-                "Extracting MPI calls for chapter {}: pages {} to {}",
-                chapter,
-                ch_start,
-                ch_end - 1
-            );
+            println!("Extracting MPI calls for chapter {}", chapter);
         }
-        let mpi_calls: Vec<MpiCallInfo> = mpi_calls_for_page_range(doc, ch_start, ch_end)?;
+        let mpi_calls: Vec<MpiCallInfo> = mpi_calls_for_chapter(doc, &chapter_indices, chapter)?;
 
         if mpi_calls.is_empty() {
             if args.verbose {
@@ -238,31 +222,14 @@ pub fn extract_and_generate_listings(
     // If a collective chapter was found, add the collective operations section
     let collective_chapter = find_collective_chapter(&chapter_indices, args, config)?;
     if let Some(collective_chapter) = collective_chapter {
-        let collective_start = get_chapter_page(&chapter_indices, collective_chapter)
-            .with_context(|| {
-                format!(
-                    "Collective chapter {} not found in PDF document.",
-                    collective_chapter
-                )
-            })?;
-        let collective_end = chapter_indices
-            .keys()
-            .filter_map(|&candidate_chapter| {
-                get_chapter_page(&chapter_indices, candidate_chapter).ok()
-            })
-            .filter(|&page| page > collective_start)
-            .min()
-            .unwrap_or_else(|| (doc.get_pages().len() + 1) as u32);
         if args.verbose {
             println!(
-                "Extracting barrier MPI calls for chapter {}: pages {} to {}",
-                collective_chapter,
-                collective_start,
-                collective_end - 1
+                "Extracting barrier MPI calls for chapter {}",
+                collective_chapter
             );
         }
         let mpi_calls: Vec<MpiCallInfo> =
-            create_barrier_names(doc, collective_start, collective_end)?;
+            create_barrier_names(doc, &chapter_indices, collective_chapter)?;
         let filtered_mpi_calls: Vec<MpiCallInfo> = mpi_calls
             .iter()
             .filter(|mpi_call| !is_excluded(&excludes, &mpi_call.0))
