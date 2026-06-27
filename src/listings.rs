@@ -19,7 +19,7 @@
 use crate::chapters::{find_chapter_pages, get_chapter_page, get_chapter_title, ChapterMap};
 use crate::cmdline::CliArgs;
 use crate::config::Config;
-use crate::mpi_calls::{create_barrier_names, extract_mpi_calls, MpiCallInfo};
+use crate::mpi_calls::{create_barrier_names, mpi_calls_for_page_range, MpiCallInfo};
 use crate::template::generate_output;
 use anyhow::{bail, Context, Result};
 use lopdf::Document;
@@ -188,7 +188,7 @@ pub fn extract_and_generate_listings(
                 ch_end - 1
             );
         }
-        let mpi_calls: Vec<MpiCallInfo> = extract_mpi_calls(doc, ch_start, ch_end)?;
+        let mpi_calls: Vec<MpiCallInfo> = mpi_calls_for_page_range(doc, ch_start, ch_end)?;
 
         if mpi_calls.is_empty() {
             if args.verbose {

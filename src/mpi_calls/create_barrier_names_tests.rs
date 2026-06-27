@@ -37,13 +37,13 @@ fn test_create_barrier_names_count_matches_extract() -> Result<()> {
     let doc = Document::load(test_pdf_path())?;
     let (start, end) = full_page_range(&doc);
 
-    let original = extract_mpi_calls(&doc, start, end)?;
+    let original = mpi_calls_for_page_range(&doc, start, end)?;
     let barrier = create_barrier_names(&doc, start, end)?;
 
     assert_eq!(
         original.len(),
         barrier.len(),
-        "create_barrier_names should return the same number of entries as extract_mpi_calls"
+        "create_barrier_names should return the same number of entries as mpi_calls_for_page_range"
     );
     Ok(())
 }
@@ -74,7 +74,7 @@ fn test_create_barrier_names_prefix_matches_original_call_name() -> Result<()> {
     let doc = Document::load(test_pdf_path())?;
     let (start, end) = full_page_range(&doc);
 
-    let original = extract_mpi_calls(&doc, start, end)?;
+    let original = mpi_calls_for_page_range(&doc, start, end)?;
     let barrier = create_barrier_names(&doc, start, end)?;
 
     for ((orig_name, _), (barrier_name, _)) in original.iter().zip(barrier.iter()) {
@@ -93,7 +93,7 @@ fn test_create_barrier_names_preserves_parameters() -> Result<()> {
     let doc = Document::load(test_pdf_path())?;
     let (start, end) = full_page_range(&doc);
 
-    let original = extract_mpi_calls(&doc, start, end)?;
+    let original = mpi_calls_for_page_range(&doc, start, end)?;
     let barrier = create_barrier_names(&doc, start, end)?;
 
     for ((_, orig_params), (barrier_name, barrier_params)) in original.iter().zip(barrier.iter()) {

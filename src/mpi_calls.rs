@@ -55,7 +55,7 @@ pub type MpiCallInfo = (String, Vec<String>);
 ///     `(call_name, parameters)`: the MPI call name (without the "MPI_" prefix) and a vector
 ///     of its parameter strings. If an error occurs during PDF processing, the Result
 ///     will contain an error message.
-pub fn extract_mpi_calls(
+pub fn mpi_calls_for_page_range(
     doc: &Document,
     start_page: u32,
     end_page: u32,
@@ -133,7 +133,7 @@ pub fn extract_mpi_calls(
     Ok(mpi_calls)
 }
 
-/// Calls extract_mpi_calls but maps the result of type Vec<MpiCallInfo> to a new
+/// Calls mpi_calls_for_page_range but maps the result of type Vec<MpiCallInfo> to a new
 /// Vec<MpiCallInfo> with the first tuple entry being the concatenation of
 /// the original tuple entry and the string "_barrier".
 ///
@@ -152,7 +152,7 @@ pub fn create_barrier_names(
     start_page: u32,
     end_page: u32,
 ) -> Result<Vec<MpiCallInfo>> {
-    let barrier_calls = extract_mpi_calls(doc, start_page, end_page)?
+    let barrier_calls = mpi_calls_for_page_range(doc, start_page, end_page)?
         .into_iter()
         .map(|(call_name, params)| (format!("{}_barrier", call_name), params))
         .collect::<Vec<MpiCallInfo>>();

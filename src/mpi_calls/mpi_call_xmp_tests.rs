@@ -31,10 +31,10 @@ fn test_pdf_path() -> PathBuf {
 }
 
 #[test]
-fn test_extract_mpi_calls_finds_calls() -> Result<()> {
+fn test_mpi_calls_for_page_range_finds_calls() -> Result<()> {
     let doc = Document::load(test_pdf_path())?;
     let num_pages = doc.page_iter().count() as u32;
-    let calls = extract_mpi_calls(&doc, 1, num_pages + 1)?;
+    let calls = mpi_calls_for_page_range(&doc, 1, num_pages + 1)?;
 
     assert!(
         !calls.is_empty(),
@@ -50,10 +50,10 @@ fn test_extract_mpi_calls_finds_calls() -> Result<()> {
 }
 
 #[test]
-fn test_extract_mpi_calls_returns_call_names() -> Result<()> {
+fn test_mpi_calls_for_page_range_returns_call_names() -> Result<()> {
     let doc = Document::load(test_pdf_path())?;
     let num_pages = doc.page_iter().count() as u32;
-    let calls = extract_mpi_calls(&doc, 1, num_pages + 1)?;
+    let calls = mpi_calls_for_page_range(&doc, 1, num_pages + 1)?;
 
     assert!(!calls.is_empty(), "Need at least one call for this test");
     for (name, _) in &calls {
@@ -68,10 +68,10 @@ fn test_extract_mpi_calls_returns_call_names() -> Result<()> {
 }
 
 #[test]
-fn test_extract_mpi_calls_returns_parameters() -> Result<()> {
+fn test_mpi_calls_for_page_range_returns_parameters() -> Result<()> {
     let doc = Document::load(test_pdf_path())?;
     let num_pages = doc.page_iter().count() as u32;
-    let calls = extract_mpi_calls(&doc, 1, num_pages + 1)?;
+    let calls = mpi_calls_for_page_range(&doc, 1, num_pages + 1)?;
 
     assert!(!calls.is_empty(), "Need at least one call for this test");
     for (name, params) in &calls {
@@ -92,10 +92,10 @@ fn test_extract_mpi_calls_returns_parameters() -> Result<()> {
 }
 
 #[test]
-fn test_extract_mpi_calls_finds_send() -> Result<()> {
+fn test_mpi_calls_for_page_range_finds_send() -> Result<()> {
     let doc = Document::load(test_pdf_path())?;
     let num_pages = doc.page_iter().count() as u32;
-    let calls = extract_mpi_calls(&doc, 1, num_pages + 1)?;
+    let calls = mpi_calls_for_page_range(&doc, 1, num_pages + 1)?;
 
     let send_calls: Vec<_> = calls.iter().filter(|(name, _)| name == "Send").collect();
     assert!(
@@ -120,10 +120,10 @@ fn test_extract_mpi_calls_finds_send() -> Result<()> {
 }
 
 #[test]
-fn test_extract_mpi_calls_finds_recv() -> Result<()> {
+fn test_mpi_calls_for_page_range_finds_recv() -> Result<()> {
     let doc = Document::load(test_pdf_path())?;
     let num_pages = doc.page_iter().count() as u32;
-    let calls = extract_mpi_calls(&doc, 1, num_pages + 1)?;
+    let calls = mpi_calls_for_page_range(&doc, 1, num_pages + 1)?;
 
     let recv_calls: Vec<_> = calls.iter().filter(|(name, _)| name == "Recv").collect();
     assert!(
@@ -142,10 +142,10 @@ fn test_extract_mpi_calls_finds_recv() -> Result<()> {
 }
 
 #[test]
-fn test_extract_mpi_calls_multiline_signature() -> Result<()> {
+fn test_mpi_calls_for_page_range_multiline_signature() -> Result<()> {
     let doc = Document::load(test_pdf_path())?;
     let num_pages = doc.page_iter().count() as u32;
-    let calls = extract_mpi_calls(&doc, 1, num_pages + 1)?;
+    let calls = mpi_calls_for_page_range(&doc, 1, num_pages + 1)?;
 
     let send_calls: Vec<_> = calls.iter().filter(|(name, _)| name == "Send").collect();
     assert!(!send_calls.is_empty(), "Expected to find MPI_Send");
@@ -160,18 +160,18 @@ fn test_extract_mpi_calls_multiline_signature() -> Result<()> {
 }
 
 #[test]
-fn test_extract_mpi_calls_empty_range() -> Result<()> {
+fn test_mpi_calls_for_page_range_empty_range() -> Result<()> {
     let doc = Document::load(test_pdf_path())?;
-    let calls = extract_mpi_calls(&doc, 5, 5)?;
+    let calls = mpi_calls_for_page_range(&doc, 5, 5)?;
 
     assert!(calls.is_empty(), "Empty page range should return no calls");
     Ok(())
 }
 
 #[test]
-fn test_extract_mpi_calls_invalid_page_range() -> Result<()> {
+fn test_mpi_calls_for_page_range_invalid_page_range() -> Result<()> {
     let doc = Document::load(test_pdf_path())?;
-    let calls = extract_mpi_calls(&doc, 100, 200)?;
+    let calls = mpi_calls_for_page_range(&doc, 100, 200)?;
 
     assert!(
         calls.is_empty(),
