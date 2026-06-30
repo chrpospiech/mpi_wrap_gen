@@ -22,14 +22,19 @@ use crate::config::Config;
 use crate::mpi_calls::{create_barrier_names, mpi_calls_for_chapter, MpiCallInfo};
 use crate::template::generate_output;
 use anyhow::{bail, Result};
+use dynfmt2::{Format, PythonFormat};
 use lopdf::Document;
 use std::collections::HashSet;
+use std::path::{Path, PathBuf};
 
 #[cfg(test)]
 mod error_tests;
 
 #[cfg(test)]
 mod find_collective;
+
+#[cfg(test)]
+mod format_chapter_number_tests;
 
 #[cfg(test)]
 mod functional_tests;
@@ -124,6 +129,43 @@ fn find_collective_chapter(
     }
 }
 
+/// Helper function to take a PathBuf that may contain a format string
+/// `%(chapter_number)[...]s`, changes the PathBuf to a string and replaces
+/// the format string with the actual chapter number.
+/// The input string will be processed by the `dynfmt2` crate using
+/// the `PythonFormat` formatter, including the width and alignment handling.
+/// The function will return a Result containing a PathBuf with the formatted
+/// string or an error message if the formatting fails.
+/// This function is very similar to `generate_output` but
+/// - only replaces the chapter number placeholder.
+/// - typos in the placeholder name will result in an error
+///   rather than silently leaving the raw text in the path.
+/// - takes and returns PATHs instead of strings.
+///
+/// Args:
+///     template: A PathBuf containing the template with placeholders to be replaced.
+///     chapter_number: The number of the chapter to be included in the output string.
+///
+/// Returns:
+///     A Result containing a formatted PathBuf with placeholders replaced by actual values.
+///
+fn format_chapter_number(template: &Path, chapter_number: u32) -> Result<PathBuf> {
+    let vars = std::collections::HashMap::<String, String>::from([(
+        "chapter_number".to_string(),
+        chapter_number.to_string(),
+    )]);
+    let output = PythonFormat
+        .format(
+            template
+                .to_str()
+                .ok_or_else(|| anyhow::anyhow!("Invalid path"))?,
+            &vars,
+        )
+        .map_err(|e| anyhow::anyhow!("{e}"))?
+        .into_owned();
+    Ok(output.into())
+}
+
 /// This function extracts the MPI call information from the PDF document for
 /// the specified list of chapters as listed in the configuration. Using the
 /// templates from the configuration, a single document is generated and written
@@ -195,6 +237,11 @@ pub fn extract_and_generate_listings(
                 chapter
             );
         }
+
+        // Dummy call for format_chapter_number() to keep the compiler happy,
+        // as it is not used in the current implementation.
+        let _ = format_chapter_number(&config.output_file, chapter)?;
+
         output += &generate_output(
             &config.templates.ch_init,
             chapter,
