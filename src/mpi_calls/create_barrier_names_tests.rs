@@ -17,33 +17,35 @@
 // Author: Dr. Christoph Pospiech
 
 use super::*;
+use crate::chapters::find_chapter_pages;
 use lopdf::Document;
 use std::path::PathBuf;
 
+// The test PDF `test_outline.pdf` has the following structure:
+//   Chapter 1 – Introduction               (page 1) – no MPI calls
+//   Chapter 2 – Terms and Conventions      (page 2) – no MPI calls
+//   Chapter 3 – Point-to-Point Comm.       (page 3) – MPI_Send, MPI_Isend, MPI_Recv
+//   Chapter 4 – Datatypes                  (page 4) – no MPI calls
+//   Chapter 5 – Collective Communication   (page 5) – MPI_Barrier, MPI_Bcast,
+//                                                      MPI_Scatter, MPI_Scatterv
 fn test_pdf_path() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("test_data")
-        .join("mpi_call_xmp.pdf")
-}
-
-/// Helper that loads the test PDF and returns the full page range as (1, num_pages + 1).
-fn full_page_range(doc: &Document) -> (u32, u32) {
-    let num_pages = doc.page_iter().count() as u32;
-    (1, num_pages + 1)
+        .join("test_outline.pdf")
 }
 
 #[test]
-fn test_create_barrier_names_count_matches_extract() -> Result<()> {
+fn test_create_barrier_names_count_matches_chapter() -> Result<()> {
     let doc = Document::load(test_pdf_path())?;
-    let (start, end) = full_page_range(&doc);
+    let chapters = find_chapter_pages(&doc)?;
 
-    let original = extract_mpi_calls(&doc, start, end)?;
-    let barrier = create_barrier_names(&doc, start, end)?;
+    let original = mpi_calls_for_chapter(&doc, &chapters, 3)?;
+    let barrier = create_barrier_names(&doc, &chapters, 3)?;
 
     assert_eq!(
         original.len(),
         barrier.len(),
-        "create_barrier_names should return the same number of entries as extract_mpi_calls"
+        "create_barrier_names should return the same number of entries as mpi_calls_for_chapter"
     );
     Ok(())
 }
@@ -51,9 +53,9 @@ fn test_create_barrier_names_count_matches_extract() -> Result<()> {
 #[test]
 fn test_create_barrier_names_all_names_have_barrier_suffix() -> Result<()> {
     let doc = Document::load(test_pdf_path())?;
-    let (start, end) = full_page_range(&doc);
+    let chapters = find_chapter_pages(&doc)?;
 
-    let barrier = create_barrier_names(&doc, start, end)?;
+    let barrier = create_barrier_names(&doc, &chapters, 3)?;
 
     assert!(
         !barrier.is_empty(),
@@ -72,10 +74,10 @@ fn test_create_barrier_names_all_names_have_barrier_suffix() -> Result<()> {
 #[test]
 fn test_create_barrier_names_prefix_matches_original_call_name() -> Result<()> {
     let doc = Document::load(test_pdf_path())?;
-    let (start, end) = full_page_range(&doc);
+    let chapters = find_chapter_pages(&doc)?;
 
-    let original = extract_mpi_calls(&doc, start, end)?;
-    let barrier = create_barrier_names(&doc, start, end)?;
+    let original = mpi_calls_for_chapter(&doc, &chapters, 3)?;
+    let barrier = create_barrier_names(&doc, &chapters, 3)?;
 
     for ((orig_name, _), (barrier_name, _)) in original.iter().zip(barrier.iter()) {
         let expected = format!("{}_barrier", orig_name);
@@ -91,10 +93,10 @@ fn test_create_barrier_names_prefix_matches_original_call_name() -> Result<()> {
 #[test]
 fn test_create_barrier_names_preserves_parameters() -> Result<()> {
     let doc = Document::load(test_pdf_path())?;
-    let (start, end) = full_page_range(&doc);
+    let chapters = find_chapter_pages(&doc)?;
 
-    let original = extract_mpi_calls(&doc, start, end)?;
-    let barrier = create_barrier_names(&doc, start, end)?;
+    let original = mpi_calls_for_chapter(&doc, &chapters, 3)?;
+    let barrier = create_barrier_names(&doc, &chapters, 3)?;
 
     for ((_, orig_params), (barrier_name, barrier_params)) in original.iter().zip(barrier.iter()) {
         assert_eq!(
@@ -109,9 +111,9 @@ fn test_create_barrier_names_preserves_parameters() -> Result<()> {
 #[test]
 fn test_create_barrier_names_finds_send_barrier() -> Result<()> {
     let doc = Document::load(test_pdf_path())?;
-    let (start, end) = full_page_range(&doc);
+    let chapters = find_chapter_pages(&doc)?;
 
-    let barrier = create_barrier_names(&doc, start, end)?;
+    let barrier = create_barrier_names(&doc, &chapters, 3)?;
 
     let send_barrier: Vec<_> = barrier
         .iter()
@@ -119,7 +121,7 @@ fn test_create_barrier_names_finds_send_barrier() -> Result<()> {
         .collect();
     assert!(
         !send_barrier.is_empty(),
-        "Expected to find 'Send_barrier', found: {:?}",
+        "Expected to find 'Send_barrier' in chapter 3, found: {:?}",
         barrier.iter().map(|(n, _)| n).collect::<Vec<_>>()
     );
 
@@ -138,25 +140,59 @@ fn test_create_barrier_names_finds_send_barrier() -> Result<()> {
 }
 
 #[test]
-fn test_create_barrier_names_empty_range() -> Result<()> {
+fn test_create_barrier_names_empty_chapter_returns_empty() -> Result<()> {
     let doc = Document::load(test_pdf_path())?;
-    let barrier = create_barrier_names(&doc, 5, 5)?;
+    let chapters = find_chapter_pages(&doc)?;
+
+    // Chapter 1 (Introduction) has no MPI call signatures.
+    let barrier = create_barrier_names(&doc, &chapters, 1)?;
 
     assert!(
         barrier.is_empty(),
-        "Empty page range should return no barrier names"
+        "Chapter with no MPI calls should return no barrier names"
     );
     Ok(())
 }
 
 #[test]
-fn test_create_barrier_names_invalid_page_range() -> Result<()> {
-    let doc = Document::load(test_pdf_path())?;
-    let barrier = create_barrier_names(&doc, 100, 200)?;
+fn test_create_barrier_names_invalid_chapter_returns_error() {
+    let doc = Document::load(test_pdf_path()).expect("Failed to load test PDF");
+    let chapters = find_chapter_pages(&doc).expect("Failed to find chapter pages");
+
+    let result = create_barrier_names(&doc, &chapters, 99);
 
     assert!(
-        barrier.is_empty(),
-        "Out-of-range pages should return no barrier names"
+        result.is_err(),
+        "Expected an error for non-existent chapter 99"
     );
+}
+
+#[test]
+fn test_create_barrier_names_collective_chapter() -> Result<()> {
+    let doc = Document::load(test_pdf_path())?;
+    let chapters = find_chapter_pages(&doc)?;
+
+    let barrier = create_barrier_names(&doc, &chapters, 5)?;
+
+    assert_eq!(
+        barrier.len(),
+        4,
+        "Chapter 5 should produce 4 barrier names, found: {:?}",
+        barrier.iter().map(|(n, _)| n).collect::<Vec<_>>()
+    );
+    let names: Vec<&str> = barrier.iter().map(|(n, _)| n.as_str()).collect();
+    for expected in &[
+        "Barrier_barrier",
+        "Bcast_barrier",
+        "Scatter_barrier",
+        "Scatterv_barrier",
+    ] {
+        assert!(
+            names.contains(expected),
+            "Expected '{}' in chapter 5 barrier names, got: {:?}",
+            expected,
+            names
+        );
+    }
     Ok(())
 }

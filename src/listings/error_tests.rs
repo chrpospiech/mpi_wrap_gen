@@ -73,6 +73,14 @@ fn verbose_args() -> CliArgs {
     }
 }
 
+fn single_output(outputs: Vec<(PathBuf, String)>) -> String {
+    outputs
+        .into_iter()
+        .next()
+        .expect("expected at least one output entry")
+        .1
+}
+
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 /// The function must return an error immediately when no chapters are configured.
@@ -111,7 +119,7 @@ fn test_chapter_not_found_returns_error() -> Result<()> {
 fn test_header_present_when_no_mpi_calls() -> Result<()> {
     let doc = Document::load(outline_pdf_path())?;
     let config = make_config(vec![1]);
-    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let output = single_output(extract_and_generate_listings(&doc, &quiet_args(), &config)?);
     assert!(
         output.starts_with("HEADER\n"),
         "output should start with header, got: {output:?}"
@@ -125,7 +133,7 @@ fn test_header_present_when_no_mpi_calls() -> Result<()> {
 fn test_footer_present_when_no_mpi_calls() -> Result<()> {
     let doc = Document::load(outline_pdf_path())?;
     let config = make_config(vec![1]);
-    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let output = single_output(extract_and_generate_listings(&doc, &quiet_args(), &config)?);
     assert!(
         output.ends_with("FOOTER\n"),
         "output should end with footer, got: {output:?}"
@@ -139,7 +147,7 @@ fn test_footer_present_when_no_mpi_calls() -> Result<()> {
 fn test_no_body_when_chapter_has_no_mpi_calls() -> Result<()> {
     let doc = Document::load(outline_pdf_path())?;
     let config = make_config(vec![1, 2]);
-    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let output = single_output(extract_and_generate_listings(&doc, &quiet_args(), &config)?);
     assert!(
         !output.contains("BODY"),
         "body template should be absent when there are no MPI calls, got: {output:?}"
@@ -152,7 +160,11 @@ fn test_no_body_when_chapter_has_no_mpi_calls() -> Result<()> {
 fn test_verbose_flag_does_not_panic() -> Result<()> {
     let doc = Document::load(outline_pdf_path())?;
     let config = make_config(vec![1]);
-    let output = extract_and_generate_listings(&doc, &verbose_args(), &config)?;
+    let output = single_output(extract_and_generate_listings(
+        &doc,
+        &verbose_args(),
+        &config,
+    )?);
     assert!(output.contains("HEADER\n"));
     assert!(output.contains("FOOTER\n"));
     Ok(())
@@ -186,7 +198,7 @@ fn test_returns_error_for_mpi_pdf_without_chapter_outlines() -> Result<()> {
 fn test_output_is_header_plus_footer_only_when_no_mpi_calls() -> Result<()> {
     let doc = Document::load(outline_pdf_path())?;
     let config = make_config(vec![1]);
-    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let output = single_output(extract_and_generate_listings(&doc, &quiet_args(), &config)?);
     assert_eq!(
         output, "HEADER\nFOOTER\n",
         "output should be exactly header+footer when no MPI calls found"

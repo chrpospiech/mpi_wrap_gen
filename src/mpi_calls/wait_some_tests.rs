@@ -33,10 +33,10 @@ fn test_pdf_path() -> PathBuf {
 }
 
 #[test]
-fn test_extract_mpi_calls_finds_all_calls() -> Result<()> {
+fn test_mpi_calls_for_page_range_finds_all_calls() -> Result<()> {
     let doc = Document::load(test_pdf_path())?;
     let num_pages = doc.page_iter().count() as u32;
-    let calls = extract_mpi_calls(&doc, 1, num_pages + 1)?;
+    let calls = mpi_calls_for_page_range(&doc, 1, num_pages + 1)?;
 
     assert!(
         !calls.is_empty(),
@@ -52,10 +52,10 @@ fn test_extract_mpi_calls_finds_all_calls() -> Result<()> {
 }
 
 #[test]
-fn test_extract_mpi_calls_finds_waitsome() -> Result<()> {
+fn test_mpi_calls_for_page_range_finds_waitsome() -> Result<()> {
     let doc = Document::load(test_pdf_path())?;
     let num_pages = doc.page_iter().count() as u32;
-    let calls = extract_mpi_calls(&doc, 1, num_pages + 1)?;
+    let calls = mpi_calls_for_page_range(&doc, 1, num_pages + 1)?;
 
     let waitsome_calls: Vec<_> = calls
         .iter()
@@ -79,10 +79,10 @@ fn test_extract_mpi_calls_finds_waitsome() -> Result<()> {
 }
 
 #[test]
-fn test_extract_mpi_calls_finds_testsome() -> Result<()> {
+fn test_mpi_calls_for_page_range_finds_testsome() -> Result<()> {
     let doc = Document::load(test_pdf_path())?;
     let num_pages = doc.page_iter().count() as u32;
-    let calls = extract_mpi_calls(&doc, 1, num_pages + 1)?;
+    let calls = mpi_calls_for_page_range(&doc, 1, num_pages + 1)?;
 
     let testsome_calls: Vec<_> = calls
         .iter()

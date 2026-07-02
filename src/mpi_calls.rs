@@ -16,7 +16,8 @@
 // Description: ~/tools/Rust/mpi_wrap_gen/src/mpi_calls.rs
 // Author: Dr. Christoph Pospiech
 
-use anyhow::Result;
+use crate::chapters::{get_chapter_page, ChapterMap};
+use anyhow::{Context, Result};
 use lopdf::Document;
 use regex::Regex;
 
@@ -31,6 +32,9 @@ mod test_outline_tests;
 
 #[cfg(test)]
 mod create_barrier_names_tests;
+
+#[cfg(test)]
+mod mpi_calls_for_chapter_tests;
 
 pub type MpiCallInfo = (String, Vec<String>);
 
@@ -55,7 +59,7 @@ pub type MpiCallInfo = (String, Vec<String>);
 ///     `(call_name, parameters)`: the MPI call name (without the "MPI_" prefix) and a vector
 ///     of its parameter strings. If an error occurs during PDF processing, the Result
 ///     will contain an error message.
-pub fn extract_mpi_calls(
+fn mpi_calls_for_page_range(
     doc: &Document,
     start_page: u32,
     end_page: u32,
@@ -133,14 +137,54 @@ pub fn extract_mpi_calls(
     Ok(mpi_calls)
 }
 
-/// Calls extract_mpi_calls but maps the result of type Vec<MpiCallInfo> to a new
+/// Extracts MPI call information from the PDF document for a given chapter
+/// and returns a vector of MPI call names and call parameters.
+/// The MPI calls are identified by searching for text elements that match
+/// the pattern "int MPI_[A-Z]\w+\(.*\)" in the PDF content streams. The closing bracket may
+/// be on the same line or on a subsequent line, so the function handles both cases.
+///
+/// The MPI call name is returned without the "MPI_" prefix, and the parameters are
+/// returned as a vector of strings.
+///
+/// The function calls `mpi_calls_for_page_range` to perform the extraction, and it is
+/// intended to be used for extracting MPI calls from a specific chapter of the PDF document,
+/// where the chapter is defined by its start and end pages.
+///
+/// Args:
+///     doc: A reference to the lopdf PDF document from which to extract MPI call information.
+///     chapter_indices: ChapterMap to identify the start and end pages for each chapter.
+///     chapter: the chapter number (1-based) for which to extract MPI calls.
+///
+/// Returns:
+///     A Result containing a vector of [`MpiCallInfo`], where each entry is a tuple of
+///     `(call_name, parameters)`: the MPI call name (without the "MPI_" prefix) and a vector
+///     of its parameter strings. If an error occurs during PDF processing, the Result
+///     will contain an error message.
+///
+pub fn mpi_calls_for_chapter(
+    doc: &Document,
+    chapter_indices: &ChapterMap,
+    chapter: u32,
+) -> Result<Vec<MpiCallInfo>> {
+    let ch_start = get_chapter_page(chapter_indices, chapter)
+        .with_context(|| format!("Chapter {} not found in PDF document.", chapter))?;
+    let ch_end = chapter_indices
+        .keys()
+        .filter_map(|&candidate_chapter| get_chapter_page(chapter_indices, candidate_chapter).ok())
+        .filter(|&page| page > ch_start)
+        .min()
+        .unwrap_or_else(|| (doc.get_pages().len() + 1) as u32); // If no later chapter is found, use end of document
+    mpi_calls_for_page_range(doc, ch_start, ch_end)
+}
+
+/// Calls mpi_calls_for_chapter but maps the result of type Vec<MpiCallInfo> to a new
 /// Vec<MpiCallInfo> with the first tuple entry being the concatenation of
 /// the original tuple entry and the string "_barrier".
 ///
 /// Args:
 ///     doc: A reference to the lopdf PDF document from which to extract MPI call information.
-///     start_page: The 1-based index of the page from which to start searching for MPI calls.
-///     end_page: The 1-based (exclusive) index of the page at which to stop searching for MPI calls.
+///     chapter_indices: ChapterMap to identify the start and end pages for each chapter.
+///     chapter: the chapter number (1-based) for which to extract MPI calls.
 ///
 /// Returns:
 ///     A Result containing a vector of [`MpiCallInfo`], where each entry is a tuple of
@@ -149,10 +193,10 @@ pub fn extract_mpi_calls(
 ///     will contain an error message.
 pub fn create_barrier_names(
     doc: &Document,
-    start_page: u32,
-    end_page: u32,
+    chapter_indices: &ChapterMap,
+    chapter: u32,
 ) -> Result<Vec<MpiCallInfo>> {
-    let barrier_calls = extract_mpi_calls(doc, start_page, end_page)?
+    let barrier_calls = mpi_calls_for_chapter(doc, chapter_indices, chapter)?
         .into_iter()
         .map(|(call_name, params)| (format!("{}_barrier", call_name), params))
         .collect::<Vec<MpiCallInfo>>();
