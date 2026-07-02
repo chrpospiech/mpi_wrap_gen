@@ -131,8 +131,8 @@ fn find_collective_chapter(
     }
 }
 
-/// Helper function to take a PathBuf that may contain a format string
-/// `%(chapter_number)[...]s`, changes the PathBuf to a string and replaces
+/// Helper function to take a `Path` that may contain a format string
+/// `%(chapter_number)[...]s`, converts the path to a string and replaces
 /// the format string with the actual chapter number.
 /// The input string will be processed by the `dynfmt2` crate using
 /// the `PythonFormat` formatter, including the width and alignment handling.
