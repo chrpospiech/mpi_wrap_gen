@@ -145,7 +145,7 @@ fn find_collective_chapter(
 /// - takes and returns PATHs instead of strings.
 ///
 /// Args:
-///     template: A PathBuf containing the template with placeholders to be replaced.
+///     template: A `Path` containing the template with placeholders to be replaced.
 ///     chapter_number: The number of the chapter to be included in the output string.
 ///
 /// Returns:
