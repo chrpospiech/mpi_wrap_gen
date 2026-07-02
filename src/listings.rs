@@ -312,7 +312,7 @@ pub fn extract_and_generate_listings(
             .cloned()
             .collect();
 
-        if !mpi_calls.is_empty() {
+        if !filtered_mpi_calls.is_empty() {
             let chapter_title = get_chapter_title(&chapter_indices, collective_chapter)?;
 
             // Add barrier chapter init template
