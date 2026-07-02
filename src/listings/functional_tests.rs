@@ -67,6 +67,14 @@ fn verbose_args() -> CliArgs {
     }
 }
 
+fn single_output(outputs: Vec<(PathBuf, String)>) -> String {
+    outputs
+        .into_iter()
+        .next()
+        .expect("expected at least one output entry")
+        .1
+}
+
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 /// When a chapter with MPI calls is requested the output must still begin with
@@ -75,7 +83,7 @@ fn verbose_args() -> CliArgs {
 fn test_chapter_with_mpi_calls_has_header_and_footer() -> Result<()> {
     let doc = Document::load(outline_pdf_path())?;
     let config = make_config(vec![3]);
-    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let output = single_output(extract_and_generate_listings(&doc, &quiet_args(), &config)?);
     assert!(
         output.starts_with("HEADER\n"),
         "output should start with header, got: {output:?}"
@@ -93,7 +101,7 @@ fn test_chapter_with_mpi_calls_has_header_and_footer() -> Result<()> {
 fn test_chapter_3_output_contains_all_mpi_call_names() -> Result<()> {
     let doc = Document::load(outline_pdf_path())?;
     let config = make_config(vec![3]);
-    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let output = single_output(extract_and_generate_listings(&doc, &quiet_args(), &config)?);
     assert!(
         output.contains("Send"),
         "output should contain MPI_Send, got: {output:?}"
@@ -115,7 +123,7 @@ fn test_chapter_3_output_contains_all_mpi_call_names() -> Result<()> {
 fn test_ch_init_appears_exactly_once_for_chapter_3() -> Result<()> {
     let doc = Document::load(outline_pdf_path())?;
     let config = make_config(vec![3]);
-    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let output = single_output(extract_and_generate_listings(&doc, &quiet_args(), &config)?);
     let init_count = output.lines().filter(|l| l.starts_with("INIT")).count();
     assert_eq!(
         init_count, 1,
@@ -130,7 +138,7 @@ fn test_ch_init_appears_exactly_once_for_chapter_3() -> Result<()> {
 fn test_ch_init_content_for_chapter_3() -> Result<()> {
     let doc = Document::load(outline_pdf_path())?;
     let config = make_config(vec![3]);
-    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let output = single_output(extract_and_generate_listings(&doc, &quiet_args(), &config)?);
     assert!(
         output.contains("INIT 3 Point-to-Point Communication Send\n"),
         "ch_init line should contain chapter number, title, and first call name, got: {output:?}"
@@ -144,7 +152,7 @@ fn test_ch_init_content_for_chapter_3() -> Result<()> {
 fn test_ch_body_count_matches_chapter_3_mpi_calls() -> Result<()> {
     let doc = Document::load(outline_pdf_path())?;
     let config = make_config(vec![3]);
-    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let output = single_output(extract_and_generate_listings(&doc, &quiet_args(), &config)?);
     let body_count = output.lines().filter(|l| l.starts_with("BODY")).count();
     assert_eq!(
         body_count, 3,
@@ -159,7 +167,7 @@ fn test_ch_body_count_matches_chapter_3_mpi_calls() -> Result<()> {
 fn test_chapter_title_substituted_in_output() -> Result<()> {
     let doc = Document::load(outline_pdf_path())?;
     let config = make_config(vec![3]);
-    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let output = single_output(extract_and_generate_listings(&doc, &quiet_args(), &config)?);
     assert!(
         output.contains("Point-to-Point Communication"),
         "output should contain the chapter title, got: {output:?}"
@@ -172,7 +180,7 @@ fn test_chapter_title_substituted_in_output() -> Result<()> {
 fn test_chapter_number_substituted_in_output() -> Result<()> {
     let doc = Document::load(outline_pdf_path())?;
     let config = make_config(vec![3]);
-    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let output = single_output(extract_and_generate_listings(&doc, &quiet_args(), &config)?);
     assert!(
         output.contains("INIT 3 "),
         "ch_init line should contain the chapter number 3, got: {output:?}"
@@ -186,7 +194,7 @@ fn test_chapter_number_substituted_in_output() -> Result<()> {
 fn test_ch_body_count_matches_chapter_5_mpi_calls() -> Result<()> {
     let doc = Document::load(outline_pdf_path())?;
     let config = make_config(vec![5]);
-    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let output = single_output(extract_and_generate_listings(&doc, &quiet_args(), &config)?);
     let body_count = output.lines().filter(|l| l.starts_with("BODY")).count();
     assert_eq!(
         body_count, 4,
@@ -201,7 +209,7 @@ fn test_ch_body_count_matches_chapter_5_mpi_calls() -> Result<()> {
 fn test_chapter_5_contains_collective_call_names() -> Result<()> {
     let doc = Document::load(outline_pdf_path())?;
     let config = make_config(vec![5]);
-    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let output = single_output(extract_and_generate_listings(&doc, &quiet_args(), &config)?);
     assert!(
         output.contains("Barrier"),
         "output should contain MPI_Barrier, got: {output:?}"
@@ -227,7 +235,7 @@ fn test_chapter_5_contains_collective_call_names() -> Result<()> {
 fn test_multiple_chapters_combined_call_counts() -> Result<()> {
     let doc = Document::load(outline_pdf_path())?;
     let config = make_config(vec![3, 5]);
-    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let output = single_output(extract_and_generate_listings(&doc, &quiet_args(), &config)?);
     let init_count = output.lines().filter(|l| l.starts_with("INIT")).count();
     let body_count = output.lines().filter(|l| l.starts_with("BODY")).count();
     assert_eq!(
@@ -247,7 +255,7 @@ fn test_multiple_chapters_combined_call_counts() -> Result<()> {
 fn test_multiple_chapters_appear_in_requested_order() -> Result<()> {
     let doc = Document::load(outline_pdf_path())?;
     let config = make_config(vec![3, 5]);
-    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let output = single_output(extract_and_generate_listings(&doc, &quiet_args(), &config)?);
     let pos_ch3 = output
         .find("Point-to-Point Communication")
         .expect("chapter 3 title should appear in output");
@@ -268,7 +276,7 @@ fn test_multiple_chapters_appear_in_requested_order() -> Result<()> {
 fn test_chapter_without_mpi_calls_skipped_in_mixed_list() -> Result<()> {
     let doc = Document::load(outline_pdf_path())?;
     let config = make_config(vec![1, 3]);
-    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let output = single_output(extract_and_generate_listings(&doc, &quiet_args(), &config)?);
     let init_count = output.lines().filter(|l| l.starts_with("INIT")).count();
     let body_count = output.lines().filter(|l| l.starts_with("BODY")).count();
     assert_eq!(
@@ -288,7 +296,7 @@ fn test_chapter_without_mpi_calls_skipped_in_mixed_list() -> Result<()> {
 fn test_output_section_order() -> Result<()> {
     let doc = Document::load(outline_pdf_path())?;
     let config = make_config(vec![3]);
-    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let output = single_output(extract_and_generate_listings(&doc, &quiet_args(), &config)?);
     let header_pos = output.find("HEADER").expect("HEADER must be present");
     let init_pos = output.find("INIT").expect("INIT must be present");
     let body_pos = output.find("BODY").expect("BODY must be present");
@@ -308,8 +316,12 @@ fn test_output_section_order() -> Result<()> {
 fn test_verbose_mode_produces_identical_output_to_quiet_mode() -> Result<()> {
     let doc = Document::load(outline_pdf_path())?;
     let config = make_config(vec![3]);
-    let quiet_output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
-    let verbose_output = extract_and_generate_listings(&doc, &verbose_args(), &config)?;
+    let quiet_output = single_output(extract_and_generate_listings(&doc, &quiet_args(), &config)?);
+    let verbose_output = single_output(extract_and_generate_listings(
+        &doc,
+        &verbose_args(),
+        &config,
+    )?);
     assert_eq!(
         quiet_output, verbose_output,
         "verbose mode should not change the returned output string"
@@ -325,7 +337,7 @@ fn test_verbose_mode_produces_identical_output_to_quiet_mode() -> Result<()> {
 fn test_collective_chapter_produces_bar_init() -> Result<()> {
     let doc = Document::load(outline_pdf_path())?;
     let config = make_config(vec![5]);
-    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let output = single_output(extract_and_generate_listings(&doc, &quiet_args(), &config)?);
     assert!(
         output.contains("BAR_INIT"),
         "output for collective chapter 5 should contain BAR_INIT, got: {output:?}"
@@ -338,7 +350,7 @@ fn test_collective_chapter_produces_bar_init() -> Result<()> {
 fn test_collective_chapter_produces_bar_body() -> Result<()> {
     let doc = Document::load(outline_pdf_path())?;
     let config = make_config(vec![5]);
-    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let output = single_output(extract_and_generate_listings(&doc, &quiet_args(), &config)?);
     assert!(
         output.contains("BAR_BODY"),
         "output for collective chapter 5 should contain BAR_BODY entries, got: {output:?}"
@@ -352,7 +364,7 @@ fn test_collective_chapter_produces_bar_body() -> Result<()> {
 fn test_collective_chapter_bar_body_count_matches_call_count() -> Result<()> {
     let doc = Document::load(outline_pdf_path())?;
     let config = make_config(vec![5]);
-    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let output = single_output(extract_and_generate_listings(&doc, &quiet_args(), &config)?);
     let bar_body_count = output.lines().filter(|l| l.starts_with("BAR_BODY")).count();
     assert_eq!(
         bar_body_count, 4,
@@ -366,7 +378,7 @@ fn test_collective_chapter_bar_body_count_matches_call_count() -> Result<()> {
 fn test_bar_init_appears_exactly_once_for_chapter_5() -> Result<()> {
     let doc = Document::load(outline_pdf_path())?;
     let config = make_config(vec![5]);
-    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let output = single_output(extract_and_generate_listings(&doc, &quiet_args(), &config)?);
     let bar_init_count = output.lines().filter(|l| l.starts_with("BAR_INIT")).count();
     assert_eq!(
         bar_init_count, 1,
@@ -381,7 +393,7 @@ fn test_bar_init_appears_exactly_once_for_chapter_5() -> Result<()> {
 fn test_bar_init_content_for_chapter_5() -> Result<()> {
     let doc = Document::load(outline_pdf_path())?;
     let config = make_config(vec![5]);
-    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let output = single_output(extract_and_generate_listings(&doc, &quiet_args(), &config)?);
     assert!(
         output.contains("BAR_INIT 5 Collective Communication Barrier_barrier\n"),
         "BAR_INIT line should contain chapter number, title, and first barrier call name, got: {output:?}"
@@ -394,7 +406,7 @@ fn test_bar_init_content_for_chapter_5() -> Result<()> {
 fn test_bar_body_names_all_have_barrier_suffix() -> Result<()> {
     let doc = Document::load(outline_pdf_path())?;
     let config = make_config(vec![5]);
-    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let output = single_output(extract_and_generate_listings(&doc, &quiet_args(), &config)?);
     for line in output.lines().filter(|l| l.starts_with("BAR_BODY")) {
         assert!(
             line.contains("_barrier"),
@@ -410,7 +422,7 @@ fn test_bar_body_names_all_have_barrier_suffix() -> Result<()> {
 fn test_non_collective_chapter_produces_no_bar_output() -> Result<()> {
     let doc = Document::load(outline_pdf_path())?;
     let config = make_config(vec![3]);
-    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let output = single_output(extract_and_generate_listings(&doc, &quiet_args(), &config)?);
     assert!(
         !output.contains("BAR_INIT"),
         "non-collective chapter 3 should not produce BAR_INIT, got: {output:?}"
@@ -428,7 +440,7 @@ fn test_non_collective_chapter_produces_no_bar_output() -> Result<()> {
 fn test_multiple_chapters_bar_section_counts() -> Result<()> {
     let doc = Document::load(outline_pdf_path())?;
     let config = make_config(vec![3, 5]);
-    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let output = single_output(extract_and_generate_listings(&doc, &quiet_args(), &config)?);
     let bar_init_count = output.lines().filter(|l| l.starts_with("BAR_INIT")).count();
     let bar_body_count = output.lines().filter(|l| l.starts_with("BAR_BODY")).count();
     assert_eq!(
@@ -456,7 +468,7 @@ fn make_config_with_excludes(chapters: Vec<u32>, excludes: Vec<&str>) -> Config 
 fn test_exclude_one_call_reduces_body_count() -> Result<()> {
     let doc = Document::load(outline_pdf_path())?;
     let config = make_config_with_excludes(vec![3], vec!["Isend"]);
-    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let output = single_output(extract_and_generate_listings(&doc, &quiet_args(), &config)?);
     let body_count = output.lines().filter(|l| l.starts_with("BODY")).count();
     assert_eq!(
         body_count, 2,
@@ -470,7 +482,7 @@ fn test_exclude_one_call_reduces_body_count() -> Result<()> {
 fn test_excluded_call_name_absent_from_output() -> Result<()> {
     let doc = Document::load(outline_pdf_path())?;
     let config = make_config_with_excludes(vec![3], vec!["Isend"]);
-    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let output = single_output(extract_and_generate_listings(&doc, &quiet_args(), &config)?);
     let body_lines: Vec<&str> = output.lines().filter(|l| l.starts_with("BODY")).collect();
     assert!(
         !body_lines.iter().any(|l| l.contains("Isend")),
@@ -484,7 +496,7 @@ fn test_excluded_call_name_absent_from_output() -> Result<()> {
 fn test_non_excluded_calls_still_present() -> Result<()> {
     let doc = Document::load(outline_pdf_path())?;
     let config = make_config_with_excludes(vec![3], vec!["Isend"]);
-    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let output = single_output(extract_and_generate_listings(&doc, &quiet_args(), &config)?);
     assert!(
         output.contains("BODY Send\n"),
         "Send should still appear in output, got: {output:?}"
@@ -501,7 +513,7 @@ fn test_non_excluded_calls_still_present() -> Result<()> {
 fn test_exclude_multiple_calls() -> Result<()> {
     let doc = Document::load(outline_pdf_path())?;
     let config = make_config_with_excludes(vec![3], vec!["Send", "Isend"]);
-    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let output = single_output(extract_and_generate_listings(&doc, &quiet_args(), &config)?);
     let body_count = output.lines().filter(|l| l.starts_with("BODY")).count();
     assert_eq!(
         body_count, 1,
@@ -514,13 +526,13 @@ fn test_exclude_multiple_calls() -> Result<()> {
     Ok(())
 }
 
-/// Excluding all calls in a chapter must leave no BODY entries but must still
-/// produce the INIT entry for that chapter.
+/// Excluding all calls in a chapter must leave neither INIT nor BODY entries
+/// for that chapter because the chapter is effectively skipped.
 #[test]
-fn test_exclude_all_calls_leaves_only_init() -> Result<()> {
+fn test_exclude_all_calls_leaves_no_entries() -> Result<()> {
     let doc = Document::load(outline_pdf_path())?;
     let config = make_config_with_excludes(vec![3], vec!["Send", "Isend", "Recv"]);
-    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let output = single_output(extract_and_generate_listings(&doc, &quiet_args(), &config)?);
     let body_count = output.lines().filter(|l| l.starts_with("BODY")).count();
     let init_count = output.lines().filter(|l| l.starts_with("INIT")).count();
     assert_eq!(
@@ -528,8 +540,8 @@ fn test_exclude_all_calls_leaves_only_init() -> Result<()> {
         "excluding all calls should produce 0 BODY entries, got: {output:?}"
     );
     assert_eq!(
-        init_count, 1,
-        "INIT should still appear even when all calls are excluded, got: {output:?}"
+        init_count, 0,
+        "excluding all calls should produce 0 INIT entries, got: {output:?}"
     );
     Ok(())
 }
@@ -540,7 +552,7 @@ fn test_exclude_all_calls_leaves_only_init() -> Result<()> {
 fn test_exclude_nonexistent_call_has_no_effect() -> Result<()> {
     let doc = Document::load(outline_pdf_path())?;
     let config = make_config_with_excludes(vec![3], vec!["MPI_Nonexistent"]);
-    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let output = single_output(extract_and_generate_listings(&doc, &quiet_args(), &config)?);
     let body_count = output.lines().filter(|l| l.starts_with("BODY")).count();
     assert_eq!(
         body_count, 3,
@@ -555,8 +567,16 @@ fn test_empty_excludes_list_has_no_effect() -> Result<()> {
     let doc = Document::load(outline_pdf_path())?;
     let config_no_excludes = make_config(vec![3]);
     let config_empty_excludes = make_config_with_excludes(vec![3], vec![]);
-    let output_no = extract_and_generate_listings(&doc, &quiet_args(), &config_no_excludes)?;
-    let output_empty = extract_and_generate_listings(&doc, &quiet_args(), &config_empty_excludes)?;
+    let output_no = single_output(extract_and_generate_listings(
+        &doc,
+        &quiet_args(),
+        &config_no_excludes,
+    )?);
+    let output_empty = single_output(extract_and_generate_listings(
+        &doc,
+        &quiet_args(),
+        &config_empty_excludes,
+    )?);
     assert_eq!(
         output_no, output_empty,
         "empty excludes list should produce identical output to no excludes"
@@ -570,7 +590,7 @@ fn test_empty_excludes_list_has_no_effect() -> Result<()> {
 fn test_excludes_apply_across_multiple_chapters() -> Result<()> {
     let doc = Document::load(outline_pdf_path())?;
     let config = make_config_with_excludes(vec![3, 5], vec!["Send", "Bcast"]);
-    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let output = single_output(extract_and_generate_listings(&doc, &quiet_args(), &config)?);
     let body_count = output.lines().filter(|l| l.starts_with("BODY")).count();
     // chapter 3: 3 - 1 = 2; chapter 5: 4 - 1 = 3  → total 5
     assert_eq!(
@@ -585,7 +605,7 @@ fn test_excludes_apply_across_multiple_chapters() -> Result<()> {
 fn test_excludes_match_case_insensitively_with_optional_prefix() -> Result<()> {
     let doc = Document::load(outline_pdf_path())?;
     let config = make_config_with_excludes(vec![3], vec!["mpi_isend", "MPI_recv"]);
-    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let output = single_output(extract_and_generate_listings(&doc, &quiet_args(), &config)?);
     let body_lines: Vec<&str> = output.lines().filter(|l| l.starts_with("BODY")).collect();
     assert_eq!(
         body_lines,
@@ -600,7 +620,7 @@ fn test_excludes_match_case_insensitively_with_optional_prefix() -> Result<()> {
 fn test_excludes_apply_to_barrier_section() -> Result<()> {
     let doc = Document::load(outline_pdf_path())?;
     let config = make_config_with_excludes(vec![5], vec!["bcast"]);
-    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let output = single_output(extract_and_generate_listings(&doc, &quiet_args(), &config)?);
     let body_lines: Vec<&str> = output.lines().filter(|l| l.starts_with("BODY")).collect();
     let bar_body_lines: Vec<&str> = output
         .lines()
@@ -636,8 +656,16 @@ fn test_verbose_excludes_produces_identical_output_to_quiet() -> Result<()> {
     let doc = Document::load(outline_pdf_path())?;
     let config_quiet = make_config_with_excludes(vec![3], vec!["Isend"]);
     let config_verbose = make_config_with_excludes(vec![3], vec!["Isend"]);
-    let quiet_output = extract_and_generate_listings(&doc, &quiet_args(), &config_quiet)?;
-    let verbose_output = extract_and_generate_listings(&doc, &verbose_args(), &config_verbose)?;
+    let quiet_output = single_output(extract_and_generate_listings(
+        &doc,
+        &quiet_args(),
+        &config_quiet,
+    )?);
+    let verbose_output = single_output(extract_and_generate_listings(
+        &doc,
+        &verbose_args(),
+        &config_verbose,
+    )?);
     assert_eq!(
         quiet_output, verbose_output,
         "verbose mode with excludes should not change the returned output string"
@@ -651,7 +679,8 @@ fn test_verbose_excludes_produces_identical_output_to_quiet() -> Result<()> {
 fn test_output_section_order_with_collective_chapter() -> Result<()> {
     let doc = Document::load(outline_pdf_path())?;
     let config = make_config(vec![5]);
-    let output = extract_and_generate_listings(&doc, &quiet_args(), &config)?;
+    let output = single_output(extract_and_generate_listings(&doc, &quiet_args(), &config)?);
+
     let header_pos = output.find("HEADER").expect("HEADER must be present");
     let init_pos = output.find("INIT").expect("INIT must be present");
     let body_pos = output.find("BODY").expect("BODY must be present");

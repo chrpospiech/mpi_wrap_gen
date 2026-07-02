@@ -45,7 +45,9 @@ fn main() -> Result<()> {
         println!("PDF opened successfully.");
     }
     let output = listings::extract_and_generate_listings(&doc, &args, &config)?;
-    std::fs::write(&config.output_file, output)?;
-    println!("Output written to {}", config.output_file.display());
+    for (path, content) in output {
+        std::fs::write(&path, content)?;
+        println!("Output written to {}", path.display());
+    }
     Ok(())
 }
