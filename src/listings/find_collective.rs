@@ -210,9 +210,9 @@ fn test_chapter_missing_from_map_returns_error() -> Result<()> {
 }
 
 /// A config whose chapter list contains the same chapter number twice should
-/// still return `Ok(Some(_))` as long as that single chapter's title contains
-/// "collective" exactly once per iteration — the duplicate entry should not be
-/// treated as a second collective chapter.
+/// return an error because the function iterates `config.chapters` linearly,
+/// so seeing the same "collective" chapter twice triggers the
+/// "multiple collective chapters" error.
 #[test]
 fn test_duplicate_chapter_entry_in_config_returns_error() -> Result<()> {
     // The function iterates `config.chapters` linearly; seeing the same
