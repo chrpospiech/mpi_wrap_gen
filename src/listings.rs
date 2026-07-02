@@ -170,7 +170,7 @@ fn format_chapter_number(template: &Path, chapter_number: u32) -> Result<PathBuf
 
 /// This function extracts the MPI call information from the PDF document for
 /// the specified list of chapters as listed in the configuration. Depending
-/// on the configuration, this information is written to a a single string variable
+/// on the configuration, this information is written to a single string variable
 /// or to separate string variables for each chapter. The generated output is based
 /// on the templates provided in the configuration. The function returns a Result
 /// containing the generated output as a vector of tuples (PathBuf, String) or an error.
