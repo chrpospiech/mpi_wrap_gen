@@ -107,20 +107,6 @@ fn find_collective_chapter(
                 .join("\n");
                 bail!(bail_msg);
             }
-            if let Some(col_item) = collective_chapter {
-                let ch_found: u32 = chapter;
-                let title_found: &str = &title;
-                let ch_second: u32 = col_item;
-                let title_second: &str = &get_chapter_title(chapter_indices, ch_second)?;
-                let bail_msg = [
-                    "Multiple collective chapters found:".to_string(),
-                    format!("  chapter {} (\"{}\")", ch_second, &title_second),
-                    format!("  chapter {} (\"{}\")", ch_found, &title_found),
-                    "Only one collective chapter is supported.".to_string(),
-                ]
-                .join("\n");
-                bail!(bail_msg);
-            }
             collective_chapter = Some(chapter);
         }
     }
