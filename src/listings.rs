@@ -286,6 +286,7 @@ pub fn extract_and_generate_listings(
         );
     }
     let chapter_indices: ChapterMap = find_chapter_pages(doc)?;
+    let collective_chapter = find_collective_chapter(&chapter_indices, args, config)?;
     let excludes = create_exclude_set(config);
     let mut output: Output = Vec::new();
 
@@ -334,9 +335,15 @@ pub fn extract_and_generate_listings(
             continue; // Skip to next chapter if all MPI calls are excluded
         }
 
+        let is_collective_chapter = collective_chapter == Some(chapter);
+
         let chapter_templates = ChapterTemplates {
             ch_init: config.templates.ch_init.clone(),
-            ch_decl: config.templates.ch_decl.clone(),
+            ch_decl: if is_collective_chapter {
+                config.templates.ch_decl.clone() + &config.templates.ch_load_imb
+            } else {
+                config.templates.ch_decl.clone()
+            },
             ch_msize: config.templates.ch_msize.clone(),
             ch_body: config.templates.ch_body.clone(),
         };
@@ -361,7 +368,6 @@ pub fn extract_and_generate_listings(
     }
 
     // If a collective chapter was found, add the collective operations section
-    let collective_chapter = find_collective_chapter(&chapter_indices, args, config)?;
     if let Some(collective_chapter) = collective_chapter {
         if args.verbose {
             println!(
