@@ -377,35 +377,20 @@ pub fn extract_and_generate_listings(
         if !filtered_mpi_calls.is_empty() {
             let chapter_title = get_chapter_title(&chapter_indices, collective_chapter)?;
 
-            // Add barrier chapter init template
-            if args.verbose {
-                println!(
-                    "Adding barrier chapter init template for chapter {} to output.",
-                    collective_chapter
-                );
-            }
-            output_str += &generate_output(
-                &config.templates.bar_init,
+            let chapter_templates = ChapterTemplates {
+                ch_init: config.templates.bar_init.clone(),
+                ch_decl: String::new(),
+                ch_msize: String::new(),
+                ch_body: config.templates.bar_body.clone(),
+            };
+
+            output_str += &generate_chapter_output(
+                &chapter_templates,
                 collective_chapter,
                 &chapter_title,
-                filtered_mpi_calls.first().unwrap_or(&mpi_calls[0]),
+                filtered_mpi_calls,
+                args.verbose,
             )?;
-
-            for mpi_call in filtered_mpi_calls {
-                // Add barrier chapter body template with MPI call information
-                if args.verbose {
-                    println!(
-                        "Adding barrier body template for MPI call {} to output.",
-                        mpi_call.0
-                    );
-                }
-                output_str += &generate_output(
-                    &config.templates.bar_body,
-                    collective_chapter,
-                    &chapter_title,
-                    &mpi_call,
-                )?;
-            }
         } else if args.verbose {
             println!("No MPI calls found in chapter {}.", collective_chapter);
         }
