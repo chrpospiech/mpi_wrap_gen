@@ -19,7 +19,9 @@
 use crate::chapters::{find_chapter_pages, get_chapter_title, ChapterMap};
 use crate::cmdline::CliArgs;
 use crate::config::Config;
-use crate::mpi_calls::{create_barrier_names, mpi_calls_for_chapter, MpiCallInfo};
+use crate::mpi_calls::{
+    create_barrier_names, filter_excluded_mpi_calls, mpi_calls_for_chapter, MpiCallInfo,
+};
 use crate::template::generate_output;
 use anyhow::{bail, Result};
 use dynfmt2::{Format, PythonFormat};
@@ -233,11 +235,8 @@ pub fn extract_and_generate_listings(
         }
         let mpi_calls: Vec<MpiCallInfo> = mpi_calls_for_chapter(doc, &chapter_indices, chapter)?;
 
-        let filtered_mpi_calls: Vec<MpiCallInfo> = mpi_calls
-            .iter()
-            .filter(|mpi_call| !is_excluded(&excludes, &mpi_call.0))
-            .cloned()
-            .collect();
+        let filtered_mpi_calls =
+            filter_excluded_mpi_calls(&mpi_calls, |name| is_excluded(&excludes, name));
 
         if filtered_mpi_calls.is_empty() {
             if args.verbose {
@@ -306,11 +305,8 @@ pub fn extract_and_generate_listings(
         }
         let mpi_calls: Vec<MpiCallInfo> =
             create_barrier_names(doc, &chapter_indices, collective_chapter)?;
-        let filtered_mpi_calls: Vec<MpiCallInfo> = mpi_calls
-            .iter()
-            .filter(|mpi_call| !is_excluded(&excludes, &mpi_call.0))
-            .cloned()
-            .collect();
+        let filtered_mpi_calls =
+            filter_excluded_mpi_calls(&mpi_calls, |name| is_excluded(&excludes, name));
 
         if !filtered_mpi_calls.is_empty() {
             let chapter_title = get_chapter_title(&chapter_indices, collective_chapter)?;
