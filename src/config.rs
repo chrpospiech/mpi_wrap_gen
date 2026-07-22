@@ -25,11 +25,19 @@ mod tests;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Templates {
+    #[serde(default)]
     pub header: String,
     pub ch_init: String,
+    #[serde(default)]
+    pub ch_decl: String,
+    #[serde(default)]
+    pub ch_load_imb: String,
+    #[serde(default)]
+    pub ch_msize: String,
     pub ch_body: String,
     pub bar_init: String,
     pub bar_body: String,
+    #[serde(default)]
     pub footer: String,
 }
 
@@ -61,6 +69,18 @@ pub fn print_config(config: &Config) {
     println!("Output File Path: {}", config.output_file.display());
     println!("Header Template:\n{}", config.templates.header);
     println!("Chapter Init Template:\n{}", config.templates.ch_init);
+    println!(
+        "Chapter Declaration Template:\n{}",
+        config.templates.ch_decl
+    );
+    println!(
+        "Chapter Load Imbalance Template:\n{}",
+        config.templates.ch_load_imb
+    );
+    println!(
+        "Chapter Message Size Template:\n{}",
+        config.templates.ch_msize
+    );
     println!("Chapter Body Template:\n{}", config.templates.ch_body);
     println!("Barrier Init Template:\n{}", config.templates.bar_init);
     println!("Barrier Body Template:\n{}", config.templates.bar_body);

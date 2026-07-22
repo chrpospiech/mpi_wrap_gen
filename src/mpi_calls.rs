@@ -203,6 +203,26 @@ pub fn create_barrier_names(
     Ok(barrier_calls)
 }
 
+/// Filters a slice of MPI calls using a caller-supplied exclusion predicate.
+/// The predicate receives the call name and returns `true` if the call should be excluded.
+///
+/// Args:
+///     calls: A slice of [`MpiCallInfo`] to filter (original slice remains usable after the call).
+///     exclude_pred: A closure `Fn(&str) -> bool` that returns `true` for calls to exclude.
+///
+/// Returns:
+///     A new `Vec<MpiCallInfo>` containing only the calls for which `exclude_pred` returns `false`.
+pub fn filter_excluded_mpi_calls<F>(calls: &[MpiCallInfo], exclude_pred: F) -> Vec<MpiCallInfo>
+where
+    F: Fn(&str) -> bool,
+{
+    calls
+        .iter()
+        .filter(|(call_name, _)| !exclude_pred(call_name))
+        .cloned()
+        .collect()
+}
+
 /// Parse the parameter string from an MPI call signature.
 /// Handles missing spaces (e.g., "constvoid*buf" -> "const void* buf")
 /// by inserting spaces before C type keywords and after pointer operators,

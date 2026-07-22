@@ -19,11 +19,14 @@
 use crate::chapters::{find_chapter_pages, get_chapter_title, ChapterMap};
 use crate::cmdline::CliArgs;
 use crate::config::Config;
-use crate::mpi_calls::{create_barrier_names, mpi_calls_for_chapter, MpiCallInfo};
+use crate::mpi_calls::{
+    create_barrier_names, filter_excluded_mpi_calls, mpi_calls_for_chapter, MpiCallInfo,
+};
 use crate::template::generate_output;
 use anyhow::{bail, Result};
 use dynfmt2::{Format, PythonFormat};
 use lopdf::Document;
+use serde::Deserialize;
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
@@ -40,6 +43,16 @@ mod format_chapter_number_tests;
 mod functional_tests;
 
 pub type Output = Vec<(PathBuf, String)>;
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct ChapterTemplates {
+    pub ch_init: String,
+    #[serde(default)]
+    pub ch_decl: String,
+    #[serde(default)]
+    pub ch_msize: String,
+    pub ch_body: String,
+}
 
 /// Normalizes the MPI call name by removing the "mpi_" prefix and "_barrier" suffix, if present.
 /// This function is used to create a set of excluded MPI call names for filtering purposes.
@@ -154,6 +167,90 @@ fn format_chapter_number(template: &Path, chapter_number: u32) -> Result<PathBuf
     Ok(output.into())
 }
 
+/// Generates the chapter output string for a given chapter, applying the chapter
+/// init template once and the chapter body template for each MPI call.
+///
+/// Args:
+///     chapter_template: References to the chapter init and body templates.
+///     chapter: The chapter number.
+///     chapter_title: The title of the chapter.
+///     mpi_calls: The filtered MPI calls for this chapter (must be non-empty).
+///     verbose: Whether to print progress messages.
+///
+/// Returns:
+///     A `Result<String>` containing the generated chapter output.
+fn generate_chapter_output(
+    chapter_template: &ChapterTemplates,
+    chapter: u32,
+    chapter_title: &str,
+    mpi_calls: Vec<MpiCallInfo>,
+    verbose: bool,
+) -> Result<String> {
+    let mut ch_output = String::new();
+
+    // Add chapter init template
+    if !chapter_template.ch_init.is_empty() {
+        if verbose {
+            println!(
+                "Adding chapter init template for chapter {} to output.",
+                chapter
+            );
+        }
+
+        let first_call = mpi_calls.first().ok_or_else(|| {
+            anyhow::anyhow!(
+                "generate_chapter_output requires at least one MPI call for chapter {}.",
+                chapter
+            )
+        })?;
+
+        ch_output += &generate_output(
+            &chapter_template.ch_init,
+            chapter,
+            chapter_title,
+            first_call,
+        )?;
+    }
+    for mpi_call in mpi_calls {
+        // Add function declaration template with MPI call information
+        if verbose && !chapter_template.ch_decl.is_empty() {
+            println!(
+                "Adding function declaration template for MPI call {} to output.",
+                mpi_call.0
+            );
+        }
+        if !chapter_template.ch_decl.is_empty() {
+            ch_output +=
+                &generate_output(&chapter_template.ch_decl, chapter, chapter_title, &mpi_call)?;
+        }
+        if verbose && !chapter_template.ch_msize.is_empty() {
+            println!(
+                "Adding message size template for MPI call {} to output.",
+                mpi_call.0
+            );
+        }
+        if !chapter_template.ch_msize.is_empty() {
+            ch_output += &generate_output(
+                &chapter_template.ch_msize,
+                chapter,
+                chapter_title,
+                &mpi_call,
+            )?;
+        }
+        // Add chapter body template with MPI call information
+        if verbose && !chapter_template.ch_body.is_empty() {
+            println!(
+                "Adding body template for MPI call {} to output.",
+                mpi_call.0
+            );
+        }
+        ch_output +=
+            &generate_output(&chapter_template.ch_body, chapter, chapter_title, &mpi_call)?;
+    }
+
+    Ok(ch_output)
+}
+
 /// This function extracts the MPI call information from the PDF document for
 /// the specified list of chapters as listed in the configuration. Depending
 /// on the configuration, this information is written to a single string variable
@@ -200,6 +297,7 @@ pub fn extract_and_generate_listings(
         );
     }
     let chapter_indices: ChapterMap = find_chapter_pages(doc)?;
+    let collective_chapter = find_collective_chapter(&chapter_indices, args, config)?;
     let excludes = create_exclude_set(config);
     let mut output: Output = Vec::new();
 
@@ -231,13 +329,12 @@ pub fn extract_and_generate_listings(
         if args.verbose {
             println!("Extracting MPI calls for chapter {}", chapter);
         }
+        let chapter_title = get_chapter_title(&chapter_indices, chapter)?;
+
         let mpi_calls: Vec<MpiCallInfo> = mpi_calls_for_chapter(doc, &chapter_indices, chapter)?;
 
-        let filtered_mpi_calls: Vec<MpiCallInfo> = mpi_calls
-            .iter()
-            .filter(|mpi_call| !is_excluded(&excludes, &mpi_call.0))
-            .cloned()
-            .collect();
+        let filtered_mpi_calls =
+            filter_excluded_mpi_calls(&mpi_calls, |name| is_excluded(&excludes, name));
 
         if filtered_mpi_calls.is_empty() {
             if args.verbose {
@@ -249,40 +346,26 @@ pub fn extract_and_generate_listings(
             continue; // Skip to next chapter if all MPI calls are excluded
         }
 
-        let mut ch_output = String::new();
+        let is_collective_chapter = collective_chapter == Some(chapter);
 
-        let chapter_title = get_chapter_title(&chapter_indices, chapter)?;
+        let chapter_templates = ChapterTemplates {
+            ch_init: config.templates.ch_init.clone(),
+            ch_decl: if is_collective_chapter {
+                config.templates.ch_decl.clone() + &config.templates.ch_load_imb
+            } else {
+                config.templates.ch_decl.clone()
+            },
+            ch_msize: config.templates.ch_msize.clone(),
+            ch_body: config.templates.ch_body.clone(),
+        };
 
-        // Add chapter init template
-        if args.verbose {
-            println!(
-                "Adding chapter init template for chapter {} to output.",
-                chapter
-            );
-        }
-
-        ch_output += &generate_output(
-            &config.templates.ch_init,
+        let ch_output = generate_chapter_output(
+            &chapter_templates,
             chapter,
             &chapter_title,
-            filtered_mpi_calls.first().unwrap_or(&mpi_calls[0]),
+            filtered_mpi_calls,
+            args.verbose,
         )?;
-
-        for mpi_call in filtered_mpi_calls {
-            // Add chapter body template with MPI call information
-            if args.verbose {
-                println!(
-                    "Adding body template for MPI call {} to output.",
-                    mpi_call.0
-                );
-            }
-            ch_output += &generate_output(
-                &config.templates.ch_body,
-                chapter,
-                &chapter_title,
-                &mpi_call,
-            )?;
-        }
         if single_output_file {
             output_str += &ch_output;
         } else {
@@ -296,7 +379,6 @@ pub fn extract_and_generate_listings(
     }
 
     // If a collective chapter was found, add the collective operations section
-    let collective_chapter = find_collective_chapter(&chapter_indices, args, config)?;
     if let Some(collective_chapter) = collective_chapter {
         if args.verbose {
             println!(
@@ -306,44 +388,26 @@ pub fn extract_and_generate_listings(
         }
         let mpi_calls: Vec<MpiCallInfo> =
             create_barrier_names(doc, &chapter_indices, collective_chapter)?;
-        let filtered_mpi_calls: Vec<MpiCallInfo> = mpi_calls
-            .iter()
-            .filter(|mpi_call| !is_excluded(&excludes, &mpi_call.0))
-            .cloned()
-            .collect();
+        let filtered_mpi_calls =
+            filter_excluded_mpi_calls(&mpi_calls, |name| is_excluded(&excludes, name));
 
         if !filtered_mpi_calls.is_empty() {
             let chapter_title = get_chapter_title(&chapter_indices, collective_chapter)?;
 
-            // Add barrier chapter init template
-            if args.verbose {
-                println!(
-                    "Adding barrier chapter init template for chapter {} to output.",
-                    collective_chapter
-                );
-            }
-            output_str += &generate_output(
-                &config.templates.bar_init,
+            let chapter_templates = ChapterTemplates {
+                ch_init: config.templates.bar_init.clone(),
+                ch_decl: String::new(),
+                ch_msize: String::new(),
+                ch_body: config.templates.bar_body.clone(),
+            };
+
+            output_str += &generate_chapter_output(
+                &chapter_templates,
                 collective_chapter,
                 &chapter_title,
-                filtered_mpi_calls.first().unwrap_or(&mpi_calls[0]),
+                filtered_mpi_calls,
+                args.verbose,
             )?;
-
-            for mpi_call in filtered_mpi_calls {
-                // Add barrier chapter body template with MPI call information
-                if args.verbose {
-                    println!(
-                        "Adding barrier body template for MPI call {} to output.",
-                        mpi_call.0
-                    );
-                }
-                output_str += &generate_output(
-                    &config.templates.bar_body,
-                    collective_chapter,
-                    &chapter_title,
-                    &mpi_call,
-                )?;
-            }
         } else if args.verbose {
             println!("No MPI calls found in chapter {}.", collective_chapter);
         }

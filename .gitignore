@@ -8,3 +8,4 @@ mpi_wrap_gen.code-workspace
 pyproject.toml
 .mdl*
 uv.lock
+/lmx_trace
