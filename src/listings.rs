@@ -219,9 +219,10 @@ fn generate_chapter_output(
                 mpi_call.0
             );
         }
-        ch_output +=
-            &generate_output(&chapter_template.ch_decl, chapter, chapter_title, &mpi_call)?;
-        // Add message size template with MPI call information
+        if !chapter_template.ch_decl.is_empty() {
+            ch_output +=
+                &generate_output(&chapter_template.ch_decl, chapter, chapter_title, &mpi_call)?;
+        }
         if verbose && !chapter_template.ch_msize.is_empty() {
             println!(
                 "Adding message size template for MPI call {} to output.",
