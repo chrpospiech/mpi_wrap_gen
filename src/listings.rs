@@ -189,20 +189,28 @@ fn generate_chapter_output(
     let mut ch_output = String::new();
 
     // Add chapter init template
-    if verbose && !chapter_template.ch_init.is_empty() {
-        println!(
-            "Adding chapter init template for chapter {} to output.",
-            chapter
-        );
+    if !chapter_template.ch_init.is_empty() {
+        if verbose {
+            println!(
+                "Adding chapter init template for chapter {} to output.",
+                chapter
+            );
+        }
+
+        let first_call = mpi_calls.first().ok_or_else(|| {
+            anyhow::anyhow!(
+                "generate_chapter_output requires at least one MPI call for chapter {}.",
+                chapter
+            )
+        })?;
+
+        ch_output += &generate_output(
+            &chapter_template.ch_init,
+            chapter,
+            chapter_title,
+            first_call,
+        )?;
     }
-
-    ch_output += &generate_output(
-        &chapter_template.ch_init,
-        chapter,
-        chapter_title,
-        mpi_calls.first().unwrap_or(&mpi_calls[0]),
-    )?;
-
     for mpi_call in mpi_calls {
         // Add function declaration template with MPI call information
         if verbose && !chapter_template.ch_decl.is_empty() {
