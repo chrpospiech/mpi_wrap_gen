@@ -229,12 +229,14 @@ fn generate_chapter_output(
                 mpi_call.0
             );
         }
-        ch_output += &generate_output(
-            &chapter_template.ch_msize,
-            chapter,
-            chapter_title,
-            &mpi_call,
-        )?;
+        if !chapter_template.ch_msize.is_empty() {
+            ch_output += &generate_output(
+                &chapter_template.ch_msize,
+                chapter,
+                chapter_title,
+                &mpi_call,
+            )?;
+        }
         // Add chapter body template with MPI call information
         if verbose && !chapter_template.ch_body.is_empty() {
             println!(
