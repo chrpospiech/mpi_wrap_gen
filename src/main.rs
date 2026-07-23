@@ -30,11 +30,6 @@ fn main() -> Result<()> {
     let args = cmdline::parse_args()?;
     cmdline::echo_args(&args)?;
 
-    if args.dry_run {
-        println!("Dry-run mode: skipping PDF processing.");
-        return Ok(());
-    }
-
     let config = config::read_config(&args.config_file)?;
     if args.verbose {
         config::print_config(&config);
@@ -45,6 +40,11 @@ fn main() -> Result<()> {
         println!("PDF opened successfully.");
     }
     let output = listings::extract_and_generate_listings(&doc, &args, &config)?;
+    if args.dry_run {
+        println!("Dry-run mode: No output will be written.");
+        return Ok(());
+    }
+
     for (path, content) in output {
         std::fs::write(&path, content)?;
         println!("Output written to {}", path.display());

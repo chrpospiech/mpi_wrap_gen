@@ -41,7 +41,14 @@ pub struct CliArgs {
 }
 
 pub fn parse_args() -> Result<CliArgs> {
-    Ok(CliArgs::parse())
+    let mut args = CliArgs::parse();
+    if args.config_file.trim().is_empty() {
+        anyhow::bail!("Configuration file must be provided.");
+    }
+    if args.dry_run && !args.verbose {
+        args.verbose = true;
+    }
+    Ok(args)
 }
 
 pub fn echo_args(args: &CliArgs) -> Result<()> {
