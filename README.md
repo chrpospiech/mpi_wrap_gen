@@ -40,6 +40,8 @@ mpi_wrap_gen [OPTIONS] <CONFIG_FILE>
 |-------------------|-------------------------------------------------------------------------|
 | `-v`, `--verbose` | Enable verbose output (default: false)                                  |
 | `-D`, `--dry-run` | Print parsed CLI arguments and exit before loading the config or PDF    |
+| `-h`, `--help`    | Print help                                                              |
+| `-V`, `--version` | Print version                                                           |
 
 ### Arguments
 
