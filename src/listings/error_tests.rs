@@ -48,6 +48,7 @@ fn make_config(chapters: Vec<u32>) -> Config {
     Config {
         mpi_pdf: PathBuf::from("dummy.pdf"),
         output_file: PathBuf::from("dummy_output.c"),
+        language: crate::config::Languages::C,
         templates: Templates {
             header: "HEADER\n".to_string(),
             ch_init: "INIT %(chapter_number)d %(chapter_title)s %(mpi_call_name)s\n".to_string(),
