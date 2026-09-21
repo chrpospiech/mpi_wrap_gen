@@ -42,9 +42,21 @@ pub struct Templates {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+pub enum Languages {
+    C,
+    Fortran,
+}
+
+fn default_language() -> Languages {
+    Languages::C
+}
+
+#[derive(Debug, Clone, Deserialize)]
 pub struct Config {
     pub mpi_pdf: PathBuf,
     pub output_file: PathBuf,
+    #[serde(default = "default_language")]
+    pub language: Languages,
     pub templates: Templates,
     pub chapters: Vec<u32>,
     #[serde(default)]
@@ -67,6 +79,7 @@ pub fn read_config(config_path: &str) -> Result<Config> {
 pub fn print_config(config: &Config) {
     println!("MPI PDF Path: {}", config.mpi_pdf.display());
     println!("Output File Path: {}", config.output_file.display());
+    println!("Language: {:?}", config.language);
     println!("Header Template:\n{}", config.templates.header);
     println!("Chapter Init Template:\n{}", config.templates.ch_init);
     println!(
