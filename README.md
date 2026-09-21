@@ -8,7 +8,8 @@ Create wrapper files for MPI profiler.
 (e.g. `mpi31-report.pdf`) to extract MPI function signatures from specified chapters,
 and generates a C source file using configurable templates.
 
-This tool replaces an earlier Perl-based workflow that relied on a plain-text conversion of the MPI standard.
+This tool replaces an earlier Perl-based workflow that relied on a plain-text
+conversion of the MPI standard.
 
 ## Features
 
