@@ -9,7 +9,7 @@ edition = "2021"
 anyhow = "1.0.104"
 clap = { version = "4.6.5", features = ["derive"] }
 dynfmt2 = { version = "0.4.0", features = ["python"] }
-lopdf = "0.44.0"
+lopdf = { version = "0.44.0", default-features = false, features = ["chrono", "jiff", "rayon"] }
 regex = "1.13.1"
 serde = { version = "1.0.229", features = ["derive"] }
 serde_yaml_ng = "0.10.0"
