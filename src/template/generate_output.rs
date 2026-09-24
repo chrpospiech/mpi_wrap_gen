@@ -16,8 +16,24 @@
 // Description: ~/tools/Rust/mpi_wrap_gen/src/template/generate_output.rs
 // Author: Dr. Christoph Pospiech
 
-use super::generate_output;
+use super::generate_output as generate_output_with_language;
+use crate::config::Languages;
 use anyhow::Result;
+
+fn generate_output(
+    template: &str,
+    chapter_number: u32,
+    chapter_title: &str,
+    mpi_call_info: &(String, Vec<String>),
+) -> Result<String> {
+    generate_output_with_language(
+        template,
+        chapter_number,
+        chapter_title,
+        mpi_call_info,
+        &Languages::C,
+    )
+}
 
 fn sample_call_info() -> (String, Vec<String>) {
     (

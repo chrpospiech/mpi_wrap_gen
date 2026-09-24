@@ -18,7 +18,7 @@
 
 use crate::chapters::{find_chapter_pages, get_chapter_title, ChapterMap};
 use crate::cmdline::CliArgs;
-use crate::config::Config;
+use crate::config::{Config, Languages};
 use crate::mpi_calls::{
     create_barrier_names, filter_excluded_mpi_calls, mpi_calls_for_chapter, MpiCallInfo,
 };
@@ -113,8 +113,8 @@ fn find_collective_chapter(
                 let title_second: &str = &get_chapter_title(chapter_indices, ch_second)?;
                 let bail_msg = [
                     "Multiple collective chapters found:".to_string(),
-                    format!("  chapter {} (\"{}\")", ch_second, &title_second),
-                    format!("  chapter {} (\"{}\")", ch_found, &title_found),
+                    format!("  chapter {} (\"{}\")", ch_second, title_second),
+                    format!("  chapter {} (\"{}\")", ch_found, title_found),
                     "Only one collective chapter is supported.".to_string(),
                 ]
                 .join("\n");
@@ -175,6 +175,7 @@ fn format_chapter_number(template: &Path, chapter_number: u32) -> Result<PathBuf
 ///     chapter: The chapter number.
 ///     chapter_title: The title of the chapter.
 ///     mpi_calls: The filtered MPI calls for this chapter (must be non-empty).
+///     language: The programming language to be used for generating the chapter output.
 ///     verbose: Whether to print progress messages.
 ///
 /// Returns:
@@ -184,6 +185,7 @@ fn generate_chapter_output(
     chapter: u32,
     chapter_title: &str,
     mpi_calls: Vec<MpiCallInfo>,
+    language: &Languages,
     verbose: bool,
 ) -> Result<String> {
     let mut ch_output = String::new();
@@ -209,6 +211,7 @@ fn generate_chapter_output(
             chapter,
             chapter_title,
             first_call,
+            language,
         )?;
     }
     for mpi_call in mpi_calls {
@@ -220,8 +223,13 @@ fn generate_chapter_output(
             );
         }
         if !chapter_template.ch_decl.is_empty() {
-            ch_output +=
-                &generate_output(&chapter_template.ch_decl, chapter, chapter_title, &mpi_call)?;
+            ch_output += &generate_output(
+                &chapter_template.ch_decl,
+                chapter,
+                chapter_title,
+                &mpi_call,
+                language,
+            )?;
         }
         if verbose && !chapter_template.ch_msize.is_empty() {
             println!(
@@ -235,6 +243,7 @@ fn generate_chapter_output(
                 chapter,
                 chapter_title,
                 &mpi_call,
+                language,
             )?;
         }
         // Add chapter body template with MPI call information
@@ -244,8 +253,13 @@ fn generate_chapter_output(
                 mpi_call.0
             );
         }
-        ch_output +=
-            &generate_output(&chapter_template.ch_body, chapter, chapter_title, &mpi_call)?;
+        ch_output += &generate_output(
+            &chapter_template.ch_body,
+            chapter,
+            chapter_title,
+            &mpi_call,
+            language,
+        )?;
     }
 
     Ok(ch_output)
@@ -364,6 +378,7 @@ pub fn extract_and_generate_listings(
             chapter,
             &chapter_title,
             filtered_mpi_calls,
+            &config.language,
             args.verbose,
         )?;
         if single_output_file {
@@ -406,6 +421,7 @@ pub fn extract_and_generate_listings(
                 collective_chapter,
                 &chapter_title,
                 filtered_mpi_calls,
+                &config.language,
                 args.verbose,
             )?;
         } else if args.verbose {
