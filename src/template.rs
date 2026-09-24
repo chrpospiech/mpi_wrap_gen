@@ -16,6 +16,7 @@
 // Description: ~/tools/Rust/mpi_wrap_gen/src/template.rs
 // Author: Dr. Christoph Pospiech
 
+use crate::arguments::format_mpi_call;
 use crate::config::Languages;
 use crate::mpi_calls::MpiCallInfo;
 use anyhow::Result;
@@ -79,7 +80,7 @@ pub fn generate_output(
     chapter_number: u32,
     chapter_title: &str,
     mpi_call_info: &MpiCallInfo,
-    _language: &Languages,
+    language: &Languages,
 ) -> Result<String> {
     let mpi_call_name_lc = mpi_call_info.0.to_lowercase();
     let vars = std::collections::HashMap::<String, String>::from([
@@ -92,8 +93,8 @@ pub fn generate_output(
             format!("{}_id,", mpi_call_name_lc),
         ),
         (
-            "mpi_call_params".to_string(),
-            format!("{:?}", mpi_call_info.1),
+            "mpi_call".to_string(),
+            format_mpi_call(language, mpi_call_info)?,
         ),
     ]);
     let output = PythonFormat

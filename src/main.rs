@@ -19,6 +19,7 @@
 use anyhow::Result;
 use lopdf::Document;
 
+pub(crate) mod arguments;
 pub(crate) mod chapters;
 pub(crate) mod cmdline;
 pub(crate) mod config;
