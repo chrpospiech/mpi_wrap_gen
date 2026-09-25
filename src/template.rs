@@ -93,10 +93,6 @@ pub fn generate_output(
             format!("{}_id,", mpi_call_name_lc),
         ),
         (
-            "mpi_call_params".to_string(),
-            format!("{:?}", mpi_call_info.1),
-        ),
-        (
             "mpi_call".to_string(),
             format_mpi_call(language, mpi_call_info)?,
         ),
