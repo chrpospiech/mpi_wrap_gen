@@ -24,6 +24,7 @@ pub(crate) mod cmdline;
 pub(crate) mod config;
 pub(crate) mod listings;
 pub(crate) mod mpi_calls;
+pub(crate) mod prettify;
 pub(crate) mod template;
 
 fn main() -> Result<()> {
@@ -46,6 +47,7 @@ fn main() -> Result<()> {
     }
 
     for (path, content) in output {
+        let content = prettify::prettify_content(&config.language, &content)?;
         std::fs::write(&path, content)?;
         println!("Output written to {}", path.display());
     }
