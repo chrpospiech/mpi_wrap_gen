@@ -39,7 +39,13 @@ pub fn prettify_content(content: &str) -> Result<String> {
         })?;
     let mut stdin = child.stdin.take().expect("stdin was piped");
     let content = content.to_owned();
-    let write_handle = std::thread::spawn(move || stdin.write_all(content.as_bytes()));
+    // A broken pipe here just means the formatter exited before reading all
+    // input (e.g. it errored out early); the real failure is reflected in
+    // its exit status or output, so don't treat this as a hard error.
+    let write_handle = std::thread::spawn(move || match stdin.write_all(content.as_bytes()) {
+        Err(e) if e.kind() == std::io::ErrorKind::BrokenPipe => Ok(()),
+        result => result,
+    });
 
     let mut stdout = child.stdout.take().expect("stdout was piped");
     let mut formatted = Vec::new();
