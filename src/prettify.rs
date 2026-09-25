@@ -16,19 +16,14 @@
 // Description: ~/tools/Rust/mpi_wrap_gen/src/prettify.rs
 // Author: Dr. Christoph Pospiech
 
-use crate::config::Languages;
 use anyhow::{bail, Context, Result};
 use std::io::Write;
 use std::process::{Command, Stdio};
 
-/// Pretty-prints generated source `content` by piping it through an
-/// external formatter chosen based on `language` (`clang-format` for C,
-/// `fprettify` for Fortran).
-pub fn prettify_content(language: &Languages, content: &str) -> Result<String> {
-    let formatter = match language {
-        Languages::C => "clang-format",
-        Languages::Fortran => "fprettify",
-    };
+/// Pretty-prints generated source `content` which is supposed to be valid
+/// `C` source code by piping it through the external formatter `clang-format`.
+pub fn prettify_content(content: &str) -> Result<String> {
+    let formatter = "clang-format";
     let mut child = Command::new(formatter)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())

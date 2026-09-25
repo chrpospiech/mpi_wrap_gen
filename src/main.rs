@@ -50,7 +50,7 @@ fn main() -> Result<()> {
         let content = if args.no_prettify {
             content
         } else {
-            prettify::prettify_content(&config.language, &content)?
+            prettify::prettify_content(&content)?
         };
         std::fs::write(&path, content)?;
         println!("Output written to {}", path.display());
