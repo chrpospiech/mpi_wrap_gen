@@ -20,6 +20,9 @@ use anyhow::{bail, Context, Result};
 use std::io::Write;
 use std::process::{Command, Stdio};
 
+#[cfg(test)]
+mod prettify_content;
+
 /// Pretty-prints generated source `content` which is supposed to be valid
 /// `C` source code by piping it through the external formatter `clang-format`.
 pub fn prettify_content(content: &str) -> Result<String> {
