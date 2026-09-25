@@ -41,6 +41,7 @@ mpi_wrap_gen [OPTIONS] <CONFIG_FILE>
 |-------------------|-------------------------------------------------------------------------|
 | `-v`, `--verbose` | Enable verbose output (default: false)                                  |
 | `-D`, `--dry-run` | Print parsed CLI arguments and exit before loading the config or PDF    |
+| `--no-prettify`   | Disable prettifying the generated output code                            |
 | `-h`, `--help`    | Print help                                                              |
 | `-V`, `--version` | Print version                                                           |
 
@@ -56,6 +57,7 @@ mpi_wrap_gen [OPTIONS] <CONFIG_FILE>
 mpi_wrap_gen config.yml
 mpi_wrap_gen --verbose config.yml
 mpi_wrap_gen --dry-run config.yml
+mpi_wrap_gen --no-prettify config.yml
 ```
 
 ## Configuration File
