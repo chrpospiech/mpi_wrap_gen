@@ -36,6 +36,10 @@ pub struct CliArgs {
     #[arg(short = 'D', long, default_value_t = false)]
     pub dry_run: bool,
 
+    /// Disable prettifying the generated output code
+    #[arg(long, default_value_t = false)]
+    pub no_prettify: bool,
+
     /// Configuration file to process (must be provided by the user)
     pub config_file: String,
 }
@@ -58,6 +62,7 @@ pub fn echo_args(args: &CliArgs) -> Result<()> {
     if args.verbose || args.dry_run {
         println!("Verbose: {}", args.verbose);
         println!("Dry run: {}", args.dry_run);
+        println!("No prettify: {}", args.no_prettify);
         println!("Configuration file: {}", args.config_file);
     };
     Ok(())
