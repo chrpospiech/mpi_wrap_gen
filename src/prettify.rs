@@ -16,8 +16,8 @@
 // Description: ~/tools/Rust/mpi_wrap_gen/src/prettify.rs
 // Author: Dr. Christoph Pospiech
 
-use anyhow::{bail, Context, Result};
-use std::io::Write;
+use anyhow::{anyhow, bail, Context, Result};
+use std::io::{Read, Write};
 use std::process::{Command, Stdio};
 
 #[cfg(test)]
@@ -37,20 +37,30 @@ pub fn prettify_content(content: &str) -> Result<String> {
                 formatter
             )
         })?;
-    child
-        .stdin
-        .take()
-        .expect("stdin was piped")
-        .write_all(content.as_bytes())?;
-    let output = child
-        .wait_with_output()
+    let mut stdin = child.stdin.take().expect("stdin was piped");
+    let content = content.to_owned();
+    let write_handle = std::thread::spawn(move || stdin.write_all(content.as_bytes()));
+
+    let mut stdout = child.stdout.take().expect("stdout was piped");
+    let mut formatted = Vec::new();
+    stdout
+        .read_to_end(&mut formatted)
         .with_context(|| format!("Failed to read output from `{}`", formatter))?;
-    if !output.status.success() {
+
+    write_handle
+        .join()
+        .map_err(|_| anyhow!("Failed to write input to `{}`", formatter))?
+        .with_context(|| format!("Failed to write input to `{}`", formatter))?;
+
+    let status = child
+        .wait()
+        .with_context(|| format!("Failed to wait for `{}`", formatter))?;
+    if !status.success() {
         bail!(
             "`{}` exited with an error while formatting output",
             formatter
         );
     }
-    String::from_utf8(output.stdout)
+    String::from_utf8(formatted)
         .with_context(|| format!("`{}` produced output that is not valid UTF-8", formatter))
 }
