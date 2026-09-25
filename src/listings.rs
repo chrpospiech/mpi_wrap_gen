@@ -113,8 +113,8 @@ fn find_collective_chapter(
                 let title_second: &str = &get_chapter_title(chapter_indices, ch_second)?;
                 let bail_msg = [
                     "Multiple collective chapters found:".to_string(),
-                    format!("  chapter {} (\"{}\")", ch_second, &title_second),
-                    format!("  chapter {} (\"{}\")", ch_found, &title_found),
+                    format!("  chapter {} (\"{}\")", ch_second, title_second),
+                    format!("  chapter {} (\"{}\")", ch_found, title_found),
                     "Only one collective chapter is supported.".to_string(),
                 ]
                 .join("\n");
