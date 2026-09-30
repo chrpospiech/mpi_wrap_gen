@@ -41,7 +41,7 @@ mpi_wrap_gen [OPTIONS] <CONFIG_FILE>
 |-------------------|-------------------------------------------------------------------------|
 | `-v`, `--verbose` | Enable verbose output (default: false)                                  |
 | `-D`, `--dry-run` | Print parsed CLI arguments and exit before loading the config or PDF    |
-| `--no-prettify`   | Disable prettifying the generated output code                            |
+| `--no-prettify`   | Disable prettifying the generated output code                           |
 | `-h`, `--help`    | Print help                                                              |
 | `-V`, `--version` | Print version                                                           |
 
@@ -92,9 +92,9 @@ Templates use Python-style format strings (`%(name)type`):
 | `%(chapter_number)d`    | integer | Chapter number                               |
 | `%(chapter_title)s`     | string  | Chapter title from the PDF outline           |
 | `%(mpi_call_name)s`     | string  | MPI function name without the `MPI_` prefix  |
-| `%(mpi_call_name_lc)s`  | string  | %(mpi_call_name)s converted to lower case    |
+| `%(mpi_call_name_lc)s`  | string  | `%(mpi_call_name)s` converted to lower case  |
 | `%(mpi_call_name_id)s`  | string  | `%(mpi_call_name_lc)s` with an `_id,` suffix |
-| `%(mpi_call_params)s`   | string  | MPI function parameter list                  |
+| `%(mpi_call)s`          | string  | `%(mpi_call_name)s` with parameter list      |
 
 The `header` template is emitted once at the start of the output. For each chapter
 with MPI calls, `ch_init` is emitted once (using the first call found), followed by
