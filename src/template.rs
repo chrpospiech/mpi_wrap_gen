@@ -50,6 +50,7 @@ mod generate_output;
 ///
 /// Example:
 /// ```no_run
+/// use mpi_wrap_gen::config::Languages;
 /// use mpi_wrap_gen::template::generate_output;
 ///
 /// let template = "Chapter %(chapter_number)d: %(chapter_title)s ";
@@ -61,8 +62,7 @@ mod generate_output;
 ///                           "MPI_Datatype datatype".to_string(),
 ///                           "int dest".to_string(),
 ///                           "int tag".to_string(),
-///                           "MPI_Comm comm".to_string()],
-///                      &Languages::C);
+///                      "MPI_Comm comm".to_string()]);
 /// let result = generate_output(
 ///     template,
 ///     chapter_number,
