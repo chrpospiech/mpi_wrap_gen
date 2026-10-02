@@ -68,7 +68,7 @@ fn format_mpi_call_normalizes_fortran_handle_arrays() -> Result<()> {
 
     assert_eq!(
         formatted,
-        "Waitsome(MPI_Fint* array_of_requests, char** argv, MPI_Fint* ierror)"
+        "Waitsome(MPI_Fint* array_of_requests, char** argv, MPI_Fint* ierror, MPI_Fint argv_len)"
     );
     Ok(())
 }

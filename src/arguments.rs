@@ -105,13 +105,14 @@ pub fn format_mpi_call_fortran(call_info: &MpiCallInfo) -> Result<String> {
             .get(arg_type)
             .copied()
             .unwrap_or("MPI_Fint*");
+        let is_string = mapped_type == "char*";
         let mapped_type = if is_array && arg_type.trim_end().ends_with('*') {
             format!("{}*", mapped_type)
         } else {
             mapped_type.to_string()
         };
         formatted_args.push(format!("{} {}", mapped_type, arg_name));
-        if mapped_type == "char*" {
+        if is_string {
             // Fortran passes a hidden trailing length argument for each string.
             length_args.push(format!("MPI_Fint {}_len", arg_name));
         }
