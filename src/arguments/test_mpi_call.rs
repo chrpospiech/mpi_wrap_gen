@@ -53,3 +53,22 @@ fn format_mpi_call_formats_fortran_arguments() -> Result<()> {
     );
     Ok(())
 }
+
+#[test]
+fn format_mpi_call_normalizes_fortran_handle_arrays() -> Result<()> {
+    let call_info: MpiCallInfo = (
+        "Waitsome".to_string(),
+        vec![
+            "MPI_Request array_of_requests[]".to_string(),
+            "char* argv[]".to_string(),
+        ],
+    );
+
+    let formatted = format_mpi_call(&Languages::Fortran, &call_info)?;
+
+    assert_eq!(
+        formatted,
+        "Waitsome(MPI_Fint* array_of_requests, char** argv, MPI_Fint* ierror)"
+    );
+    Ok(())
+}

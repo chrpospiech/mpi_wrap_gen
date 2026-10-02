@@ -97,10 +97,19 @@ pub fn format_mpi_call_fortran(call_info: &MpiCallInfo) -> Result<String> {
         let (arg_type, arg_name) = param
             .rsplit_once(char::is_whitespace)
             .ok_or_else(|| anyhow::anyhow!("Malformed parameter: '{}'", param))?;
+        let (arg_name, is_array) = match arg_name.split_once('[') {
+            Some((name, suffix)) if suffix.ends_with(']') => (name, true),
+            _ => (arg_name, false),
+        };
         let mapped_type = MPI_C_TO_C_TYPES
             .get(arg_type)
             .copied()
             .unwrap_or("MPI_Fint*");
+        let mapped_type = if is_array && arg_type.trim_end().ends_with('*') {
+            format!("{}*", mapped_type)
+        } else {
+            mapped_type.to_string()
+        };
         formatted_args.push(format!("{} {}", mapped_type, arg_name));
         if mapped_type == "char*" {
             // Fortran passes a hidden trailing length argument for each string.
