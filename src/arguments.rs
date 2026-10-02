@@ -91,6 +91,7 @@ pub fn format_mpi_call_fortran(call_info: &MpiCallInfo) -> Result<String> {
 
     for param in &call_info.1 {
         let param = param.trim();
+        // parameter void means "no argument" => leave alone.
         if param == "void" {
             continue;
         }
@@ -105,6 +106,7 @@ pub fn format_mpi_call_fortran(call_info: &MpiCallInfo) -> Result<String> {
             .get(arg_type)
             .copied()
             .unwrap_or("MPI_Fint*");
+        // Add additional length argument for strings in Fortran.
         let is_string = mapped_type == "char*";
         let mapped_type = if is_array && arg_type.trim_end().ends_with('*') {
             format!("{}*", mapped_type)
