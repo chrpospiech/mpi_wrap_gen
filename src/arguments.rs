@@ -90,8 +90,11 @@ pub fn format_mpi_call_fortran(call_info: &MpiCallInfo) -> Result<String> {
     let mut length_args: Vec<String> = Vec::new();
 
     for param in &call_info.1 {
+        let param = param.trim();
+        if param == "void" {
+            continue;
+        }
         let (arg_type, arg_name) = param
-            .trim()
             .rsplit_once(char::is_whitespace)
             .ok_or_else(|| anyhow::anyhow!("Malformed parameter: '{}'", param))?;
         let mapped_type = MPI_C_TO_C_TYPES
