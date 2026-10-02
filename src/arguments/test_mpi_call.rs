@@ -34,18 +34,22 @@ fn format_mpi_call_handles_empty_parameter_list() -> Result<()> {
 }
 
 #[test]
-fn format_mpi_call_rejects_unsupported_language() -> Result<()> {
+fn format_mpi_call_formats_fortran_arguments() -> Result<()> {
     let call_info: MpiCallInfo = (
-        "Bcast".to_string(),
-        vec!["void* buffer".to_string(), "int count".to_string()],
+        "Send".to_string(),
+        vec![
+            "const void* buf".to_string(),
+            "int count".to_string(),
+            "MPI_Datatype datatype".to_string(),
+            "char* name".to_string(),
+        ],
     );
 
-    let result = format_mpi_call(&Languages::Fortran, &call_info);
+    let formatted = format_mpi_call(&Languages::Fortran, &call_info)?;
 
-    assert!(result.is_err());
-    assert!(result
-        .unwrap_err()
-        .to_string()
-        .contains("Unsupported language"));
+    assert_eq!(
+        formatted,
+        "Send(void* buf, MPI_Fint* count, MPI_Fint* datatype, char* name, MPI_Fint* ierror, MPI_Fint name_len)"
+    );
     Ok(())
 }

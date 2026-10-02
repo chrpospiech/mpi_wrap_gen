@@ -23,8 +23,98 @@ use anyhow::Result;
 #[cfg(test)]
 mod test_mpi_call;
 
-/// function to compose a string representation of MPI call name(arguments) based
-/// on the provided language and call information.
+/// Static hash for MPI call formatting, mapping C data types used in MPI calls to
+/// C data types that observed by a C routine called by the corresponding MPI call
+/// in Fortran. Fortran calls by name, hence all C data types are pointer types,
+/// most of them pointer to MPI_Fint. This hash provides the necessary mappings for
+/// data types that are **not** mapped to MPI_Fint*.
+static MPI_C_TO_C_TYPES: phf::Map<&'static str, &'static str> = phf::phf_map! {
+    "void*" => "void*",
+    "const void*" => "void*",
+    "char*" => "char*",
+    "const char*" => "char*",
+    "MPI_Aint" => "MPI_Aint*",
+    "MPI_Aint*" => "MPI_Aint*",
+    "MPI_Count" => "MPI_Count*",
+    "MPI_Count*" => "MPI_Count*",
+    "MPI_Offset" => "MPI_Offset*",
+    "MPI_Offset*" => "MPI_Offset*",
+    "MPI_Comm_copy_attr_function*" => "MPI_Comm_copy_attr_function*",
+    "MPI_Comm_delete_attr_function*" => "MPI_Comm_delete_attr_function*",
+    "MPI_Comm_errhandler_fn*" => "MPI_Comm_errhandler_fn*",
+    "MPI_Comm_errhandler_function*" => "MPI_Comm_errhandler_function*",
+    "MPI_Copy_function*" => "MPI_Copy_function*",
+    "MPI_Datarep_conversion_function*" => "MPI_Datarep_conversion_function*",
+    "MPI_Datarep_extent_function*" => "MPI_Datarep_extent_function*",
+    "MPI_Delete_function*" => "MPI_Delete_function*",
+    "MPI_File_errhandler_fn*" => "MPI_File_errhandler_fn*",
+    "MPI_File_errhandler_function*" => "MPI_File_errhandler_function*",
+    "MPI_Grequest_cancel_function*" => "MPI_Grequest_cancel_function*",
+    "MPI_Grequest_free_function*" => "MPI_Grequest_free_function*",
+    "MPI_Grequest_query_function*" => "MPI_Grequest_query_function*",
+    "MPI_Handler_function*" => "MPI_Handler_function*",
+    "MPI_Type_copy_attr_function*" => "MPI_Type_copy_attr_function*",
+    "MPI_Type_delete_attr_function*" => "MPI_Type_delete_attr_function*",
+    "MPI_User_function*" => "MPI_User_function*",
+    "MPI_Win_copy_attr_function*" => "MPI_Win_copy_attr_function*",
+    "MPI_Win_delete_attr_function*" => "MPI_Win_delete_attr_function*",
+    "MPI_Win_errhandler_fn*" => "MPI_Win_errhandler_fn*",
+    "MPI_Win_errhandler_function*" => "MPI_Win_errhandler_function*",
+};
+
+/// Formats the wrapper call for an MPI function in the Fortran language.
+/// The wrapper itself is written in C. The argument list is adapted to
+/// match the Fortran calling conventions. This is done in the following steps:
+/// 1. Each argument in the call_info tuple is examined and split into its type
+///    and name components.
+/// 2. The argument types are mapped to their corresponding C types using the
+///    MPI_C_TO_C_TYPES map.
+/// 3. If the argument is not found in the MPI_C_TO_C_TYPES map, it is set to "MPI_Fint*".
+/// 4. The argument names are preserved as they are in the original call_info tuple.
+/// 5. An additional argument "MPI_Fint* ierror" is appended to the argument list
+///    for Fortran compatibility.
+/// 6. For each argument of type "char*", an additional "MPI_Fint" argument is appended
+///    to represent the string length.
+/// 7. The formatted arguments are then combined into a single string representing the MPI call
+///    and returned as the result of the function.
+///
+/// # Arguments
+/// * `call_info` - A tuple containing the MPI call name and its parameters.
+///
+/// # Returns
+/// A `Result` containing the formatted MPI call as a string, or an error if formatting fails.
+///
+pub fn format_mpi_call_fortran(call_info: &MpiCallInfo) -> Result<String> {
+    let call_name = &call_info.0;
+    let mut formatted_args: Vec<String> = Vec::new();
+    let mut length_args: Vec<String> = Vec::new();
+
+    for param in &call_info.1 {
+        let (arg_type, arg_name) = param
+            .trim()
+            .rsplit_once(char::is_whitespace)
+            .ok_or_else(|| anyhow::anyhow!("Malformed parameter: '{}'", param))?;
+        let mapped_type = MPI_C_TO_C_TYPES
+            .get(arg_type)
+            .copied()
+            .unwrap_or("MPI_Fint*");
+        formatted_args.push(format!("{} {}", mapped_type, arg_name));
+        if mapped_type == "char*" {
+            // Fortran passes a hidden trailing length argument for each string.
+            length_args.push(format!("MPI_Fint {}_len", arg_name));
+        }
+    }
+
+    formatted_args.push("MPI_Fint* ierror".to_string());
+    formatted_args.extend(length_args);
+
+    Ok(format!("{}({})", call_name, formatted_args.join(", ")))
+}
+
+/// Formats an MPI call as a string based on the target programming language.
+///
+/// This function takes the target language and MPI call information, and returns
+/// a string representation of the MPI call suitable for the specified language.
 ///
 /// # Arguments
 /// * `language` - The target programming language for which to format the MPI call.
@@ -54,11 +144,11 @@ mod test_mpi_call;
 ///
 pub fn format_mpi_call(language: &Languages, call_info: &MpiCallInfo) -> Result<String> {
     match language {
-        &Languages::C => {
+        Languages::C => {
             let call_name = &call_info.0;
             let params = call_info.1.join(", ");
             Ok(format!("{}({})", call_name, params))
         }
-        _ => Err(anyhow::anyhow!("Unsupported language")),
+        Languages::Fortran => format_mpi_call_fortran(call_info),
     }
 }
