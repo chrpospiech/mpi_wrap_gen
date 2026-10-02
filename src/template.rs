@@ -16,6 +16,8 @@
 // Description: ~/tools/Rust/mpi_wrap_gen/src/template.rs
 // Author: Dr. Christoph Pospiech
 
+use crate::arguments::format_mpi_call;
+use crate::config::Languages;
 use crate::mpi_calls::MpiCallInfo;
 use anyhow::Result;
 use dynfmt2::{Format, PythonFormat};
@@ -25,8 +27,9 @@ mod generate_output;
 
 /// Generates an output string based on a template. The template is defined as a
 /// string with placeholders that can be replaced with actual values. The function
-/// takes a template string, a chapter number, a chapter title and one item of MPI call
-/// information (name and parameters) and returns a formatted string where the placeholders
+/// takes a template string, a chapter number, a chapter title, one item of MPI call
+/// information (name and parameters) and the programming language to be used,
+/// and returns a formatted string where the placeholders
 /// in the template are replaced.
 ///
 /// The placeholders in the template should follow the old Python string formatting syntax
@@ -47,19 +50,26 @@ mod generate_output;
 ///
 /// Example:
 /// ```no_run
+/// use mpi_wrap_gen::config::Languages;
 /// use mpi_wrap_gen::template::generate_output;
 ///
 /// let template = "Chapter %(chapter_number)d: %(chapter_title)s ";
 /// let chapter_number = 3;
 /// let chapter_title = "Point-to-Point Communication";
 /// let mpi_call_info = ("Send".to_string(),
-///                      vec!["buf".to_string(),
-///                           "count".to_string(),
-///                           "datatype".to_string(),
-///                           "dest".to_string(),
-///                           "tag".to_string(),
-///                           "comm".to_string()]);
-/// let result = generate_output(template, chapter_number, chapter_title, &mpi_call_info);
+///                      vec!["const void* buf".to_string(),
+///                           "int count".to_string(),
+///                           "MPI_Datatype datatype".to_string(),
+///                           "int dest".to_string(),
+///                           "int tag".to_string(),
+///                      "MPI_Comm comm".to_string()]);
+/// let result = generate_output(
+///     template,
+///     chapter_number,
+///     chapter_title,
+///     &mpi_call_info,
+///     &Languages::C,
+/// );
 /// match result {
 ///     Ok(output) => println!("Generated output: {}", output),
 ///     Err(e) => eprintln!("Error generating output: {}", e),
@@ -70,8 +80,15 @@ pub fn generate_output(
     chapter_number: u32,
     chapter_title: &str,
     mpi_call_info: &MpiCallInfo,
+    language: &Languages,
 ) -> Result<String> {
     let mpi_call_name_lc = mpi_call_info.0.to_lowercase();
+    let mpi_call = format_mpi_call(language, mpi_call_info)?;
+    let mpi_call_params = mpi_call
+        .strip_prefix(&format!("{}(", mpi_call_info.0))
+        .and_then(|params| params.strip_suffix(')'))
+        .ok_or_else(|| anyhow::anyhow!("Unable to format MPI call parameters"))?
+        .to_string();
     let vars = std::collections::HashMap::<String, String>::from([
         ("chapter_number".to_string(), chapter_number.to_string()),
         ("chapter_title".to_string(), chapter_title.to_string()),
@@ -81,10 +98,8 @@ pub fn generate_output(
             "mpi_call_name_id".to_string(),
             format!("{}_id,", mpi_call_name_lc),
         ),
-        (
-            "mpi_call_params".to_string(),
-            format!("{:?}", mpi_call_info.1),
-        ),
+        ("mpi_call_params".to_string(), mpi_call_params),
+        ("mpi_call".to_string(), mpi_call),
     ]);
     let output = PythonFormat
         .format(template, &vars)
