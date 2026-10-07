@@ -37,7 +37,12 @@ pub struct CliArgs {
     pub dry_run: bool,
 
     /// Specify the number of underscores to use for Fortran calls
-    #[arg(short = 'u', long, default_value_t = 0)]
+    #[arg(
+        short = 'u',
+        long,
+        default_value_t = 0,
+        value_parser = clap::value_parser!(usize).range(0..=2)
+    )]
     pub underscores: usize,
 
     /// Disable prettifying the generated output code
