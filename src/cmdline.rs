@@ -36,6 +36,10 @@ pub struct CliArgs {
     #[arg(short = 'D', long, default_value_t = false)]
     pub dry_run: bool,
 
+    /// Specify the number of underscores to use for Fortran calls
+    #[arg(short = 'u', long, default_value_t = 0)]
+    pub underscores: usize,
+
     /// Disable prettifying the generated output code
     #[arg(long, default_value_t = false)]
     pub no_prettify: bool,
@@ -62,6 +66,7 @@ pub fn echo_args(args: &CliArgs) -> Result<()> {
     if args.verbose || args.dry_run {
         println!("Verbose: {}", args.verbose);
         println!("Dry run: {}", args.dry_run);
+        println!("Fortran underscores: {}", args.underscores);
         println!("No prettify: {}", args.no_prettify);
         println!("Configuration file: {}", args.config_file);
     };

@@ -37,13 +37,14 @@ mpi_wrap_gen [OPTIONS] <CONFIG_FILE>
 
 ### Options
 
-| Option            | Description                                                             |
-|-------------------|-------------------------------------------------------------------------|
-| `-v`, `--verbose` | Enable verbose output (default: false)                                  |
-| `-D`, `--dry-run` | Print parsed CLI arguments and exit before loading the config or PDF    |
-| `--no-prettify`   | Disable prettifying the generated output code                           |
-| `-h`, `--help`    | Print help                                                              |
-| `-V`, `--version` | Print version                                                           |
+| Option                | Description                                       |
+|-----------------------|---------------------------------------------------|
+| `-v`, `--verbose`     | Enable verbose output (default: false)            |
+| `-D`, `--dry-run`     | Run in verbose mode without generating output     |
+| `-u`, `--underscores` | Number of underscores preceding each Fortran call |
+| `--no-prettify`       | Disable prettifying the generated output code     |
+| `-h`, `--help`        | Print help                                        |
+| `-V`, `--version`     | Print version                                     |
 
 ### Arguments
 
@@ -57,7 +58,7 @@ mpi_wrap_gen [OPTIONS] <CONFIG_FILE>
 mpi_wrap_gen config.yml
 mpi_wrap_gen --verbose config.yml
 mpi_wrap_gen --dry-run config.yml
-mpi_wrap_gen --no-prettify config.yml
+mpi_wrap_gen --no-prettify -u 2 config.yml
 ```
 
 ## Configuration File
