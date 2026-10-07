@@ -97,6 +97,7 @@ Templates use Python-style format strings (`%(name)type`):
 | `%(mpi_call_name_id)s`  | string  | `%(mpi_call_name_lc)s` with an `_id,` suffix |
 | `%(mpi_call_params)s`   | string  | Language dependent parameter list without () |
 | `%(mpi_call)s`          | string  | `%(mpi_call_name)s` with parameter list      |
+| `%(u)s`                 | string  | "_".repeat(underscores)                      |
 
 The `header` template is emitted once at the start of the output. For each chapter
 with MPI calls, `ch_init` is emitted once (using the first call found), followed by

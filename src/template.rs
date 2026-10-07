@@ -81,6 +81,7 @@ pub fn generate_output(
     chapter_title: &str,
     mpi_call_info: &MpiCallInfo,
     language: &Languages,
+    underscores: usize,
 ) -> Result<String> {
     let mpi_call_name_lc = mpi_call_info.0.to_lowercase();
     let mpi_call = format_mpi_call(language, mpi_call_info)?;
@@ -100,6 +101,7 @@ pub fn generate_output(
         ),
         ("mpi_call_params".to_string(), mpi_call_params),
         ("mpi_call".to_string(), mpi_call),
+        ("u".to_string(), "_".repeat(underscores)),
     ]);
     let output = PythonFormat
         .format(template, &vars)
