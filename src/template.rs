@@ -69,6 +69,7 @@ mod generate_output;
 ///     chapter_title,
 ///     &mpi_call_info,
 ///     &Languages::C,
+///     0,
 /// );
 /// match result {
 ///     Ok(output) => println!("Generated output: {}", output),
