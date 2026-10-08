@@ -41,9 +41,9 @@ pub struct CliArgs {
         short = 'u',
         long,
         default_value_t = 0,
-        value_parser = clap::value_parser!(usize).range(0..=2)
+        value_parser = clap::value_parser!(u8).range(0..=2)
     )]
-    pub underscores: usize,
+    pub underscores: u8,
 
     /// Disable prettifying the generated output code
     #[arg(long, default_value_t = false)]
