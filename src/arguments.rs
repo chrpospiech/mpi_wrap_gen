@@ -79,13 +79,14 @@ static MPI_C_TO_C_TYPES: phf::Map<&'static str, &'static str> = phf::phf_map! {
 ///    and returned as the result of the function.
 ///
 /// # Arguments
+/// * `underscores` - The number of underscores to use for Fortran calls.
 /// * `call_info` - A tuple containing the MPI call name and its parameters.
 ///
 /// # Returns
 /// A `Result` containing the formatted MPI call as a string, or an error if formatting fails.
 ///
-pub fn format_mpi_call_fortran(call_info: &MpiCallInfo) -> Result<String> {
-    let call_name = &call_info.0;
+pub fn format_mpi_call_fortran(underscores: u8, call_info: &MpiCallInfo) -> Result<String> {
+    let call_name = format!("{}{}", call_info.0, "_".repeat(underscores as usize));
     let mut formatted_args: Vec<String> = Vec::new();
     let mut length_args: Vec<String> = Vec::new();
 
@@ -163,13 +164,12 @@ pub fn format_mpi_call(
     underscores: u8,
     call_info: &MpiCallInfo,
 ) -> Result<String> {
-    let _ = underscores;
     match language {
         Languages::C => {
             let call_name = &call_info.0;
             let params = call_info.1.join(", ");
             Ok(format!("{}({})", call_name, params))
         }
-        Languages::Fortran => format_mpi_call_fortran(call_info),
+        Languages::Fortran => format_mpi_call_fortran(underscores, call_info),
     }
 }

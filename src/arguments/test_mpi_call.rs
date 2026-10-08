@@ -45,11 +45,16 @@ fn format_mpi_call_formats_fortran_arguments() -> Result<()> {
         ],
     );
 
-    let formatted = format_mpi_call(&Languages::Fortran, 0, &call_info)?;
+    let formatted = format_mpi_call(&Languages::Fortran, 2, &call_info)?;
 
     assert_eq!(
         formatted,
-        "Send(void* buf, MPI_Fint* count, MPI_Fint* datatype, char* name, MPI_Fint* ierror, MPI_Fint name_len)"
+        format!(
+            "{}__({}, {})",
+            "Send",
+            "void* buf, MPI_Fint* count, MPI_Fint* datatype",
+            "char* name, MPI_Fint* ierror, MPI_Fint name_len"
+        )
     );
     Ok(())
 }
