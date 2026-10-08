@@ -384,7 +384,7 @@ pub fn extract_and_generate_listings(
             &chapter_title,
             filtered_mpi_calls,
             &config.language,
-            args.underscores,
+            args.underscores as usize,
             args.verbose,
         )?;
         if single_output_file {
@@ -428,7 +428,7 @@ pub fn extract_and_generate_listings(
                 &chapter_title,
                 filtered_mpi_calls,
                 &config.language,
-                args.underscores,
+                args.underscores as usize,
                 args.verbose,
             )?;
         } else if args.verbose {
