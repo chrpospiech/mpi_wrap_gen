@@ -1,6 +1,6 @@
 [package]
 name = "mpi_wrap_gen"
-version = "0.5.0"
+version = "0.6.0"
 authors = ["C. Pospiech <pospiech-HD@t-online.de>"]
 description = "Create wrapper files for MPI profiler"
 edition = "2021"
