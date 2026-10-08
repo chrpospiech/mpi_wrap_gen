@@ -186,7 +186,7 @@ fn generate_chapter_output(
     chapter_title: &str,
     mpi_calls: Vec<MpiCallInfo>,
     language: &Languages,
-    underscores: usize,
+    underscores: u8,
     verbose: bool,
 ) -> Result<String> {
     let mut ch_output = String::new();
