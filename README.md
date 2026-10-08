@@ -37,13 +37,14 @@ mpi_wrap_gen [OPTIONS] <CONFIG_FILE>
 
 ### Options
 
-| Option            | Description                                                             |
-|-------------------|-------------------------------------------------------------------------|
-| `-v`, `--verbose` | Enable verbose output (default: false)                                  |
-| `-D`, `--dry-run` | Print parsed CLI arguments and exit before loading the config or PDF    |
-| `--no-prettify`   | Disable prettifying the generated output code                           |
-| `-h`, `--help`    | Print help                                                              |
-| `-V`, `--version` | Print version                                                           |
+| Option                | Description                                       |
+|-----------------------|---------------------------------------------------|
+| `-v`, `--verbose`     | Enable verbose output (default: false)            |
+| `-D`, `--dry-run`     | Run in verbose mode without generating output     |
+| `-u`, `--underscores` | Number of underscores preceding each Fortran call |
+| `--no-prettify`       | Disable prettifying the generated output code     |
+| `-h`, `--help`        | Print help                                        |
+| `-V`, `--version`     | Print version                                     |
 
 ### Arguments
 
@@ -57,7 +58,7 @@ mpi_wrap_gen [OPTIONS] <CONFIG_FILE>
 mpi_wrap_gen config.yml
 mpi_wrap_gen --verbose config.yml
 mpi_wrap_gen --dry-run config.yml
-mpi_wrap_gen --no-prettify config.yml
+mpi_wrap_gen --no-prettify -u 2 config.yml
 ```
 
 ## Configuration File
@@ -95,7 +96,8 @@ Templates use Python-style format strings (`%(name)type`):
 | `%(mpi_call_name_lc)s`  | string  | `%(mpi_call_name)s` converted to lower case  |
 | `%(mpi_call_name_id)s`  | string  | `%(mpi_call_name_lc)s` with an `_id,` suffix |
 | `%(mpi_call_params)s`   | string  | Language dependent parameter list without () |
-| `%(mpi_call)s`          | string  | `%(mpi_call_name)s` with parameter list      |
+| `%(mpi_call)s`          | string  | Language dependent complete MPI call         |
+| `%(u)s`                 | string  | "_".repeat(underscores)                      |
 
 The `header` template is emitted once at the start of the output. For each chapter
 with MPI calls, `ch_init` is emitted once (using the first call found), followed by

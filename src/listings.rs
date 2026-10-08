@@ -186,6 +186,7 @@ fn generate_chapter_output(
     chapter_title: &str,
     mpi_calls: Vec<MpiCallInfo>,
     language: &Languages,
+    underscores: u8,
     verbose: bool,
 ) -> Result<String> {
     let mut ch_output = String::new();
@@ -212,6 +213,7 @@ fn generate_chapter_output(
             chapter_title,
             first_call,
             language,
+            underscores,
         )?;
     }
     for mpi_call in mpi_calls {
@@ -229,6 +231,7 @@ fn generate_chapter_output(
                 chapter_title,
                 &mpi_call,
                 language,
+                underscores,
             )?;
         }
         if verbose && !chapter_template.ch_msize.is_empty() {
@@ -244,6 +247,7 @@ fn generate_chapter_output(
                 chapter_title,
                 &mpi_call,
                 language,
+                underscores,
             )?;
         }
         // Add chapter body template with MPI call information
@@ -259,6 +263,7 @@ fn generate_chapter_output(
             chapter_title,
             &mpi_call,
             language,
+            underscores,
         )?;
     }
 
@@ -379,6 +384,7 @@ pub fn extract_and_generate_listings(
             &chapter_title,
             filtered_mpi_calls,
             &config.language,
+            args.underscores,
             args.verbose,
         )?;
         if single_output_file {
@@ -422,6 +428,7 @@ pub fn extract_and_generate_listings(
                 &chapter_title,
                 filtered_mpi_calls,
                 &config.language,
+                args.underscores,
                 args.verbose,
             )?;
         } else if args.verbose {

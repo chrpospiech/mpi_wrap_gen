@@ -69,6 +69,7 @@ mod generate_output;
 ///     chapter_title,
 ///     &mpi_call_info,
 ///     &Languages::C,
+///     0,
 /// );
 /// match result {
 ///     Ok(output) => println!("Generated output: {}", output),
@@ -81,11 +82,13 @@ pub fn generate_output(
     chapter_title: &str,
     mpi_call_info: &MpiCallInfo,
     language: &Languages,
+    underscores: u8,
 ) -> Result<String> {
     let mpi_call_name_lc = mpi_call_info.0.to_lowercase();
-    let mpi_call = format_mpi_call(language, mpi_call_info)?;
+    let mpi_call = format_mpi_call(language, underscores, mpi_call_info)?;
     let mpi_call_params = mpi_call
-        .strip_prefix(&format!("{}(", mpi_call_info.0))
+        .split_once('(')
+        .map(|(_, params)| params)
         .and_then(|params| params.strip_suffix(')'))
         .ok_or_else(|| anyhow::anyhow!("Unable to format MPI call parameters"))?
         .to_string();
@@ -100,6 +103,7 @@ pub fn generate_output(
         ),
         ("mpi_call_params".to_string(), mpi_call_params),
         ("mpi_call".to_string(), mpi_call),
+        ("u".to_string(), "_".repeat(underscores as usize)),
     ]);
     let output = PythonFormat
         .format(template, &vars)
