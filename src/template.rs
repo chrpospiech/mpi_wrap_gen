@@ -87,7 +87,8 @@ pub fn generate_output(
     let mpi_call_name_lc = mpi_call_info.0.to_lowercase();
     let mpi_call = format_mpi_call(language, underscores, mpi_call_info)?;
     let mpi_call_params = mpi_call
-        .strip_prefix(&format!("{}(", mpi_call_info.0))
+        .split_once('(')
+        .map(|(_, params)| params)
         .and_then(|params| params.strip_suffix(')'))
         .ok_or_else(|| anyhow::anyhow!("Unable to format MPI call parameters"))?
         .to_string();

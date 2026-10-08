@@ -113,6 +113,15 @@ fn test_mpi_call_params_fortran_substitution() -> Result<()> {
 }
 
 #[test]
+fn test_fortran_mpi_call_with_underscores() -> Result<()> {
+    let template = "%(mpi_call)s";
+    let info = ("Send".to_string(), vec!["int count".to_string()]);
+    let output = generate_output(template, 1, "Title", &info, &Languages::Fortran, 2)?;
+    assert_eq!(output, "Send__(MPI_Fint* count, MPI_Fint* ierror)");
+    Ok(())
+}
+
+#[test]
 fn test_template_without_placeholders() -> Result<()> {
     let template = "no placeholders here";
     let info = sample_call_info();
