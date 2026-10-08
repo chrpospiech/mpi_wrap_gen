@@ -84,7 +84,7 @@ fn test_all_placeholders() -> Result<()> {
         output,
         concat!(
             "Chapter 3: Point-to-Point Communication - ",
-            "Send(const void* buf, int count, MPI_Datatype datatype, ",
+            "MPI_Send(const void* buf, int count, MPI_Datatype datatype, ",
             "int dest, int tag, MPI_Comm comm)"
         )
     );
@@ -117,7 +117,7 @@ fn test_fortran_mpi_call_with_underscores() -> Result<()> {
     let template = "%(mpi_call)s";
     let info = ("Send".to_string(), vec!["int count".to_string()]);
     let output = generate_output(template, 1, "Title", &info, &Languages::Fortran, 2)?;
-    assert_eq!(output, "Send__(MPI_Fint* count, MPI_Fint* ierror)");
+    assert_eq!(output, "mpi_send__(MPI_Fint* count, MPI_Fint* ierror)");
     Ok(())
 }
 
@@ -144,7 +144,7 @@ fn test_empty_params() -> Result<()> {
     let template = "%(mpi_call)s";
     let info = ("Barrier".to_string(), vec![]);
     let output = generate_output(template, 1, "Title", &info, &Languages::C, 0)?;
-    assert_eq!(output, "Barrier()");
+    assert_eq!(output, "MPI_Barrier()");
     Ok(())
 }
 
