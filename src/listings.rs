@@ -186,7 +186,7 @@ fn generate_chapter_output(
     chapter_title: &str,
     mpi_calls: Vec<MpiCallInfo>,
     language: &Languages,
-    underscores: usize,
+    underscores: u8,
     verbose: bool,
 ) -> Result<String> {
     let mut ch_output = String::new();
@@ -384,7 +384,7 @@ pub fn extract_and_generate_listings(
             &chapter_title,
             filtered_mpi_calls,
             &config.language,
-            args.underscores as usize,
+            args.underscores,
             args.verbose,
         )?;
         if single_output_file {
@@ -428,7 +428,7 @@ pub fn extract_and_generate_listings(
                 &chapter_title,
                 filtered_mpi_calls,
                 &config.language,
-                args.underscores as usize,
+                args.underscores,
                 args.verbose,
             )?;
         } else if args.verbose {
