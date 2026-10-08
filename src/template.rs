@@ -85,7 +85,7 @@ pub fn generate_output(
     underscores: u8,
 ) -> Result<String> {
     let mpi_call_name_lc = mpi_call_info.0.to_lowercase();
-    let mpi_call = format_mpi_call(language, mpi_call_info)?;
+    let mpi_call = format_mpi_call(language, underscores, mpi_call_info)?;
     let mpi_call_params = mpi_call
         .strip_prefix(&format!("{}(", mpi_call_info.0))
         .and_then(|params| params.strip_suffix(')'))

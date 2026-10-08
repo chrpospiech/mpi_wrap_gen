@@ -133,6 +133,7 @@ pub fn format_mpi_call_fortran(call_info: &MpiCallInfo) -> Result<String> {
 ///
 /// # Arguments
 /// * `language` - The target programming language for which to format the MPI call.
+/// * `underscores` - The number of underscores to use for Fortran calls.
 /// * `call_info` - A tuple containing the MPI call name and its parameters.
 ///
 /// # Returns
@@ -153,11 +154,16 @@ pub fn format_mpi_call_fortran(call_info: &MpiCallInfo) -> Result<String> {
 ///                           "int tag".to_string(),
 ///                           "MPI_Comm comm".to_string()])
 /// ;
-/// let formatted_call = format_mpi_call(&Languages::C, &call_info).unwrap();
+/// let formatted_call = format_mpi_call(&Languages::C, 0, &call_info).unwrap();
 /// println!("{}", formatted_call);
 /// ```
 ///
-pub fn format_mpi_call(language: &Languages, call_info: &MpiCallInfo) -> Result<String> {
+pub fn format_mpi_call(
+    language: &Languages,
+    underscores: u8,
+    call_info: &MpiCallInfo,
+) -> Result<String> {
+    let _ = underscores;
     match language {
         Languages::C => {
             let call_name = &call_info.0;
