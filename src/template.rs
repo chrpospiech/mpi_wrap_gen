@@ -18,6 +18,7 @@
 
 use crate::arguments::format_mpi_call;
 use crate::config::Languages;
+use crate::mess_size::generate_mess_size_code;
 use crate::mpi_calls::MpiCallInfo;
 use anyhow::Result;
 use dynfmt2::{Format, PythonFormat};
@@ -43,6 +44,8 @@ mod generate_output;
 ///     chapter_number: The number of the chapter to be included in the output string.
 ///     chapter_title: The title of the chapter to be included in the output string.
 ///     mpi_call_info: A tuple containing the MPI call name and its parameters.
+///     language: The target programming language for which to format the MPI call.
+///     underscores: The number of underscores to use for Fortran calls.
 ///
 /// Returns:
 ///    A Result containing the formatted string with placeholders replaced by actual values.
@@ -104,6 +107,10 @@ pub fn generate_output(
         ("mpi_call_params".to_string(), mpi_call_params),
         ("mpi_call".to_string(), mpi_call),
         ("u".to_string(), "_".repeat(underscores as usize)),
+        (
+            "mess_size".to_string(),
+            generate_mess_size_code(language, underscores, mpi_call_info)?,
+        ),
     ]);
     let output = PythonFormat
         .format(template, &vars)
