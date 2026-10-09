@@ -52,7 +52,7 @@ pub fn get_chapter_title(map: &ChapterMap, chapter: u32) -> Result<String> {
 
 /// Finds the 1-based page indices where each chapter starts by walking the
 /// PDF outline (bookmark) tree. Outline entries whose title matches
-/// "<N> <title>" (e.g. "3 Point-to-Point Communication") are resolved to
+/// "`<N> <title>`" (e.g. "3 Point-to-Point Communication") are resolved to
 /// their target page, which is then mapped to a 1-based page number.
 ///
 /// # Arguments

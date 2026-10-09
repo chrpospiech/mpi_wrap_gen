@@ -177,8 +177,8 @@ pub fn mpi_calls_for_chapter(
     mpi_calls_for_page_range(doc, ch_start, ch_end)
 }
 
-/// Calls mpi_calls_for_chapter but maps the result of type Vec<MpiCallInfo> to a new
-/// Vec<MpiCallInfo> with the first tuple entry being the concatenation of
+/// Calls mpi_calls_for_chapter but maps the result of type `Vec<MpiCallInfo>` to a new
+/// `Vec<MpiCallInfo>` with the first tuple entry being the concatenation of
 /// the original tuple entry and the string "_barrier".
 ///
 /// # Arguments
