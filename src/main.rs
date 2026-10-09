@@ -24,6 +24,7 @@ pub(crate) mod chapters;
 pub(crate) mod cmdline;
 pub(crate) mod config;
 pub(crate) mod listings;
+pub(crate) mod mess_size;
 pub(crate) mod mpi_calls;
 pub(crate) mod prettify;
 pub(crate) mod template;
