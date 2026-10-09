@@ -143,12 +143,12 @@ fn find_collective_chapter(
 ///   rather than silently leaving the raw text in the path.
 /// - takes and returns PATHs instead of strings.
 ///
-/// Args:
-///     template: A `Path` containing the template with placeholders to be replaced.
-///     chapter_number: The number of the chapter to be included in the output string.
+/// # Arguments
+/// * `template` - A `Path` containing the template with placeholders to be replaced.
+/// * `chapter_number` - The number of the chapter to be included in the output string.
 ///
-/// Returns:
-///     A Result containing a formatted PathBuf with placeholders replaced by actual values.
+/// # Returns
+/// A Result containing a formatted PathBuf with placeholders replaced by actual values.
 ///
 fn format_chapter_number(template: &Path, chapter_number: u32) -> Result<PathBuf> {
     let vars = std::collections::HashMap::<String, String>::from([(
@@ -170,16 +170,16 @@ fn format_chapter_number(template: &Path, chapter_number: u32) -> Result<PathBuf
 /// Generates the chapter output string for a given chapter, applying the chapter
 /// init template once and the chapter body template for each MPI call.
 ///
-/// Args:
-///     chapter_template: References to the chapter init and body templates.
-///     chapter: The chapter number.
-///     chapter_title: The title of the chapter.
-///     mpi_calls: The filtered MPI calls for this chapter (must be non-empty).
-///     language: The programming language to be used for generating the chapter output.
-///     verbose: Whether to print progress messages.
+/// # Arguments
+/// * `chapter_template` - References to the chapter init and body templates.
+/// * `chapter` - The chapter number.
+/// * `chapter_title` - The title of the chapter.
+/// * `mpi_calls` - The filtered MPI calls for this chapter (must be non-empty).
+/// * `language` - The programming language to be used for generating the chapter output.
+/// * `verbose` - Whether to print progress messages.
 ///
-/// Returns:
-///     A `Result<String>` containing the generated chapter output.
+/// # Returns
+/// A `Result<String>` containing the generated chapter output.
 fn generate_chapter_output(
     chapter_template: &ChapterTemplates,
     chapter: u32,
@@ -289,17 +289,17 @@ fn generate_chapter_output(
 /// in the output. This is only supported for the case of a single output file path, as
 /// the collective operations section is not associated with a specific chapter.
 ///
-/// Arguments:
-/// - `doc`: The PDF document to extract the MPI call information from.
-/// - `args`: The command line arguments containing the verbose flag for debugging purposes.
-/// - `config`: The configuration containing the list of chapters to extract and
+/// # Arguments
+/// * `doc` - The PDF document to extract the MPI call information from.
+/// * `args` - The command line arguments containing the verbose flag for debugging purposes.
+/// * `config` - The configuration containing the list of chapters to extract and
 ///   the templates to use for generating the output.
 ///
-/// Returns:
-/// - A vector of tuples (PathBuf, String) containing the generated output based
-///   on the extracted MPI call information and the templates from the configuration.
-/// - If the list of chapters is empty, the function will return an error.
-/// - If a chapter is not found in the PDF document, the function will return an error.
+/// # Returns
+/// A vector of tuples (PathBuf, String) containing the generated output based
+/// on the extracted MPI call information and the templates from the configuration.
+/// If the list of chapters is empty, the function will return an error.
+/// If a chapter is not found in the PDF document, the function will return an error.
 pub fn extract_and_generate_listings(
     doc: &Document,
     args: &CliArgs,

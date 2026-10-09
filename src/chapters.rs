@@ -55,12 +55,12 @@ pub fn get_chapter_title(map: &ChapterMap, chapter: u32) -> Result<String> {
 /// "<N> <title>" (e.g. "3 Point-to-Point Communication") are resolved to
 /// their target page, which is then mapped to a 1-based page number.
 ///
-/// Args:
-///     doc: A reference to the lopdf PDF document.
+/// # Arguments
+/// * `doc` - A reference to the lopdf PDF document.
 ///
-/// Returns:
-///     A ChapterMap where the keys are chapter numbers and the values are tuples
-///     of the 1-based page index and the chapter title string.
+/// # Returns
+/// A ChapterMap where the keys are chapter numbers and the values are tuples
+/// of the 1-based page index and the chapter title string.
 pub fn find_chapter_pages(doc: &Document) -> Result<ChapterMap> {
     let re = Regex::new(CHAPTER_REGEX)?;
 
