@@ -49,16 +49,16 @@ pub type MpiCallInfo = (String, Vec<String>);
 /// The MPI call name is returned without the "MPI_" prefix, and the parameters are
 /// returned as a vector of strings.
 ///
-/// Args:
-///     doc: A reference to the lopdf PDF document from which to extract MPI call information.
-///     start_page: The 1-based index of the page from which to start searching for MPI calls.
-///     end_page: The 1-based (exclusive) index of the page at which to stop searching for MPI calls.
+/// # Arguments
+/// * `doc` - A reference to the lopdf PDF document from which to extract MPI call information.
+/// * `start_page` - The 1-based index of the page from which to start searching for MPI calls.
+/// * `end_page` - The 1-based (exclusive) index of the page at which to stop searching for MPI calls.
 ///
-/// Returns:
-///     A Result containing a vector of [`MpiCallInfo`], where each entry is a tuple of
-///     `(call_name, parameters)`: the MPI call name (without the "MPI_" prefix) and a vector
-///     of its parameter strings. If an error occurs during PDF processing, the Result
-///     will contain an error message.
+/// # Returns
+/// A Result containing a vector of [`MpiCallInfo`], where each entry is a tuple of
+/// `(call_name, parameters)`: the MPI call name (without the "MPI_" prefix) and a vector
+/// of its parameter strings. If an error occurs during PDF processing, the Result
+/// will contain an error message.
 fn mpi_calls_for_page_range(
     doc: &Document,
     start_page: u32,
@@ -150,16 +150,16 @@ fn mpi_calls_for_page_range(
 /// intended to be used for extracting MPI calls from a specific chapter of the PDF document,
 /// where the chapter is defined by its start and end pages.
 ///
-/// Args:
-///     doc: A reference to the lopdf PDF document from which to extract MPI call information.
-///     chapter_indices: ChapterMap to identify the start and end pages for each chapter.
-///     chapter: the chapter number (1-based) for which to extract MPI calls.
+/// # Arguments
+/// * `doc` - A reference to the lopdf PDF document from which to extract MPI call information.
+/// * `chapter_indices` - ChapterMap to identify the start and end pages for each chapter.
+/// * `chapter` - the chapter number (1-based) for which to extract MPI calls.
 ///
-/// Returns:
-///     A Result containing a vector of [`MpiCallInfo`], where each entry is a tuple of
-///     `(call_name, parameters)`: the MPI call name (without the "MPI_" prefix) and a vector
-///     of its parameter strings. If an error occurs during PDF processing, the Result
-///     will contain an error message.
+/// # Returns
+/// A Result containing a vector of [`MpiCallInfo`], where each entry is a tuple of
+/// `(call_name, parameters)`: the MPI call name (without the "MPI_" prefix) and a vector
+/// of its parameter strings. If an error occurs during PDF processing, the Result
+/// will contain an error message.
 ///
 pub fn mpi_calls_for_chapter(
     doc: &Document,
@@ -181,16 +181,16 @@ pub fn mpi_calls_for_chapter(
 /// Vec<MpiCallInfo> with the first tuple entry being the concatenation of
 /// the original tuple entry and the string "_barrier".
 ///
-/// Args:
-///     doc: A reference to the lopdf PDF document from which to extract MPI call information.
-///     chapter_indices: ChapterMap to identify the start and end pages for each chapter.
-///     chapter: the chapter number (1-based) for which to extract MPI calls.
+/// # Arguments
+/// * `doc` - A reference to the lopdf PDF document from which to extract MPI call information.
+/// * `chapter_indices` - ChapterMap to identify the start and end pages for each chapter.
+/// * `chapter` - the chapter number (1-based) for which to extract MPI calls.
 ///
-/// Returns:
-///     A Result containing a vector of [`MpiCallInfo`], where each entry is a tuple of
-///     `(call_name, parameters)`: the MPI call name (without the "MPI_" prefix) and a vector
-///     of its parameter strings. If an error occurs during PDF processing, the Result
-///     will contain an error message.
+/// # Returns
+/// A Result containing a vector of [`MpiCallInfo`], where each entry is a tuple of
+/// `(call_name, parameters)`: the MPI call name (without the "MPI_" prefix) and a vector
+/// of its parameter strings. If an error occurs during PDF processing, the Result
+/// will contain an error message.
 pub fn create_barrier_names(
     doc: &Document,
     chapter_indices: &ChapterMap,
@@ -206,12 +206,12 @@ pub fn create_barrier_names(
 /// Filters a slice of MPI calls using a caller-supplied exclusion predicate.
 /// The predicate receives the call name and returns `true` if the call should be excluded.
 ///
-/// Args:
-///     calls: A slice of [`MpiCallInfo`] to filter (original slice remains usable after the call).
-///     exclude_pred: A closure `Fn(&str) -> bool` that returns `true` for calls to exclude.
+/// # Arguments
+/// * `calls` - A slice of [`MpiCallInfo`] to filter (original slice remains usable after the call).
+/// * `exclude_pred` - A closure `Fn(&str) -> bool` that returns `true` for calls to exclude.
 ///
-/// Returns:
-///     A new `Vec<MpiCallInfo>` containing only the calls for which `exclude_pred` returns `false`.
+/// # Returns
+/// A new `Vec<MpiCallInfo>` containing only the calls for which `exclude_pred` returns `false`.
 pub fn filter_excluded_mpi_calls<F>(calls: &[MpiCallInfo], exclude_pred: F) -> Vec<MpiCallInfo>
 where
     F: Fn(&str) -> bool,

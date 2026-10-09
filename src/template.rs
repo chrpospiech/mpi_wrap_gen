@@ -39,17 +39,17 @@ mod generate_output;
 /// the `PythonFormat` formatter, including the width and alignment handling covered by the
 /// regression tests. The function will return a Result containing the formatted string.
 ///
-/// Args:
-///     template: A string containing the template with placeholders to be replaced.
-///     chapter_number: The number of the chapter to be included in the output string.
-///     chapter_title: The title of the chapter to be included in the output string.
-///     mpi_call_info: A tuple containing the MPI call name and its parameters.
-///     language: The target programming language for which to format the MPI call.
-///     underscores: The number of underscores to use for Fortran calls.
+/// # Arguments
+/// * `template` - A string containing the template with placeholders to be replaced.
+/// * `chapter_number` - The number of the chapter to be included in the output string.
+/// * `chapter_title` - The title of the chapter to be included in the output string.
+/// * `mpi_call_info` - A tuple containing the MPI call name and its parameters.
+/// * `language` - The target programming language for which to format the MPI call.
+/// * `underscores` - The number of underscores to use for Fortran calls.
 ///
-/// Returns:
-///    A Result containing the formatted string with placeholders replaced by actual values.
-///   If an error occurs during formatting, the Result will contain an error message.
+/// # Returns
+/// A Result containing the formatted string with placeholders replaced by actual values.
+/// If an error occurs during formatting, the Result will contain an error message.
 ///
 /// Example:
 /// ```no_run
