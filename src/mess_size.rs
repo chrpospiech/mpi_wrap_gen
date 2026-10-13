@@ -87,7 +87,7 @@ pub fn generate_mess_size_code(
     let datatype_var = &captures.as_ref().unwrap()[2];
     if matches!(language, Languages::C) {
         Ok(format!(
-            "MPI_Count type_size;\n\
+            "int type_size;\n\
             PMPI_Type_size({}, &type_size);\n\
             MPI_Count message_size = {} * type_size;",
             datatype_var, count_var
