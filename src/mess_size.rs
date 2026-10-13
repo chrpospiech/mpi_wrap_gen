@@ -39,7 +39,7 @@ mod generate_mess_size_code_tests;
 /// Depending on the values of `language` and `underscores` the generated code
 /// contains the appropriate call to MPI_Type_size to extract the size of the
 /// MPI datatype into a variable type_size. Then the total message size is
-/// computed as `MPI_Countmessage_size = count * type_size;`.
+/// computed as `MPI_Count message_size = count * type_size;`
 ///
 /// # Arguments
 /// * `language` - The programming language for which to generate the code.
