@@ -39,7 +39,7 @@ mod generate_mess_size_code_tests;
 /// Depending on the values of `language` and `underscores` the generated code
 /// contains the appropriate call to MPI_Type_size to extract the size of the
 /// MPI datatype into a variable type_size. Then the total message size is
-/// computed as `MPI_Count message_size = count * type_size;`
+/// computed as `MPI_Count message_size = (MPI_Count) count * type_size;`
 ///
 /// # Arguments
 /// * `language` - The programming language for which to generate the code.
@@ -89,7 +89,7 @@ pub fn generate_mess_size_code(
         Ok(format!(
             "int type_size;\n\
             PMPI_Type_size({}, &type_size);\n\
-            MPI_Count message_size = {} * type_size;",
+            MPI_Count message_size = (MPI_Count) {} * type_size;",
             datatype_var, count_var
         ))
     } else {
@@ -97,7 +97,7 @@ pub fn generate_mess_size_code(
             "MPI_Count type_size;\n\
             int ierror_type_size;\n\
             pmpi_type_size{}({}, &type_size, &ierror_type_size);\n\
-            MPI_Count message_size = *{} * type_size;",
+            MPI_Count message_size = (MPI_Count) *{} * type_size;",
             "_".repeat(underscores as usize),
             datatype_var,
             count_var
