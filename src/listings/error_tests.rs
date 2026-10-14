@@ -54,7 +54,6 @@ fn make_config(chapters: Vec<u32>) -> Config {
             ch_init: "INIT %(chapter_number)d %(chapter_title)s %(mpi_call_name)s\n".to_string(),
             ch_decl: String::new(),
             ch_load_imb: String::new(),
-            ch_msize: String::new(),
             ch_body: "BODY %(mpi_call_name)s\n".to_string(),
             bar_init: "BAR_INIT %(chapter_number)d %(chapter_title)s %(mpi_call_name)s\n"
                 .to_string(),

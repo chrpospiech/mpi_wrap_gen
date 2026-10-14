@@ -89,12 +89,6 @@ pub fn generate_output(
 ) -> Result<String> {
     let mpi_call_name_lc = mpi_call_info.0.to_lowercase();
     let mpi_call = format_mpi_call(language, underscores, mpi_call_info)?;
-    let mpi_call_params = mpi_call
-        .split_once('(')
-        .map(|(_, params)| params)
-        .and_then(|params| params.strip_suffix(')'))
-        .ok_or_else(|| anyhow::anyhow!("Unable to format MPI call parameters"))?
-        .to_string();
     let vars = std::collections::HashMap::<String, String>::from([
         ("chapter_number".to_string(), chapter_number.to_string()),
         ("chapter_title".to_string(), chapter_title.to_string()),
@@ -104,7 +98,6 @@ pub fn generate_output(
             "mpi_call_name_id".to_string(),
             format!("{}_id,", mpi_call_name_lc),
         ),
-        ("mpi_call_params".to_string(), mpi_call_params),
         ("mpi_call".to_string(), mpi_call),
         ("u".to_string(), "_".repeat(underscores as usize)),
         (

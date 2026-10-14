@@ -49,8 +49,6 @@ pub struct ChapterTemplates {
     pub ch_init: String,
     #[serde(default)]
     pub ch_decl: String,
-    #[serde(default)]
-    pub ch_msize: String,
     pub ch_body: String,
 }
 
@@ -234,22 +232,6 @@ fn generate_chapter_output(
                 underscores,
             )?;
         }
-        if verbose && !chapter_template.ch_msize.is_empty() {
-            println!(
-                "Adding message size template for MPI call {} to output.",
-                mpi_call.0
-            );
-        }
-        if !chapter_template.ch_msize.is_empty() {
-            ch_output += &generate_output(
-                &chapter_template.ch_msize,
-                chapter,
-                chapter_title,
-                &mpi_call,
-                language,
-                underscores,
-            )?;
-        }
         // Add chapter body template with MPI call information
         if verbose && !chapter_template.ch_body.is_empty() {
             println!(
@@ -374,7 +356,6 @@ pub fn extract_and_generate_listings(
             } else {
                 config.templates.ch_decl.clone()
             },
-            ch_msize: config.templates.ch_msize.clone(),
             ch_body: config.templates.ch_body.clone(),
         };
 
@@ -418,7 +399,6 @@ pub fn extract_and_generate_listings(
             let chapter_templates = ChapterTemplates {
                 ch_init: config.templates.bar_init.clone(),
                 ch_decl: String::new(),
-                ch_msize: String::new(),
                 ch_body: config.templates.bar_body.clone(),
             };
 
