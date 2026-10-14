@@ -32,8 +32,6 @@ pub struct Templates {
     pub ch_decl: String,
     #[serde(default)]
     pub ch_load_imb: String,
-    #[serde(default)]
-    pub ch_msize: String,
     pub ch_body: String,
     pub bar_init: String,
     pub bar_body: String,
@@ -89,10 +87,6 @@ pub fn print_config(config: &Config) {
     println!(
         "Chapter Load Imbalance Template:\n{}",
         config.templates.ch_load_imb
-    );
-    println!(
-        "Chapter Message Size Template:\n{}",
-        config.templates.ch_msize
     );
     println!("Chapter Body Template:\n{}", config.templates.ch_body);
     println!("Barrier Init Template:\n{}", config.templates.bar_init);

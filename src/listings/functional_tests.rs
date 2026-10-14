@@ -48,7 +48,6 @@ fn make_config(chapters: Vec<u32>) -> Config {
             ch_init: "INIT %(chapter_number)d %(chapter_title)s %(mpi_call_name)s\n".to_string(),
             ch_decl: String::new(),
             ch_load_imb: String::new(),
-            ch_msize: String::new(),
             ch_body: "BODY %(mpi_call_name)s\n".to_string(),
             bar_init: "BAR_INIT %(chapter_number)d %(chapter_title)s %(mpi_call_name)s\n"
                 .to_string(),
@@ -458,7 +457,7 @@ fn test_multiple_chapters_bar_section_counts() -> Result<()> {
     Ok(())
 }
 
-/// Non-empty ch_decl/ch_msize templates must be emitted for all selected calls,
+/// Non-empty ch_decl templates must be emitted for all selected calls,
 /// and ch_load_imb must only be appended for the collective chapter.
 #[test]
 fn test_decl_msize_and_load_imb_behavior_for_collective_chapter() -> Result<()> {
@@ -466,11 +465,9 @@ fn test_decl_msize_and_load_imb_behavior_for_collective_chapter() -> Result<()> 
     let mut config = make_config(vec![3, 5]);
     config.templates.ch_decl = "DECL %(chapter_number)d %(mpi_call_name)s\n".to_string();
     config.templates.ch_load_imb = "LOAD_IMB %(chapter_number)d %(mpi_call_name)s\n".to_string();
-    config.templates.ch_msize = "MSIZE %(chapter_number)d %(mpi_call_name)s\n".to_string();
 
     let output = single_output(extract_and_generate_listings(&doc, &quiet_args(), &config)?);
     let decl_count = output.lines().filter(|l| l.starts_with("DECL ")).count();
-    let msize_count = output.lines().filter(|l| l.starts_with("MSIZE ")).count();
     let load_imb_lines: Vec<&str> = output
         .lines()
         .filter(|l| l.starts_with("LOAD_IMB "))
@@ -479,10 +476,6 @@ fn test_decl_msize_and_load_imb_behavior_for_collective_chapter() -> Result<()> 
     assert_eq!(
         decl_count, 7,
         "chapters 3+5 should emit DECL for all 7 calls, got: {output:?}"
-    );
-    assert_eq!(
-        msize_count, 7,
-        "chapters 3+5 should emit MSIZE for all 7 calls, got: {output:?}"
     );
     assert_eq!(
         load_imb_lines.len(),
@@ -500,16 +493,9 @@ fn test_decl_msize_and_load_imb_behavior_for_collective_chapter() -> Result<()> 
     let load_imb_barrier_pos = output
         .find("LOAD_IMB 5 Barrier")
         .expect("collective chapter should emit LOAD_IMB for Barrier");
-    let msize_barrier_pos = output
-        .find("MSIZE 5 Barrier")
-        .expect("collective chapter should emit MSIZE for Barrier");
     assert!(
         decl_barrier_pos < load_imb_barrier_pos,
         "DECL must come before LOAD_IMB for collective chapter entries"
-    );
-    assert!(
-        load_imb_barrier_pos < msize_barrier_pos,
-        "LOAD_IMB must come before MSIZE for collective chapter entries"
     );
     Ok(())
 }

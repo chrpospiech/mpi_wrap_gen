@@ -45,7 +45,6 @@ fn make_config(chapters: Vec<u32>) -> Config {
             ch_init: String::new(),
             ch_decl: String::new(),
             ch_load_imb: String::new(),
-            ch_msize: String::new(),
             ch_body: String::new(),
             bar_init: String::new(),
             bar_body: String::new(),

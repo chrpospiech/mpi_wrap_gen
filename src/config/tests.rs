@@ -32,7 +32,6 @@ templates:
   ch_init: "chapter: {{chapter}}"
   ch_decl: "function declaration: {{chapter}}"
   ch_load_imb: "load imbalance: {{chapter}}"
-  ch_msize: "message size: {{chapter}}"
   ch_body: "MPI function"
   bar_init: "barrier chapter: {{chapter}}"
   bar_body: "barrier MPI function"
@@ -64,7 +63,6 @@ excludes:
         .templates
         .ch_load_imb
         .contains("imbalance: {chapter}"));
-    assert!(config.templates.ch_msize.contains("message size"));
     assert!(config.templates.ch_body.contains("MPI function"));
     assert!(config.templates.bar_init.contains("{chapter}"));
     assert!(config.templates.bar_body.contains("barrier MPI function"));
