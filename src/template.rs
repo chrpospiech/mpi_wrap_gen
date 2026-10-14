@@ -102,7 +102,7 @@ pub fn generate_output(
         ("u".to_string(), "_".repeat(underscores as usize)),
         (
             "mess_size".to_string(),
-            generate_mess_size_code(language, underscores, mpi_call_info)?,
+            generate_mess_size_code(language, underscores, chapter_number, mpi_call_info)?,
         ),
     ]);
     let output = PythonFormat

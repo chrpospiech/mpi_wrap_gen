@@ -44,6 +44,7 @@ mod generate_mess_size_code_tests;
 /// # Arguments
 /// * `language` - The programming language for which to generate the code.
 /// * `underscores` - The number of underscores to use for Fortran calls.
+/// * `chapter` - The chapter number of the MPI standard relevant to the call.
 /// * `call_info` - Information about the MPI call.
 ///
 /// # Returns
@@ -62,7 +63,7 @@ mod generate_mess_size_code_tests;
 ///          "int dest".to_string(),
 ///          "int tag".to_string(),
 ///          "MPI_Comm comm".to_string()]);
-/// let result = generate_mess_size_code(&Languages::C, 0, &call_info);
+/// let result = generate_mess_size_code(&Languages::C, 0, 3, &call_info);
 /// match result {
 ///     Ok(code) => println!("Generated code: {}", code),
 ///     Err(e) => eprintln!("Error generating code: {}", e),
@@ -72,8 +73,13 @@ mod generate_mess_size_code_tests;
 pub fn generate_mess_size_code(
     language: &Languages,
     underscores: u8,
+    chapter: u32,
     call_info: &MpiCallInfo,
 ) -> Result<String> {
+    // No MPI calls with message sizes in chapter 4
+    if chapter == 4 {
+        return Ok("MPI_Count message_size=0;".to_string());
+    }
     // Join call_info.1 into a single string with `,` as separator
     let joined_parameters = call_info.1.join(",");
     // Search for matches of the regular expression in the joined parameters string
