@@ -93,22 +93,22 @@ fn test_all_placeholders() -> Result<()> {
 
 #[test]
 fn test_mpi_call_params_substitution() -> Result<()> {
-    let template = "%(mpi_call_name_lc)s(%(mpi_call_params)s)";
+    let template = "%(mpi_call)s";
     let info = sample_call_info();
     let output = generate_output(template, 1, "Title", &info, &Languages::C, 0)?;
     assert_eq!(
         output,
-        "send(const void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm)"
+        "MPI_Send(const void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm)"
     );
     Ok(())
 }
 
 #[test]
 fn test_mpi_call_params_fortran_substitution() -> Result<()> {
-    let template = "%(mpi_call_name_lc)s(%(mpi_call_params)s)";
+    let template = "%(mpi_call)s";
     let info = ("Send".to_string(), vec!["int count".to_string()]);
     let output = generate_output(template, 1, "Title", &info, &Languages::Fortran, 0)?;
-    assert_eq!(output, "send(MPI_Fint* count, MPI_Fint* ierror)");
+    assert_eq!(output, "mpi_send(MPI_Fint* count, MPI_Fint* ierror)");
     Ok(())
 }
 
