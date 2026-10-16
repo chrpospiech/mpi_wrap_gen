@@ -1,5 +1,6 @@
 /target
 .vscode
+.clang_format
 .markdownlint.yaml
 .venv
 __pycache__/
