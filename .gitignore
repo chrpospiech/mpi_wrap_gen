@@ -1,6 +1,6 @@
 /target
 .vscode
-.clang_format
+.clang-format
 .markdownlint.yaml
 .venv
 __pycache__/
@@ -11,3 +11,4 @@ pyproject.toml
 .mdl*
 uv.lock
 /lmx_trace
+/tmp
