@@ -16,7 +16,7 @@
 // Description: ~/tools/Rust/mpi_wrap_gen/src/template.rs
 // Author: Dr. Christoph Pospiech
 
-use crate::arguments::format_mpi_call;
+use crate::arguments::{format_mpi_call, format_mpi_definition};
 use crate::config::Languages;
 use crate::mess_size::generate_mess_size_code;
 use crate::mpi_calls::MpiCallInfo;
@@ -88,6 +88,7 @@ pub fn generate_output(
     underscores: u8,
 ) -> Result<String> {
     let mpi_call_name_lc = mpi_call_info.0.to_lowercase();
+    let mpi_definition = format_mpi_definition(language, underscores, mpi_call_info)?;
     let mpi_call = format_mpi_call(language, underscores, mpi_call_info)?;
     let vars = std::collections::HashMap::<String, String>::from([
         ("chapter_number".to_string(), chapter_number.to_string()),
@@ -98,6 +99,7 @@ pub fn generate_output(
             "mpi_call_name_id".to_string(),
             format!("{}_id,", mpi_call_name_lc),
         ),
+        ("mpi_definition".to_string(), mpi_definition),
         ("mpi_call".to_string(), mpi_call),
         ("u".to_string(), "_".repeat(underscores as usize)),
         (
