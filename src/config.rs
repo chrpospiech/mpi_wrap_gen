@@ -33,7 +33,9 @@ pub struct Templates {
     #[serde(default)]
     pub ch_load_imb: String,
     pub ch_body: String,
+    #[serde(default)]
     pub bar_init: String,
+    #[serde(default)]
     pub bar_body: String,
     #[serde(default)]
     pub footer: String,
