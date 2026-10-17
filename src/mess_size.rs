@@ -33,7 +33,10 @@ mod generate_mess_size_code_tests;
 /// .*void\*\s+\w+,int\s+(\w+),MPI_Datatype\s+(\w+)
 /// ```
 ///
-/// If no matches are found, the string "MPI_Count message_size=0;" is returned.
+/// If no matches are found, the string "MPI_Count message_size = -1;" is returned.
+/// The default message size of -1 indicates that this MPI call does not have a
+/// meaningful message size.
+///
 /// If a match is found, the variable names captured by the regular expression are
 /// placed into the generated C code to compute the message size.
 /// Depending on the values of `language` and `underscores` the generated code
@@ -79,9 +82,9 @@ pub fn generate_mess_size_code(
     // Search for matches of the regular expression in the joined parameters string
     let re = Regex::new(r".*void\*\s+\w+,int\s+(\w+),MPI_Datatype\s+(\w+)")?;
     let captures = re.captures(&joined_parameters);
-    // If no matches are found, return a default message size of 0.
+    // If no matches are found, return a default message size of -1.
     if captures.is_none() {
-        return Ok("MPI_Count message_size=0;".to_string());
+        return Ok("MPI_Count message_size = -1;".to_string());
     }
     let count_var = &captures.as_ref().unwrap()[1];
     let datatype_var = &captures.as_ref().unwrap()[2];

@@ -36,7 +36,7 @@ fn send_call_info() -> MpiCallInfo {
 fn test_no_match_returns_default_message_size() -> Result<()> {
     let call_info: MpiCallInfo = ("Barrier".to_string(), vec!["MPI_Comm comm".to_string()]);
     let code = generate_mess_size_code(&Languages::C, 0, &call_info)?;
-    assert_eq!(code, "MPI_Count message_size=0;");
+    assert_eq!(code, "MPI_Count message_size = -1;");
     Ok(())
 }
 
