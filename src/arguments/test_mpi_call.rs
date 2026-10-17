@@ -16,10 +16,7 @@ fn format_mpi_call_c_formats_arguments() -> Result<()> {
 
     let formatted = format_mpi_call(&Languages::C, 0, &call_info)?;
 
-    assert_eq!(
-        formatted,
-        "MPI_Send(const void* buf, int count, MPI_Datatype datatype)"
-    );
+    assert_eq!(formatted, "MPI_Send(buf, count, datatype)");
     Ok(())
 }
 
@@ -51,8 +48,7 @@ fn format_mpi_call_formats_fortran_arguments() -> Result<()> {
         formatted,
         format!(
             "mpi_send__({}, {})",
-            "void* buf, MPI_Fint* count, MPI_Fint* datatype",
-            "char* name, MPI_Fint* ierror, MPI_Fint name_len"
+            "buf, count, datatype", "name, ierror, name_len"
         )
     );
     Ok(())
@@ -72,7 +68,7 @@ fn format_mpi_call_normalizes_fortran_handle_arrays() -> Result<()> {
 
     assert_eq!(
         formatted,
-        "mpi_waitsome(MPI_Fint* array_of_requests, char** argv, MPI_Fint* ierror, MPI_Fint argv_len)"
+        "mpi_waitsome(array_of_requests, argv, ierror, argv_len)"
     );
     Ok(())
 }
