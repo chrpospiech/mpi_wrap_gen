@@ -105,16 +105,21 @@ fn test_mpi_calls_for_page_range_finds_send() -> Result<()> {
     );
 
     let (_, params) = &send_calls[0];
-    // lopdf may strip spaces, so check with contains
-    assert!(
-        params.iter().any(|p| p.contains("buf")),
+    // lopdf may strip spaces, but we need the exact spaces
+    assert_eq!(
+        params[0], "const void* buf",
         "MPI_Send should have a 'buf' parameter, got: {:?}",
-        params
+        params[0]
     );
-    assert!(
-        params.iter().any(|p| p.contains("comm")),
+    assert_eq!(
+        params[2], "MPI_Datatype datatype",
+        "MPI_Send should have a 'datatype' parameter, got: {:?}",
+        params[2]
+    );
+    assert_eq!(
+        params[5], "MPI_Comm comm",
         "MPI_Send should have a 'comm' parameter, got: {:?}",
-        params
+        params[5]
     );
     Ok(())
 }
@@ -137,6 +142,52 @@ fn test_mpi_calls_for_page_range_finds_recv() -> Result<()> {
         params.iter().any(|p| p.contains("status")),
         "MPI_Recv should have a 'status' parameter, got: {:?}",
         params
+    );
+    Ok(())
+}
+
+#[test]
+fn test_mpi_calls_for_page_range_finds_waitsome() -> Result<()> {
+    let doc = Document::load(test_pdf_path())?;
+    let num_pages = doc.page_iter().count() as u32;
+    let calls = mpi_calls_for_page_range(&doc, 1, num_pages + 1)?;
+
+    let waitsome_calls: Vec<_> = calls
+        .iter()
+        .filter(|(name, _)| name == "Waitsome")
+        .collect();
+    assert!(
+        !waitsome_calls.is_empty(),
+        "Expected to find MPI_Waitsome in test PDF, found: {:?}",
+        calls.iter().map(|(n, _)| n).collect::<Vec<_>>()
+    );
+
+    let (_, params) = &waitsome_calls[0];
+    // lopdf may strip spaces, but we need the exact spaces
+    assert_eq!(
+        params[0], "int incount",
+        "MPI_Waitsome should have 'incount' parameter, got: {:?}",
+        params[0]
+    );
+    assert_eq!(
+        params[1], "MPI_Request array_of_requests[]",
+        "MPI_Waitsome should have 'array_of_requests' parameter, got: {:?}",
+        params[1]
+    );
+    assert_eq!(
+        params[2], "int *outcount",
+        "MPI_Waitsome should have 'outcount' parameter, got: {:?}",
+        params[2]
+    );
+    assert_eq!(
+        params[3], "int array_of_indices[]",
+        "MPI_Waitsome should have 'array_of_indices' parameter, got: {:?}",
+        params[3]
+    );
+    assert_eq!(
+        params[4], "MPI_Status array_of_statuses[]",
+        "MPI_Waitsome should have 'array_of_statuses' parameter, got: {:?}",
+        params[4]
     );
     Ok(())
 }
