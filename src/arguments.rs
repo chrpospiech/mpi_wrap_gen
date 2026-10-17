@@ -65,6 +65,46 @@ static MPI_C_TO_C_TYPES: phf::Map<&'static str, &'static str> = phf::phf_map! {
     "MPI_Win_errhandler_function*" => "MPI_Win_errhandler_function*",
 };
 
+/// Formats the extension arguments of an MPI function in the Fortran language.
+/// The extension arguments are additional parameters required for Fortran
+/// compatibility, such as
+/// 1. The error code.
+/// 2. The string length for character arguments.
+///
+/// In the special case of `MPI_Comm_spawn` and `MPI_Comm_spawn_multiple`,
+/// a vector of strings (C type char* argv[]) representing the command-line
+/// arguments is also included in the argument list. The MPI standard
+/// requires that all strings in this array (or array of arrays) have the same length.
+/// Hence a single string length argument is sufficient to represent the length of
+/// all strings in the array. Hence no special handling is required for arrays of strings.
+/// We only have to strip the `[]` suffix from the argument name.
+///
+/// Arguments
+/// * `call_info` - A tuple containing the MPI call name and its parameters.
+///
+/// # Returns
+/// A `Result` containing the formatted extension arguments as a vector of strings
+/// (same format as the original argument list `call_info.1`)
+/// or an error if formatting fails.
+fn format_mpi_extension_arguments_fortran(call_info: &MpiCallInfo) -> Result<Vec<String>> {
+    let mut extension_args: Vec<String> = Vec::new();
+    // Add the error code argument
+    extension_args.push("MPI_Fint* ierror".to_string());
+    // Add string length arguments for each character argument
+    for param in &call_info.1 {
+        if param.trim().starts_with("char*") {
+            let name = param.split_whitespace().nth(1).unwrap();
+            // strip a potential `[]` suffix from array-of-strings parameters
+            let name = match name.split_once('[') {
+                Some((name, suffix)) if suffix.ends_with(']') => name,
+                _ => name,
+            };
+            extension_args.push(format!("MPI_Fint {}_len", name));
+        }
+    }
+    Ok(extension_args)
+}
+
 /// Formats the definition of an MPI function in the Fortran language.
 /// The wrapper itself is written in C. The argument list is adapted to
 /// match the Fortran calling conventions. This is done in the following steps:
@@ -88,14 +128,13 @@ static MPI_C_TO_C_TYPES: phf::Map<&'static str, &'static str> = phf::phf_map! {
 /// # Returns
 /// A `Result` containing the formatted MPI call as a string, or an error if formatting fails.
 ///
-pub fn format_mpi_definition_fortran(underscores: u8, call_info: &MpiCallInfo) -> Result<String> {
+fn format_mpi_definition_fortran(underscores: u8, call_info: &MpiCallInfo) -> Result<String> {
     let call_name = format!(
         "mpi_{}{}",
         call_info.0.to_lowercase(),
         "_".repeat(underscores as usize)
     );
     let mut formatted_args: Vec<String> = Vec::new();
-    let mut length_args: Vec<String> = Vec::new();
 
     for param in &call_info.1 {
         let param = param.trim();
@@ -114,22 +153,16 @@ pub fn format_mpi_definition_fortran(underscores: u8, call_info: &MpiCallInfo) -
             .get(arg_type)
             .copied()
             .unwrap_or("MPI_Fint*");
-        // Add additional length argument for strings in Fortran.
-        let is_string = mapped_type == "char*";
+        // Add additional `*` for arrays.
         let mapped_type = if is_array && arg_type.trim_end().ends_with('*') {
             format!("{}*", mapped_type)
         } else {
             mapped_type.to_string()
         };
         formatted_args.push(format!("{} {}", mapped_type, arg_name));
-        if is_string {
-            // Fortran passes a hidden trailing length argument for each string.
-            length_args.push(format!("MPI_Fint {}_len", arg_name));
-        }
     }
 
-    formatted_args.push("MPI_Fint* ierror".to_string());
-    formatted_args.extend(length_args);
+    formatted_args.extend(format_mpi_extension_arguments_fortran(call_info)?);
 
     Ok(format!("{}({})", call_name, formatted_args.join(", ")))
 }
@@ -226,8 +259,11 @@ pub fn format_mpi_call(
     underscores: u8,
     call_info: &MpiCallInfo,
 ) -> Result<String> {
-    let params = call_info
-        .1
+    let mut ext_params = call_info.1.clone();
+    if let Languages::Fortran = language {
+        ext_params.extend(format_mpi_extension_arguments_fortran(call_info)?);
+    }
+    let extended_params = ext_params
         .iter()
         .map(|arg| {
             let parts: Vec<&str> = arg.split_whitespace().collect();
@@ -247,5 +283,5 @@ pub fn format_mpi_call(
             "_".repeat(underscores as usize)
         ),
     };
-    Ok(format!("{}({})", call_name, params))
+    Ok(format!("{}({})", call_name, extended_params))
 }
