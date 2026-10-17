@@ -21,6 +21,9 @@ use crate::mpi_calls::MpiCallInfo;
 use anyhow::Result;
 
 #[cfg(test)]
+mod test_mpi_defs;
+
+#[cfg(test)]
 mod test_mpi_call;
 
 /// Static hash for MPI call formatting, mapping C data types used in MPI calls to

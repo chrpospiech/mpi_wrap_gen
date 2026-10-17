@@ -1,4 +1,4 @@
-use super::format_mpi_definition;
+use super::format_mpi_call;
 use crate::config::Languages;
 use crate::mpi_calls::MpiCallInfo;
 use anyhow::Result;
@@ -14,12 +14,9 @@ fn format_mpi_call_c_formats_arguments() -> Result<()> {
         ],
     );
 
-    let formatted = format_mpi_definition(&Languages::C, 0, &call_info)?;
+    let formatted = format_mpi_call(&Languages::C, 0, &call_info)?;
 
-    assert_eq!(
-        formatted,
-        "MPI_Send(const void* buf, int count, MPI_Datatype datatype)"
-    );
+    assert_eq!(formatted, "MPI_Send(buf, count, datatype)");
     Ok(())
 }
 
@@ -27,7 +24,7 @@ fn format_mpi_call_c_formats_arguments() -> Result<()> {
 fn format_mpi_call_handles_empty_parameter_list() -> Result<()> {
     let call_info: MpiCallInfo = ("Barrier".to_string(), vec![]);
 
-    let formatted = format_mpi_definition(&Languages::C, 0, &call_info)?;
+    let formatted = format_mpi_call(&Languages::C, 0, &call_info)?;
 
     assert_eq!(formatted, "MPI_Barrier()");
     Ok(())
@@ -45,14 +42,13 @@ fn format_mpi_call_formats_fortran_arguments() -> Result<()> {
         ],
     );
 
-    let formatted = format_mpi_definition(&Languages::Fortran, 2, &call_info)?;
+    let formatted = format_mpi_call(&Languages::Fortran, 2, &call_info)?;
 
     assert_eq!(
         formatted,
         format!(
             "mpi_send__({}, {})",
-            "void* buf, MPI_Fint* count, MPI_Fint* datatype",
-            "char* name, MPI_Fint* ierror, MPI_Fint name_len"
+            "buf, count, datatype", "name, ierror, name_len"
         )
     );
     Ok(())
@@ -68,11 +64,11 @@ fn format_mpi_call_normalizes_fortran_handle_arrays() -> Result<()> {
         ],
     );
 
-    let formatted = format_mpi_definition(&Languages::Fortran, 0, &call_info)?;
+    let formatted = format_mpi_call(&Languages::Fortran, 0, &call_info)?;
 
     assert_eq!(
         formatted,
-        "mpi_waitsome(MPI_Fint* array_of_requests, char** argv, MPI_Fint* ierror, MPI_Fint argv_len)"
+        "mpi_waitsome(array_of_requests, argv, ierror, argv_len)"
     );
     Ok(())
 }
