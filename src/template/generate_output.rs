@@ -70,7 +70,7 @@ fn test_mpi_call_name_substitution() -> Result<()> {
 
 #[test]
 fn test_all_placeholders() -> Result<()> {
-    let template = "Chapter %(chapter_number)d: %(chapter_title)s - %(mpi_call)s";
+    let template = "Chapter %(chapter_number)d: %(chapter_title)s - %(mpi_definition)s";
     let info = sample_call_info();
     let output = generate_output(
         template,
@@ -93,7 +93,7 @@ fn test_all_placeholders() -> Result<()> {
 
 #[test]
 fn test_mpi_call_params_substitution() -> Result<()> {
-    let template = "%(mpi_call)s";
+    let template = "%(mpi_definition)s";
     let info = sample_call_info();
     let output = generate_output(template, 1, "Title", &info, &Languages::C, 0)?;
     assert_eq!(
@@ -105,7 +105,7 @@ fn test_mpi_call_params_substitution() -> Result<()> {
 
 #[test]
 fn test_mpi_call_params_fortran_substitution() -> Result<()> {
-    let template = "%(mpi_call)s";
+    let template = "%(mpi_definition)s";
     let info = ("Send".to_string(), vec!["int count".to_string()]);
     let output = generate_output(template, 1, "Title", &info, &Languages::Fortran, 0)?;
     assert_eq!(output, "mpi_send(MPI_Fint* count, MPI_Fint* ierror)");
@@ -114,7 +114,7 @@ fn test_mpi_call_params_fortran_substitution() -> Result<()> {
 
 #[test]
 fn test_fortran_mpi_call_with_underscores() -> Result<()> {
-    let template = "%(mpi_call)s";
+    let template = "%(mpi_definition)s";
     let info = ("Send".to_string(), vec!["int count".to_string()]);
     let output = generate_output(template, 1, "Title", &info, &Languages::Fortran, 2)?;
     assert_eq!(output, "mpi_send__(MPI_Fint* count, MPI_Fint* ierror)");
@@ -141,7 +141,7 @@ fn test_empty_template() -> Result<()> {
 
 #[test]
 fn test_empty_params() -> Result<()> {
-    let template = "%(mpi_call)s";
+    let template = "%(mpi_definition)s";
     let info = ("Barrier".to_string(), vec![]);
     let output = generate_output(template, 1, "Title", &info, &Languages::C, 0)?;
     assert_eq!(output, "MPI_Barrier()");
