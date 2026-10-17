@@ -265,6 +265,7 @@ pub fn format_mpi_call(
     }
     let extended_params = ext_params
         .iter()
+        .filter(|arg| arg.trim() != "void")
         .map(|arg| {
             let parts: Vec<&str> = arg.split_whitespace().collect();
             let name = parts.last().unwrap_or(&"");
