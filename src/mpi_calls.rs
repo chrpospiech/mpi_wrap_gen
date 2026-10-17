@@ -236,30 +236,83 @@ fn parse_parameters(params_str: &str) -> Vec<String> {
 }
 
 /// Insert spaces that may be missing due to PDF text extraction stripping
-/// whitespace. Handles pointer operators and common C type keywords/qualifiers
-/// (e.g., `const`, `void`, `int`).
+/// whitespace. Handles pointer operators and common C type qualifiers,
+/// type modifiers and C data types.
+///
+/// The list of C type qualifiers are `const`, `volatile` and `restrict`.
+/// The list of C type modifiers are `unsigned`, `signed`, `short` and `long`.
+/// The list of C data types are `void*`, `void`, `int`, `char`, `float` and `double`.
+/// The latter list needs to be extended by the MPI-specific data types, such as
+/// `MPI_Comm`, `MPI_Datatype`, `MPI_Request`, `MPI_Status`, `MPI_File`,
+/// `MPI_Aint`, `MPI_Offset`, `MPI_Count`, `MPI_Win`, `MPI_Group`, `MPI_Op`, `MPI_Info`.
+///
+/// For each of these categories, the function will attempt to insert spaces
+/// where they are missing. This is done by creating a regular expression
+/// by joining the keywords with the separator '|' and enclosing them in
+/// parentheses. This regular expression is then extended with (\w+).
+/// For the C type qualifiers for example, the resulting regular expression
+/// would be `(const|volatile|restrict)(\w+)`.
+/// If the regular expression matches, a space is inserted between the two groups.
+///
+/// Per the MPI standard, `*` is placed next to the variable name rather than
+/// the type, so a trailing space is inserted before any remaining `*` that
+/// directly joins two identifiers. The `void*` data type is the exception:
+/// since it is matched as a single keyword above, it keeps its `*` attached
+/// to `void` (e.g., `void* buf`).
 ///
 /// Examples:
-/// - `"constvoid*buf"` → `"const void* buf"`
+/// - `"constvoid*buf"` → `"const void*buf"` → `"const void* buf"`
 /// - `"intcount"` → `"int count"`
+/// - `"MPI_Commcomm"` → `"MPI_Comm comm"`
+/// - `"MPI_Request*req"` → `"MPI_Request *req"`
+///
+/// Arguments:
+/// - `s`: The input string potentially missing spaces.
+///
+/// Returns:
+/// A new string with spaces inserted where necessary.
 fn insert_missing_spaces(s: &str) -> String {
-    // Insert space after * when immediately followed by a word character
-    // (e.g., "*buf" -> "* buf"), keeping * attached to the type on the left.
-    let re_after_star = Regex::new(r"\*(\w)").unwrap();
-    let result = re_after_star.replace_all(s, "* $1").to_string();
+    const QUALIFIERS: &[&str] = &["const", "volatile", "restrict"];
+    const MODIFIERS: &[&str] = &["unsigned", "signed", "short", "long"];
+    const DATA_TYPES: &[&str] = &[
+        "void*",
+        "void",
+        "int",
+        "char",
+        "float",
+        "double",
+        "MPI_Comm",
+        "MPI_Datatype",
+        "MPI_Request",
+        "MPI_Status",
+        "MPI_File",
+        "MPI_Aint",
+        "MPI_Offset",
+        "MPI_Count",
+        "MPI_Win",
+        "MPI_Group",
+        "MPI_Op",
+        "MPI_Info",
+    ];
 
-    // Insert space before C type keywords/qualifiers when they are immediately
-    // preceded by a word character (e.g., "constvoid" -> "const void").
-    let re_mid =
-        Regex::new(r"(\w)(const|unsigned|signed|short|long|void|int|char|float|double)").unwrap();
-    let result = re_mid.replace_all(&result, "$1 $2").to_string();
+    // For each category, build "(keyword1|keyword2|...)(\w+)" and insert a
+    // space between the matched keyword and the word characters that follow it.
+    let mut result = s.to_string();
+    for keywords in [QUALIFIERS, MODIFIERS, DATA_TYPES] {
+        let alternation = keywords
+            .iter()
+            .map(|k| regex::escape(k))
+            .collect::<Vec<_>>()
+            .join("|");
+        let re = Regex::new(&format!("({})(\\w+)", alternation)).unwrap();
+        result = re.replace_all(&result, "$1 $2").to_string();
+    }
 
-    // Insert space after C type keywords/qualifiers at the start of the string
-    // when immediately followed by a word character with no intervening space
-    // (e.g., "intcount" -> "int count").
-    let re_start =
-        Regex::new(r"^(const|unsigned|signed|short|long|void|int|char|float|double)(\w)").unwrap();
-    re_start.replace_all(&result, "$1 $2").to_string()
+    // Any remaining "*" directly joining two identifiers belongs to a
+    // pointer whose type was not matched above (e.g., "MPI_Request*req");
+    // attach it to the variable name on its right.
+    let re_before_star = Regex::new(r"(\w)\*(\w)").unwrap();
+    re_before_star.replace_all(&result, "$1 *$2").to_string()
 }
 
 /// Remove line numbers and normalize the text extracted from the PDF.
