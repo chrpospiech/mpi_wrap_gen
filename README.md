@@ -88,15 +88,16 @@ templates:
 
 Templates use Python-style format strings (`%(name)type`):
 
-| Placeholder             | Type    | Description                                  |
-|-------------------------|---------|----------------------------------------------|
-| `%(chapter_number)d`    | integer | Chapter number                               |
-| `%(chapter_title)s`     | string  | Chapter title from the PDF outline           |
-| `%(mpi_call_name)s`     | string  | MPI function name without the `MPI_` prefix  |
-| `%(mpi_call_name_lc)s`  | string  | `%(mpi_call_name)s` converted to lower case  |
-| `%(mpi_call_name_id)s`  | string  | `%(mpi_call_name_lc)s` with an `_id,` suffix |
-| `%(mpi_call)s`          | string  | Language dependent complete MPI call         |
-| `%(u)s`                 | string  | "_".repeat(underscores)                      |
+| Placeholder             | Type    | Description                                   |
+|-------------------------|---------|-----------------------------------------------|
+| `%(chapter_number)d`    | integer | Chapter number                                |
+| `%(chapter_title)s`     | string  | Chapter title from the PDF outline            |
+| `%(mpi_call_name)s`     | string  | MPI function name without the `MPI_` prefix   |
+| `%(mpi_call_name_lc)s`  | string  | `%(mpi_call_name)s` converted to lower case   |
+| `%(mpi_call_name_id)s`  | string  | `%(mpi_call_name_lc)s` with an `_id,` suffix  |
+| `%(mpi_definition)s`    | string  | Language dependent definition of MPI function |
+| `%(mpi_call)s`          | string  | Language dependent complete MPI call          |
+| `%(u)s`                 | string  | "_".repeat(underscores)                       |
 
 The `header` template is emitted once at the start of the output. For each chapter
 with MPI calls, `ch_init` is emitted once (using the first call found), followed by
