@@ -96,9 +96,9 @@ MPI names (`init`) or `MPI_`-prefixed names (`MPI_Init`), and also suppress matc
 
 ### Templates
 
-Templates are strings that use Python-style format strings (`%(name)type`). The output
-is the concatenation of different templates with with the Python style format strings
-evaluated.
+Chapter and barrier templates use Python-style placeholders (`%(name)type`), which
+are evaluated before the generated fragments are concatenated. `header` and `footer`
+are copied verbatim and do not support placeholder substitution.
 
 The `header` template is emitted once at the start of the output. For each chapter
 with MPI calls, `ch_init` is emitted once (using the first call found), followed by
