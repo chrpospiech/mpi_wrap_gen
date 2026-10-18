@@ -63,6 +63,8 @@ mpi_wrap_gen --no-prettify -u 2 config.yml
 
 ## Configuration File
 
+### Configuration Example
+
 The configuration file is a YAML document with the following fields:
 
 ```yaml
@@ -84,9 +86,30 @@ templates:
   footer: "/* end of file */\n"
 ```
 
-### Template Placeholders
+### Configuration File Details
 
-Templates use Python-style format strings (`%(name)type`):
+`excludes` is optional. Entries are matched case-insensitively, accept either bare
+MPI names (`init`) or `MPI_`-prefixed names (`MPI_Init`), and also suppress matching
+`*_barrier` entries in the collective barrier section.
+
+### Templates
+
+Templates are strings that use Python-style format strings (`%(name)type`). The output
+is the concatenation of different templates with with the Python style format strings
+evaluated.
+
+The `header` template is emitted once at the start of the output. For each chapter
+with MPI calls, `ch_init` is emitted once (using the first call found), followed by
+`ch_body` once per MPI call. The `footer` template is emitted once at the end.
+
+If any of the processed chapters has a title containing the word "collective"
+(case-insensitive), a barrier section is appended before the footer. `bar_init` is
+emitted once for that section (using the first barrier call found), followed by
+`bar_body` once per barrier call. In the barrier templates, `%(mpi_call_name)s`
+contains the MPI function name with the `_barrier` suffix already appended
+(e.g. `Bcast_barrier`).
+
+### Template Placeholders
 
 | Placeholder             | Type    | Description                                   |
 |-------------------------|---------|-----------------------------------------------|
@@ -98,21 +121,6 @@ Templates use Python-style format strings (`%(name)type`):
 | `%(mpi_definition)s`    | string  | Language dependent definition of MPI function |
 | `%(mpi_call)s`          | string  | Language dependent complete MPI call          |
 | `%(u)s`                 | string  | "_".repeat(underscores)                       |
-
-The `header` template is emitted once at the start of the output. For each chapter
-with MPI calls, `ch_init` is emitted once (using the first call found), followed by
-`ch_body` once per MPI call. The `footer` template is emitted once at the end.
-
-`excludes` is optional. Entries are matched case-insensitively, accept either bare
-MPI names (`init`) or `MPI_`-prefixed names (`MPI_Init`), and also suppress matching
-`*_barrier` entries in the collective barrier section.
-
-If any of the processed chapters has a title containing the word "collective"
-(case-insensitive), a barrier section is appended before the footer. `bar_init` is
-emitted once for that section (using the first barrier call found), followed by
-`bar_body` once per barrier call. In the barrier templates, `%(mpi_call_name)s`
-contains the MPI function name with the `_barrier` suffix already appended
-(e.g. `Bcast_barrier`).
 
 ## Project Structure
 
