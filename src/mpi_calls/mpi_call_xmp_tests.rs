@@ -42,8 +42,8 @@ fn test_mpi_calls_for_page_range_finds_calls() -> Result<()> {
     );
     assert_eq!(
         calls.len(),
-        22,
-        "Expected to find 22 MPI calls, found: {:?}",
+        23,
+        "Expected to find 23 MPI calls, found: {:?}",
         calls.iter().map(|(n, _)| n).collect::<Vec<_>>()
     );
     Ok(())
@@ -170,7 +170,7 @@ fn test_mpi_calls_for_page_range_finds_waitsome() -> Result<()> {
         params[0]
     );
     assert_eq!(
-        params[1], "MPI_Request array_of_requests[]",
+        params[1], "MPI_Request array_of_requests []",
         "MPI_Waitsome should have 'array_of_requests' parameter, got: {:?}",
         params[1]
     );
@@ -180,12 +180,12 @@ fn test_mpi_calls_for_page_range_finds_waitsome() -> Result<()> {
         params[2]
     );
     assert_eq!(
-        params[3], "int array_of_indices[]",
+        params[3], "int array_of_indices []",
         "MPI_Waitsome should have 'array_of_indices' parameter, got: {:?}",
         params[3]
     );
     assert_eq!(
-        params[4], "MPI_Status array_of_statuses[]",
+        params[4], "MPI_Status array_of_statuses []",
         "MPI_Waitsome should have 'array_of_statuses' parameter, got: {:?}",
         params[4]
     );
