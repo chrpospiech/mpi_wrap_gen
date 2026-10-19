@@ -17,7 +17,7 @@
 // Author: Dr. Christoph Pospiech
 
 use crate::chapters::{get_chapter_page, ChapterMap};
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use lopdf::Document;
 use regex::Regex;
 
@@ -230,14 +230,16 @@ where
 fn parse_parameters(params_str: &str) -> Vec<String> {
     params_str
         .split(',')
-        .map(|p| normalize_whitespace(&insert_missing_spaces(p)))
+        .map(format_variable_declaration)
+        .filter_map(|res| res.ok())
         .filter(|p| !p.is_empty())
         .collect()
 }
 
-/// Insert spaces that may be missing due to PDF text extraction stripping
-/// whitespace. Handles pointer operators and common C type qualifiers,
-/// type modifiers and C data types.
+/// Parse a single parameter from an MPI call signature.
+/// This function handles missing spaces and tries to extract
+/// potential C type qualifiers, type modifiers, C data types
+/// and the variable name.
 ///
 /// The list of C type qualifiers are `const`, `volatile` and `restrict`.
 /// The list of C type modifiers are `unsigned`, `signed`, `short` and `long`.
@@ -246,37 +248,50 @@ fn parse_parameters(params_str: &str) -> Vec<String> {
 /// `MPI_Comm`, `MPI_Datatype`, `MPI_Request`, `MPI_Status`, `MPI_File`,
 /// `MPI_Aint`, `MPI_Offset`, `MPI_Count`, `MPI_Win`, `MPI_Group`, `MPI_Op`, `MPI_Info`.
 ///
-/// For each of these categories, the function will attempt to insert spaces
-/// where they are missing. This is done by creating a regular expression
+/// For each of these categories, we create a group in a regular expression
 /// by joining the keywords with the separator '|' and enclosing them in
-/// parentheses. This regular expression is then extended with (\w+).
-/// For the C type qualifiers for example, the resulting regular expression
-/// would be `(const|volatile|restrict)(\w+)`.
-/// If the regular expression matches, a space is inserted between the two groups.
+/// parentheses.
 ///
-/// Per the MPI standard, `*` is placed next to the variable name rather than
-/// the type, so a trailing space is inserted before any remaining `*` that
-/// directly joins two identifiers. The `void*` data type is the exception:
-/// since it is matched as a single keyword above, it keeps its `*` attached
-/// to `void` (e.g., `void* buf`).
+/// To account for the variable name, three additional groups are appended
+/// to the regular expression:
+/// - One for the pointer operator (if present)
+/// - One for the variable name
+/// - One for any array brackets (if present)
 ///
-/// Examples:
-/// - `"constvoid*buf"` → `"const void*buf"` → `"const void* buf"`
-/// - `"intcount"` → `"int count"`
-/// - `"MPI_Commcomm"` → `"MPI_Comm comm"`
-/// - `"MPI_Request*req"` → `"MPI_Request *req"`
+/// Several of these groups are optional, as C type qualifiers, type modifiers,
+/// and array brackets may not always be present in a parameter declaration.
+/// We have the choice of `(group|entries)?` versus `(group|entries|)`
+/// to make the group optional. Only in the latter case will the group
+/// match an empty string if the corresponding component is absent.
+///
+/// Unfortunately, we cannot combine all groups into a single regular expression
+/// because some groups are optional and and may deliver empty matches even when
+/// the corresponding component is **not** absent. Hence, we start with the last
+/// four groups corresponding to the C data type, pointer operator, variable name,
+/// and array brackets, and work our way backward to handle optional components
+/// correctly.
+///
+/// This is done by joining the last four groups together with a separator `\s*`
+/// to form a first regular expression used for parsing MPI call signatures.
+///
+/// - If there is no match, an error is returned.
+/// - If there is a match, the captured groups are joined to reconstruct the
+///   correctly spaced variable declaration.
+///
+/// We also catch the part preceding the variable declaration, and check for
+/// any C type qualifiers and type modifiers.
 ///
 /// Arguments:
-/// - `s`: The input string potentially missing spaces.
+/// - `s`: The input string representing a single parameter from an MPI call signature.
 ///
 /// Returns:
-/// A new string with spaces inserted where necessary.
-fn insert_missing_spaces(s: &str) -> String {
+/// - `Ok(String)`: The correctly spaced variable declaration if parsing is successful.
+/// - `Err`: An error message if parsing fails.
+fn format_variable_declaration(s: &str) -> Result<String> {
     const QUALIFIERS: &[&str] = &["const", "volatile", "restrict"];
     const MODIFIERS: &[&str] = &["unsigned", "signed", "short", "long"];
     const DATA_TYPES: &[&str] = &[
-        "void*",
-        "void",
+        "void\\*",
         "int",
         "char",
         "float",
@@ -294,25 +309,45 @@ fn insert_missing_spaces(s: &str) -> String {
         "MPI_Op",
         "MPI_Info",
     ];
-
-    // For each category, build "(keyword1|keyword2|...)(\w+)" and insert a
-    // space between the matched keyword and the word characters that follow it.
-    let mut result = s.to_string();
-    for keywords in [QUALIFIERS, MODIFIERS, DATA_TYPES] {
-        let alternation = keywords
-            .iter()
-            .map(|k| regex::escape(k))
-            .collect::<Vec<_>>()
-            .join("|");
-        let re = Regex::new(&format!("({})(\\w+)", alternation)).unwrap();
-        result = re.replace_all(&result, "$1 $2").to_string();
+    // Build regular expression fragments for parsing MPI call signatures using these lists.
+    let data_types_re = format!("({})", DATA_TYPES.join("|"));
+    let pointer_re = r"(\*|)".to_string();
+    let identifier_re = r"(\w+)".to_string();
+    let array_re = r"(\[\]|)".to_string();
+    // These regular expression pieces are joined together to form a complete
+    // regular expression for parsing MPI call signatures.
+    let typed_variable_signature_re = Regex::new(&format!(
+        "(.*){}\\s*{}\\s*{}\\s*{}.*",
+        data_types_re, pointer_re, identifier_re, array_re,
+    ))?;
+    // If s matches the MPI call signature regular expression, return a formatted string
+    // composed from joining the matching groups. We trim the resulting string to remove
+    // any leading or trailing whitespace.
+    if !typed_variable_signature_re.is_match(s) {
+        bail!("Failed to extract typed variable declaration: {}", s)
     }
-
-    // Any remaining "*" directly joining two identifiers belongs to a
-    // pointer whose type was not matched above (e.g., "MPI_Request*req");
-    // attach it to the variable name on its right.
-    let re_before_star = Regex::new(r"(\w)\*(\w)").unwrap();
-    re_before_star.replace_all(&result, "$1 *$2").to_string()
+    let mut leading_part = typed_variable_signature_re.captures(s).unwrap()[1].to_string();
+    let mut typed_variable = format!(
+        "{} {}{}{}",
+        &typed_variable_signature_re.captures(s).unwrap()[2],
+        &typed_variable_signature_re.captures(s).unwrap()[3],
+        &typed_variable_signature_re.captures(s).unwrap()[4],
+        &typed_variable_signature_re.captures(s).unwrap()[5],
+    );
+    // Next we look for a C type qualifyiers and modifiers,
+    // extract them from `leading_part` and prepend them to the typed variable.
+    let chop_off_re = Regex::new(&format!(
+        "(.*)({}|{})\\s*$",
+        QUALIFIERS.join("|"),
+        MODIFIERS.join("|")
+    ))?;
+    while let Some(caps) = chop_off_re.captures(&leading_part) {
+        let qualifier_or_modifier = caps[2].to_string();
+        let remaining = caps[1].to_string();
+        typed_variable = format!("{} {}", qualifier_or_modifier, typed_variable);
+        leading_part = remaining;
+    }
+    Ok(typed_variable)
 }
 
 /// Remove line numbers and normalize the text extracted from the PDF.
@@ -329,10 +364,4 @@ fn clean_extracted_text(text: &str) -> String {
         lines.push(trimmed);
     }
     lines.join("\n")
-}
-
-/// Normalize whitespace: collapse all whitespace (including newlines) into
-/// single spaces, then trim.
-fn normalize_whitespace(s: &str) -> String {
-    s.split_whitespace().collect::<Vec<_>>().join(" ")
 }

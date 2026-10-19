@@ -170,7 +170,7 @@ fn test_mpi_calls_for_page_range_finds_waitsome() -> Result<()> {
         params[0]
     );
     assert_eq!(
-        params[1], "MPI_Request array_of_requests []",
+        params[1], "MPI_Request array_of_requests[]",
         "MPI_Waitsome should have 'array_of_requests' parameter, got: {:?}",
         params[1]
     );
@@ -180,12 +180,12 @@ fn test_mpi_calls_for_page_range_finds_waitsome() -> Result<()> {
         params[2]
     );
     assert_eq!(
-        params[3], "int array_of_indices []",
+        params[3], "int array_of_indices[]",
         "MPI_Waitsome should have 'array_of_indices' parameter, got: {:?}",
         params[3]
     );
     assert_eq!(
-        params[4], "MPI_Status array_of_statuses []",
+        params[4], "MPI_Status array_of_statuses[]",
         "MPI_Waitsome should have 'array_of_statuses' parameter, got: {:?}",
         params[4]
     );
@@ -237,7 +237,7 @@ fn test_clean_extracted_text_removes_line_numbers() -> Result<()> {
     let cleaned = clean_extracted_text(input);
     assert!(!cleaned.contains("\n1\n"), "Line numbers should be removed");
     assert!(
-        cleaned.contains("int MPI_Send"),
+        cleaned.contains("int MPI_Send(void* buf)"),
         "MPI call text should be preserved"
     );
     Ok(())
@@ -246,30 +246,38 @@ fn test_clean_extracted_text_removes_line_numbers() -> Result<()> {
 #[test]
 fn test_normalize_whitespace() -> Result<()> {
     let input = "  const void*   buf  ";
-    assert_eq!(normalize_whitespace(input), "const void* buf");
+    assert_eq!(format_variable_declaration(input)?, "const void* buf");
     Ok(())
 }
 
 #[test]
-fn test_insert_missing_spaces_pointer() -> Result<()> {
+fn test_format_variable_declaration_pointer() -> Result<()> {
     // Space is inserted after * when immediately followed by a word character.
-    assert_eq!(insert_missing_spaces("void*buf"), "void* buf");
+    assert_eq!(format_variable_declaration("void*buf")?, "void* buf");
     Ok(())
 }
 
 #[test]
-fn test_insert_missing_spaces_const_void() -> Result<()> {
+fn test_format_variable_declaration_const_void() -> Result<()> {
     // Full example from the docstring.
-    let result = normalize_whitespace(&insert_missing_spaces("constvoid*buf"));
+    let result = format_variable_declaration("constvoid*buf")?;
     assert_eq!(result, "const void* buf");
     Ok(())
 }
 
 #[test]
-fn test_insert_missing_spaces_int_identifier() -> Result<()> {
+fn test_format_variable_declaration_int_identifier() -> Result<()> {
     // Keyword at start of string followed directly by an identifier.
-    let result = normalize_whitespace(&insert_missing_spaces("intcount"));
+    let result = format_variable_declaration("intcount")?;
     assert_eq!(result, "int count");
+    Ok(())
+}
+
+#[test]
+fn test_format_variable_declaration_wrong_spacing() -> Result<()> {
+    // Keyword at start of string followed a * in the wrong spacing.
+    let result = format_variable_declaration("int* count")?;
+    assert_eq!(result, "int *count");
     Ok(())
 }
 
@@ -282,9 +290,9 @@ fn test_parse_parameters_missing_spaces() -> Result<()> {
 }
 
 #[test]
-fn test_insert_missing_spaces_already_spaced() -> Result<()> {
+fn test_format_variable_declaration_already_spaced() -> Result<()> {
     // Already-correct input must not be changed.
-    let result = normalize_whitespace(&insert_missing_spaces("const void* buf"));
+    let result = format_variable_declaration("const void* buf")?;
     assert_eq!(result, "const void* buf");
     Ok(())
 }
