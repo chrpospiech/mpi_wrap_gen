@@ -350,7 +350,9 @@ fn format_variable_declaration(s: &str) -> Result<String> {
         "MPI_Win_errhandler_function",
     ];
     // Build regular expression fragments for parsing MPI call signatures using these lists.
-    let data_types_re = format!("({})", DATA_TYPES.join("|"));
+    let mut data_types = DATA_TYPES.to_vec();
+    data_types.sort_by_key(|data_type| std::cmp::Reverse(data_type.len()));
+    let data_types_re = format!("({})", data_types.join("|"));
     let pointer_re = r"(\*+|)".to_string();
     let identifier_re = r"(\w+)".to_string();
     let array_re = r"((?:\[[^\]]*\])*)".to_string();
