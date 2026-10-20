@@ -115,7 +115,8 @@ fn mpi_calls_for_page_range(
                 .map(|m| m.as_str().to_string())
                 .unwrap_or_default();
             let params_str = cap.get(2).map(|m| m.as_str()).unwrap_or("");
-            let params = parse_parameters(params_str);
+            let params = parse_parameters(params_str)
+                .with_context(|| format!("Failed to parse parameters for MPI_{}", call_name))?;
             mpi_calls.push((call_name, params));
         }
 
@@ -227,12 +228,14 @@ where
 /// Handles missing spaces (e.g., "constvoid*buf" -> "const void* buf")
 /// by inserting spaces before C type keywords and after pointer operators,
 /// then splitting on commas and normalizing whitespace.
-fn parse_parameters(params_str: &str) -> Vec<String> {
+fn parse_parameters(params_str: &str) -> Result<Vec<String>> {
+    let params_str = params_str.trim();
+    if params_str.is_empty() || params_str == "void" {
+        return Ok(Vec::new());
+    }
     params_str
         .split(',')
         .map(format_variable_declaration)
-        .filter_map(|res| res.ok())
-        .filter(|p| !p.is_empty())
         .collect()
 }
 
@@ -243,10 +246,11 @@ fn parse_parameters(params_str: &str) -> Vec<String> {
 ///
 /// The list of C type qualifiers are `const`, `volatile` and `restrict`.
 /// The list of C type modifiers are `unsigned`, `signed`, `short` and `long`.
-/// The list of C data types are `void*`, `void`, `int`, `char`, `float` and `double`.
+/// The list of C data types are `void*`, `int`, `char`, `float` and `double`.
 /// The latter list needs to be extended by the MPI-specific data types, such as
 /// `MPI_Comm`, `MPI_Datatype`, `MPI_Request`, `MPI_Status`, `MPI_File`,
-/// `MPI_Aint`, `MPI_Offset`, `MPI_Count`, `MPI_Win`, `MPI_Group`, `MPI_Op`, `MPI_Info`.
+/// `MPI_Aint`, `MPI_Offset`, `MPI_Count`, `MPI_Win`, `MPI_Group`, `MPI_Op`,
+/// `MPI_Info`, `MPI_User_function` and `MPI_Message`.
 ///
 /// For each of these categories, we create a group in a regular expression
 /// by joining the keywords with the separator '|' and enclosing them in
@@ -291,7 +295,7 @@ fn format_variable_declaration(s: &str) -> Result<String> {
     const QUALIFIERS: &[&str] = &["const", "volatile", "restrict"];
     const MODIFIERS: &[&str] = &["unsigned", "signed", "short", "long"];
     const DATA_TYPES: &[&str] = &[
-        "void\\*",
+        r"void\s*\*",
         "int",
         "char",
         "float",
@@ -308,10 +312,12 @@ fn format_variable_declaration(s: &str) -> Result<String> {
         "MPI_Group",
         "MPI_Op",
         "MPI_Info",
+        "MPI_User_function",
+        "MPI_Message",
     ];
     // Build regular expression fragments for parsing MPI call signatures using these lists.
     let data_types_re = format!("({})", DATA_TYPES.join("|"));
-    let pointer_re = r"(\*|)".to_string();
+    let pointer_re = r"(\*+|)".to_string();
     let identifier_re = r"(\w+)".to_string();
     let array_re = r"(\[\]|)".to_string();
     // These regular expression pieces are joined together to form a complete
@@ -326,13 +332,12 @@ fn format_variable_declaration(s: &str) -> Result<String> {
     if !typed_variable_signature_re.is_match(s) {
         bail!("Failed to extract typed variable declaration: {}", s)
     }
-    let mut leading_part = typed_variable_signature_re.captures(s).unwrap()[1].to_string();
+    let captures = typed_variable_signature_re.captures(s).unwrap();
+    let mut leading_part = captures[1].to_string();
+    let data_type = captures[2].split_whitespace().collect::<String>();
     let mut typed_variable = format!(
         "{} {}{}{}",
-        &typed_variable_signature_re.captures(s).unwrap()[2],
-        &typed_variable_signature_re.captures(s).unwrap()[3],
-        &typed_variable_signature_re.captures(s).unwrap()[4],
-        &typed_variable_signature_re.captures(s).unwrap()[5],
+        data_type, &captures[3], &captures[4], &captures[5],
     );
     // Next we look for a C type qualifyiers and modifiers,
     // extract them from `leading_part` and prepend them to the typed variable.

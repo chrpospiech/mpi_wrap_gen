@@ -284,9 +284,33 @@ fn test_format_variable_declaration_wrong_spacing() -> Result<()> {
 #[test]
 fn test_parse_parameters_missing_spaces() -> Result<()> {
     // Verify parse_parameters applies space insertion across comma-separated params.
-    let params = parse_parameters("constvoid*buf,intcount");
+    let params = parse_parameters("constvoid*buf,intcount")?;
     assert_eq!(params, vec!["const void* buf", "int count"]);
     Ok(())
+}
+
+#[test]
+fn test_format_variable_declaration_additional_mpi_types_and_pointer_forms() -> Result<()> {
+    assert_eq!(
+        format_variable_declaration("MPI_User_function*user_fn")?,
+        "MPI_User_function *user_fn"
+    );
+    assert_eq!(
+        format_variable_declaration("MPI_Message *message")?,
+        "MPI_Message *message"
+    );
+    assert_eq!(
+        format_variable_declaration("const void *buf")?,
+        "const void* buf"
+    );
+    assert_eq!(format_variable_declaration("char ***argv")?, "char ***argv");
+    Ok(())
+}
+
+#[test]
+fn test_parse_parameters_returns_error_for_unrecognized_declaration() {
+    let error = parse_parameters("int count,unknown_type value").unwrap_err();
+    assert!(error.to_string().contains("unknown_type value"));
 }
 
 #[test]
