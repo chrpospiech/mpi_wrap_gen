@@ -19,6 +19,7 @@
 use crate::config::Languages;
 use crate::mpi_calls::MpiCallInfo;
 use anyhow::Result;
+use regex::Regex;
 
 #[cfg(test)]
 mod test_mpi_defs;
@@ -263,18 +264,23 @@ pub fn format_mpi_call(
     if let Languages::Fortran = language {
         ext_params.extend(format_mpi_extension_arguments_fortran(call_info)?);
     }
+    let pointer_re = r"(\*+|)".to_string();
+    let identifier_re = r"(\w+)".to_string();
+    let array_re = r"(?:(?:\[[^\]]*\])*)".to_string();
+    let param_re = Regex::new(&format!(
+        r".*\s+{}{}{}$",
+        pointer_re, identifier_re, array_re
+    ))?;
     let extended_params = ext_params
         .iter()
         .filter(|arg| arg.trim() != "void")
-        .map(|arg| {
-            let parts: Vec<&str> = arg.split_whitespace().collect();
-            let name = parts.last().unwrap_or(&"");
-            match name.split_once('[') {
-                Some((name, suffix)) if suffix.ends_with(']') => name.to_string(),
-                _ => name.to_string(),
-            }
+        .map(|arg| -> Result<String> {
+            let caps = param_re
+                .captures(arg)
+                .ok_or_else(|| anyhow::anyhow!("failed to parse parameter: {}", arg))?;
+            Ok(caps[2].to_string())
         })
-        .collect::<Vec<String>>()
+        .collect::<Result<Vec<String>>>()?
         .join(", ");
     let call_name = match language {
         Languages::C => format!("MPI_{}", call_info.0),
