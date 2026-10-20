@@ -22,11 +22,32 @@ fn format_mpi_call_c_formats_arguments() -> Result<()> {
 
 #[test]
 fn format_mpi_call_handles_empty_parameter_list() -> Result<()> {
-    let call_info: MpiCallInfo = ("Barrier".to_string(), vec![]);
+    let call_info: MpiCallInfo = (
+        "Testall".to_string(),
+        vec![
+            "int count".to_string(),
+            "MPI_Request array_of_requests[]".to_string(),
+            "int *flag".to_string(),
+            "MPI_Status array_of_statuses[]".to_string(),
+        ],
+    );
 
     let formatted = format_mpi_call(&Languages::C, 0, &call_info)?;
 
-    assert_eq!(formatted, "MPI_Barrier()");
+    assert_eq!(
+        formatted,
+        "MPI_Testall(count, array_of_requests, flag, array_of_statuses)"
+    );
+    Ok(())
+}
+
+#[test]
+fn format_mpi_call_handles_c_complex_parameter_list() -> Result<()> {
+    let call_info: MpiCallInfo = ("Barrier".to_string(), vec![]);
+
+    let formatted = format_mpi_call(&Languages::Fortran, 0, &call_info)?;
+
+    assert_eq!(formatted, "mpi_barrier(ierror)");
     Ok(())
 }
 
