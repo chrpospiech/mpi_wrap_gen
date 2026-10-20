@@ -64,6 +64,10 @@ fn test_format_variable_declaration_additional_mpi_types_and_pointer_forms() -> 
         "MPI_User_function *user_fn"
     );
     assert_eq!(
+        format_variable_declaration("MPI_Type_copy_attr_function*type_copy_attr_fn")?,
+        "MPI_Type_copy_attr_function *type_copy_attr_fn"
+    );
+    assert_eq!(
         format_variable_declaration("MPI_Message *message")?,
         "MPI_Message *message"
     );
