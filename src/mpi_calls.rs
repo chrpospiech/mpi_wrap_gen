@@ -253,7 +253,16 @@ fn parse_parameters(params_str: &str) -> Result<Vec<String>> {
 /// The latter list needs to be extended by the MPI-specific data types, such as
 /// `MPI_Comm`, `MPI_Datatype`, `MPI_Request`, `MPI_Status`, `MPI_File`,
 /// `MPI_Aint`, `MPI_Offset`, `MPI_Count`, `MPI_Win`, `MPI_Group`, `MPI_Op`,
-/// `MPI_Info`, `MPI_User_function` and `MPI_Message`.
+/// `MPI_Info`, `MPI_User_function`, `MPI_Message`, `MPI_Errhandler`,
+/// `MPI_Comm_copy_attr_function`, `MPI_Comm_delete_attr_function`,
+/// `MPI_Comm_errhandler_fn`, `MPI_Comm_errhandler_function`, `MPI_Copy_function`,
+/// `MPI_Datarep_conversion_function`, `MPI_Datarep_extent_function`,
+/// `MPI_Delete_function`, `MPI_File_errhandler_fn`, `MPI_File_errhandler_function`,
+/// `MPI_Grequest_cancel_function`, `MPI_Grequest_free_function`,
+/// `MPI_Grequest_query_function`, `MPI_Handler_function`,
+/// `MPI_Type_copy_attr_function`, `MPI_Type_delete_attr_function`,
+/// `MPI_Win_copy_attr_function`, `MPI_Win_delete_attr_function`,
+/// `MPI_Win_errhandler_fn` and `MPI_Win_errhandler_function`.
 ///
 /// For each of these categories, we create a group in a regular expression
 /// by joining the keywords with the separator '|' and enclosing them in
@@ -317,6 +326,28 @@ fn format_variable_declaration(s: &str) -> Result<String> {
         "MPI_Info",
         "MPI_User_function",
         "MPI_Message",
+        "MPI_Errhandler",
+        "MPI_Comm_copy_attr_function",
+        "MPI_Comm_delete_attr_function",
+        "MPI_Comm_errhandler_fn",
+        "MPI_Comm_errhandler_function",
+        "MPI_Copy_function",
+        "MPI_Datarep_conversion_function",
+        "MPI_Datarep_extent_function",
+        "MPI_Delete_function",
+        "MPI_File_errhandler_fn",
+        "MPI_File_errhandler_function",
+        "MPI_Grequest_cancel_function",
+        "MPI_Grequest_free_function",
+        "MPI_Grequest_query_function",
+        "MPI_Handler_function",
+        "MPI_Type_copy_attr_function",
+        "MPI_Type_delete_attr_function",
+        "MPI_User_function",
+        "MPI_Win_copy_attr_function",
+        "MPI_Win_delete_attr_function",
+        "MPI_Win_errhandler_fn",
+        "MPI_Win_errhandler_function",
     ];
     // Build regular expression fragments for parsing MPI call signatures using these lists.
     let data_types_re = format!("({})", DATA_TYPES.join("|"));
