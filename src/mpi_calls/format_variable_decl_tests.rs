@@ -85,3 +85,19 @@ fn test_format_variable_declaration_nested_array() -> Result<()> {
     );
     Ok(())
 }
+
+#[test]
+fn test_format_variable_declaration_greedy_leading_part() -> Result<()> {
+    // Leading part should be empty as opposed to
+    // "MPI_A" and variable "int disp" being incorrectly split.
+    assert_eq!(
+        format_variable_declaration("MPI_Aintdisp ")?,
+        "MPI_Aint disp"
+    );
+    // Similar for int array_of_integers[]
+    assert_eq!(
+        format_variable_declaration("intarray_of_integers[]")?,
+        "int array_of_integers[]"
+    );
+    Ok(())
+}
