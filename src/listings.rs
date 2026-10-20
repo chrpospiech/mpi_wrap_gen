@@ -129,14 +129,15 @@ fn find_collective_chapter(
 }
 
 /// Helper function to take a `Path` that may contain a format string
-/// `%(chapter_number)[...]s`, converts the path to a string and replaces
-/// the format string with the actual chapter number.
+/// `%(chapter_number)[...]s` or `%(u)s`, converts the path to a string
+/// and replaces it with either the actual chapter number or the number
+/// of underscores, as specified by the `-u, --underscores` option.
 /// The input string will be processed by the `dynfmt2` crate using
 /// the `PythonFormat` formatter, including the width and alignment handling.
 /// The function will return a Result containing a PathBuf with the formatted
 /// string or an error message if the formatting fails.
 /// This function is very similar to `generate_output` but
-/// - only replaces the chapter number placeholder.
+/// - only replaces the chapter number and underscore placeholders.
 /// - typos in the placeholder name will result in an error
 ///   rather than silently leaving the raw text in the path.
 /// - takes and returns PATHs instead of strings.
@@ -144,15 +145,16 @@ fn find_collective_chapter(
 /// # Arguments
 /// * `template` - A `Path` containing the template with placeholders to be replaced.
 /// * `chapter_number` - The number of the chapter to be included in the output string.
+/// * `underscores` - The number of underscores to replace the `%(u)s` placeholder with.
 ///
 /// # Returns
 /// A Result containing a formatted PathBuf with placeholders replaced by actual values.
 ///
-fn format_chapter_number(template: &Path, chapter_number: u32) -> Result<PathBuf> {
-    let vars = std::collections::HashMap::<String, String>::from([(
-        "chapter_number".to_string(),
-        chapter_number.to_string(),
-    )]);
+fn format_chapter_number(template: &Path, chapter_number: u32, underscores: u8) -> Result<PathBuf> {
+    let vars = std::collections::HashMap::<String, String>::from([
+        ("chapter_number".to_string(), chapter_number.to_string()),
+        ("u".to_string(), "_".repeat(underscores as usize)),
+    ]);
     let output = PythonFormat
         .format(
             template
@@ -309,7 +311,7 @@ pub fn extract_and_generate_listings(
     // formatting the chapter number. The result is stored in a
     // boolean variable `single_output_file`.
     let single_output_file = {
-        let formatted_path = format_chapter_number(&config.output_file, 1)?;
+        let formatted_path = format_chapter_number(&config.output_file, 1, 0)?;
         formatted_path == config.output_file
     };
 
@@ -371,7 +373,8 @@ pub fn extract_and_generate_listings(
         if single_output_file {
             output_str += &ch_output;
         } else {
-            let output_path = format_chapter_number(&config.output_file, chapter)?;
+            let output_path =
+                format_chapter_number(&config.output_file, chapter, args.underscores)?;
             output.push((output_path, ch_output));
         }
     }
