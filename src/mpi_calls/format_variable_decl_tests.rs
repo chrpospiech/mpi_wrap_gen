@@ -66,3 +66,22 @@ fn test_format_variable_declaration_additional_mpi_types_and_pointer_forms() -> 
     assert_eq!(format_variable_declaration("char ***argv")?, "char ***argv");
     Ok(())
 }
+
+#[test]
+fn test_format_variable_declaration_array() -> Result<()> {
+    assert_eq!(format_variable_declaration("int arr[]")?, "int arr[]");
+    assert_eq!(
+        format_variable_declaration("constchar*str[]")?,
+        "const char *str[]"
+    );
+    Ok(())
+}
+
+#[test]
+fn test_format_variable_declaration_nested_array() -> Result<()> {
+    assert_eq!(
+        format_variable_declaration("intranges[][3]")?,
+        "int ranges[][3]"
+    );
+    Ok(())
+}
