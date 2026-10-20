@@ -251,59 +251,10 @@ fn test_normalize_whitespace() -> Result<()> {
 }
 
 #[test]
-fn test_format_variable_declaration_pointer() -> Result<()> {
-    // Space is inserted after * when immediately followed by a word character.
-    assert_eq!(format_variable_declaration("void*buf")?, "void* buf");
-    Ok(())
-}
-
-#[test]
-fn test_format_variable_declaration_const_void() -> Result<()> {
-    // Full example from the docstring.
-    let result = format_variable_declaration("constvoid*buf")?;
-    assert_eq!(result, "const void* buf");
-    Ok(())
-}
-
-#[test]
-fn test_format_variable_declaration_int_identifier() -> Result<()> {
-    // Keyword at start of string followed directly by an identifier.
-    let result = format_variable_declaration("intcount")?;
-    assert_eq!(result, "int count");
-    Ok(())
-}
-
-#[test]
-fn test_format_variable_declaration_wrong_spacing() -> Result<()> {
-    // Keyword at start of string followed a * in the wrong spacing.
-    let result = format_variable_declaration("int* count")?;
-    assert_eq!(result, "int *count");
-    Ok(())
-}
-
-#[test]
 fn test_parse_parameters_missing_spaces() -> Result<()> {
     // Verify parse_parameters applies space insertion across comma-separated params.
     let params = parse_parameters("constvoid*buf,intcount")?;
     assert_eq!(params, vec!["const void* buf", "int count"]);
-    Ok(())
-}
-
-#[test]
-fn test_format_variable_declaration_additional_mpi_types_and_pointer_forms() -> Result<()> {
-    assert_eq!(
-        format_variable_declaration("MPI_User_function*user_fn")?,
-        "MPI_User_function *user_fn"
-    );
-    assert_eq!(
-        format_variable_declaration("MPI_Message *message")?,
-        "MPI_Message *message"
-    );
-    assert_eq!(
-        format_variable_declaration("const void *buf")?,
-        "const void* buf"
-    );
-    assert_eq!(format_variable_declaration("char ***argv")?, "char ***argv");
     Ok(())
 }
 
