@@ -323,7 +323,7 @@ fn format_variable_declaration(s: &str) -> Result<String> {
     // These regular expression pieces are joined together to form a complete
     // regular expression for parsing MPI call signatures.
     let typed_variable_signature_re = Regex::new(&format!(
-        "(.*){}\\s*{}\\s*{}\\s*{}.*",
+        "(.*?){}\\s*{}\\s*{}\\s*{}.*",
         data_types_re, pointer_re, identifier_re, array_re,
     ))?;
     // If s matches the MPI call signature regular expression, return a formatted string
