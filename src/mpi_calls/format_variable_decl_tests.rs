@@ -50,6 +50,14 @@ fn test_format_variable_declaration_wrong_spacing() -> Result<()> {
 }
 
 #[test]
+fn test_format_variable_declaration_already_spaced() -> Result<()> {
+    // Already-correct input must not be changed.
+    let result = format_variable_declaration("const void* buf")?;
+    assert_eq!(result, "const void* buf");
+    Ok(())
+}
+
+#[test]
 fn test_format_variable_declaration_additional_mpi_types_and_pointer_forms() -> Result<()> {
     assert_eq!(
         format_variable_declaration("MPI_User_function*user_fn")?,
@@ -99,5 +107,18 @@ fn test_format_variable_declaration_greedy_leading_part() -> Result<()> {
         format_variable_declaration("intarray_of_integers[]")?,
         "int array_of_integers[]"
     );
+    Ok(())
+}
+
+#[test]
+fn test_format_variable_declaration_cannot_parse() -> Result<()> {
+    // Ensure that parsing an unknown text returns an error.
+    assert!(format_variable_declaration("unknowntext").is_err());
+    // Check the error message.
+    if let Err(e) = format_variable_declaration("unknowntext") {
+        assert!(e
+            .to_string()
+            .contains("Failed to extract typed variable declaration"));
+    }
     Ok(())
 }

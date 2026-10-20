@@ -259,15 +259,11 @@ fn test_parse_parameters_missing_spaces() -> Result<()> {
 }
 
 #[test]
-fn test_parse_parameters_returns_error_for_unrecognized_declaration() {
+fn test_parse_parameters_returns_error_for_unrecognized_declaration() -> Result<()> {
     let error = parse_parameters("int count,unknown_type value").unwrap_err();
+    assert!(error
+        .to_string()
+        .contains("Failed to extract typed variable declaration"));
     assert!(error.to_string().contains("unknown_type value"));
-}
-
-#[test]
-fn test_format_variable_declaration_already_spaced() -> Result<()> {
-    // Already-correct input must not be changed.
-    let result = format_variable_declaration("const void* buf")?;
-    assert_eq!(result, "const void* buf");
     Ok(())
 }
