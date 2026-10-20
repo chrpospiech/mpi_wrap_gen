@@ -42,8 +42,8 @@ fn test_mpi_calls_for_page_range_finds_calls() -> Result<()> {
     );
     assert_eq!(
         calls.len(),
-        22,
-        "Expected to find 22 MPI calls, found: {:?}",
+        23,
+        "Expected to find 23 MPI calls, found: {:?}",
         calls.iter().map(|(n, _)| n).collect::<Vec<_>>()
     );
     Ok(())
@@ -105,16 +105,21 @@ fn test_mpi_calls_for_page_range_finds_send() -> Result<()> {
     );
 
     let (_, params) = &send_calls[0];
-    // lopdf may strip spaces, so check with contains
-    assert!(
-        params.iter().any(|p| p.contains("buf")),
+    // lopdf may strip spaces, but we need the exact spaces
+    assert_eq!(
+        params[0], "const void* buf",
         "MPI_Send should have a 'buf' parameter, got: {:?}",
-        params
+        params[0]
     );
-    assert!(
-        params.iter().any(|p| p.contains("comm")),
+    assert_eq!(
+        params[2], "MPI_Datatype datatype",
+        "MPI_Send should have a 'datatype' parameter, got: {:?}",
+        params[2]
+    );
+    assert_eq!(
+        params[5], "MPI_Comm comm",
         "MPI_Send should have a 'comm' parameter, got: {:?}",
-        params
+        params[5]
     );
     Ok(())
 }
@@ -137,6 +142,52 @@ fn test_mpi_calls_for_page_range_finds_recv() -> Result<()> {
         params.iter().any(|p| p.contains("status")),
         "MPI_Recv should have a 'status' parameter, got: {:?}",
         params
+    );
+    Ok(())
+}
+
+#[test]
+fn test_mpi_calls_for_page_range_finds_waitsome() -> Result<()> {
+    let doc = Document::load(test_pdf_path())?;
+    let num_pages = doc.page_iter().count() as u32;
+    let calls = mpi_calls_for_page_range(&doc, 1, num_pages + 1)?;
+
+    let waitsome_calls: Vec<_> = calls
+        .iter()
+        .filter(|(name, _)| name == "Waitsome")
+        .collect();
+    assert!(
+        !waitsome_calls.is_empty(),
+        "Expected to find MPI_Waitsome in test PDF, found: {:?}",
+        calls.iter().map(|(n, _)| n).collect::<Vec<_>>()
+    );
+
+    let (_, params) = &waitsome_calls[0];
+    // lopdf may strip spaces, but we need the exact spaces
+    assert_eq!(
+        params[0], "int incount",
+        "MPI_Waitsome should have 'incount' parameter, got: {:?}",
+        params[0]
+    );
+    assert_eq!(
+        params[1], "MPI_Request array_of_requests[]",
+        "MPI_Waitsome should have 'array_of_requests' parameter, got: {:?}",
+        params[1]
+    );
+    assert_eq!(
+        params[2], "int *outcount",
+        "MPI_Waitsome should have 'outcount' parameter, got: {:?}",
+        params[2]
+    );
+    assert_eq!(
+        params[3], "int array_of_indices[]",
+        "MPI_Waitsome should have 'array_of_indices' parameter, got: {:?}",
+        params[3]
+    );
+    assert_eq!(
+        params[4], "MPI_Status array_of_statuses[]",
+        "MPI_Waitsome should have 'array_of_statuses' parameter, got: {:?}",
+        params[4]
     );
     Ok(())
 }
@@ -186,7 +237,7 @@ fn test_clean_extracted_text_removes_line_numbers() -> Result<()> {
     let cleaned = clean_extracted_text(input);
     assert!(!cleaned.contains("\n1\n"), "Line numbers should be removed");
     assert!(
-        cleaned.contains("int MPI_Send"),
+        cleaned.contains("int MPI_Send(void* buf)"),
         "MPI call text should be preserved"
     );
     Ok(())
@@ -195,45 +246,77 @@ fn test_clean_extracted_text_removes_line_numbers() -> Result<()> {
 #[test]
 fn test_normalize_whitespace() -> Result<()> {
     let input = "  const void*   buf  ";
-    assert_eq!(normalize_whitespace(input), "const void* buf");
+    assert_eq!(format_variable_declaration(input)?, "const void* buf");
     Ok(())
 }
 
 #[test]
-fn test_insert_missing_spaces_pointer() -> Result<()> {
+fn test_format_variable_declaration_pointer() -> Result<()> {
     // Space is inserted after * when immediately followed by a word character.
-    assert_eq!(insert_missing_spaces("void*buf"), "void* buf");
+    assert_eq!(format_variable_declaration("void*buf")?, "void* buf");
     Ok(())
 }
 
 #[test]
-fn test_insert_missing_spaces_const_void() -> Result<()> {
+fn test_format_variable_declaration_const_void() -> Result<()> {
     // Full example from the docstring.
-    let result = normalize_whitespace(&insert_missing_spaces("constvoid*buf"));
+    let result = format_variable_declaration("constvoid*buf")?;
     assert_eq!(result, "const void* buf");
     Ok(())
 }
 
 #[test]
-fn test_insert_missing_spaces_int_identifier() -> Result<()> {
+fn test_format_variable_declaration_int_identifier() -> Result<()> {
     // Keyword at start of string followed directly by an identifier.
-    let result = normalize_whitespace(&insert_missing_spaces("intcount"));
+    let result = format_variable_declaration("intcount")?;
     assert_eq!(result, "int count");
+    Ok(())
+}
+
+#[test]
+fn test_format_variable_declaration_wrong_spacing() -> Result<()> {
+    // Keyword at start of string followed a * in the wrong spacing.
+    let result = format_variable_declaration("int* count")?;
+    assert_eq!(result, "int *count");
     Ok(())
 }
 
 #[test]
 fn test_parse_parameters_missing_spaces() -> Result<()> {
     // Verify parse_parameters applies space insertion across comma-separated params.
-    let params = parse_parameters("constvoid*buf,intcount");
+    let params = parse_parameters("constvoid*buf,intcount")?;
     assert_eq!(params, vec!["const void* buf", "int count"]);
     Ok(())
 }
 
 #[test]
-fn test_insert_missing_spaces_already_spaced() -> Result<()> {
+fn test_format_variable_declaration_additional_mpi_types_and_pointer_forms() -> Result<()> {
+    assert_eq!(
+        format_variable_declaration("MPI_User_function*user_fn")?,
+        "MPI_User_function *user_fn"
+    );
+    assert_eq!(
+        format_variable_declaration("MPI_Message *message")?,
+        "MPI_Message *message"
+    );
+    assert_eq!(
+        format_variable_declaration("const void *buf")?,
+        "const void* buf"
+    );
+    assert_eq!(format_variable_declaration("char ***argv")?, "char ***argv");
+    Ok(())
+}
+
+#[test]
+fn test_parse_parameters_returns_error_for_unrecognized_declaration() {
+    let error = parse_parameters("int count,unknown_type value").unwrap_err();
+    assert!(error.to_string().contains("unknown_type value"));
+}
+
+#[test]
+fn test_format_variable_declaration_already_spaced() -> Result<()> {
     // Already-correct input must not be changed.
-    let result = normalize_whitespace(&insert_missing_spaces("const void* buf"));
+    let result = format_variable_declaration("const void* buf")?;
     assert_eq!(result, "const void* buf");
     Ok(())
 }
