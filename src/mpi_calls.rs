@@ -36,6 +36,9 @@ mod create_barrier_names_tests;
 #[cfg(test)]
 mod mpi_calls_for_chapter_tests;
 
+#[cfg(test)]
+mod format_variable_decl_tests;
+
 pub type MpiCallInfo = (String, Vec<String>);
 
 /// Extracts MPI call information from the PDF document and returns a vector of MPI call names
