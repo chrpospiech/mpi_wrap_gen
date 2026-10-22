@@ -136,7 +136,7 @@ fn format_mpi_definition_fortran(underscores: u8, call_info: &MpiCallInfo) -> Re
     for param in &call_info.1 {
         let s = param.trim();
         // parameter void means "no argument" => leave alone.
-        if param == "void" {
+        if s == "void" {
             continue;
         }
         let typed_variable_signature_re = c_data_types_regex()?;
