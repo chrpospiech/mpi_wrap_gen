@@ -21,7 +21,7 @@ fn format_mpi_call_c_formats_arguments() -> Result<()> {
 }
 
 #[test]
-fn format_mpi_call_handles_empty_parameter_list() -> Result<()> {
+fn format_mpi_call_handles_c_complex_parameter_list() -> Result<()> {
     let call_info: MpiCallInfo = (
         "Testall".to_string(),
         vec![
@@ -42,7 +42,7 @@ fn format_mpi_call_handles_empty_parameter_list() -> Result<()> {
 }
 
 #[test]
-fn format_mpi_call_handles_c_complex_parameter_list() -> Result<()> {
+fn format_mpi_call_handles_empty_parameter_list_for_fortran() -> Result<()> {
     let call_info: MpiCallInfo = ("Barrier".to_string(), vec![]);
 
     let formatted = format_mpi_call(&Languages::Fortran, 0, &call_info)?;
