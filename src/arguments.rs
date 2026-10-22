@@ -27,38 +27,37 @@ mod test_mpi_defs;
 #[cfg(test)]
 mod test_mpi_call;
 
-/// Static hash for MPI call formatting, mapping C data types used in MPI calls to
-/// C data types that observed by a C routine called by the corresponding MPI call
-/// in Fortran. Fortran calls by name, hence all C data types are pointer types,
-/// most of them pointer to MPI_Fint. This hash provides the necessary mappings for
-/// data types that are **not** mapped to MPI_Fint*.
-static MPI_C_TO_C_TYPES: phf::Map<&'static str, &'static str> = phf::phf_map! {
-    "void*" => "void*",
-    "char" => "char",
-    "MPI_Aint" => "MPI_Aint",
-    "MPI_Count" => "MPI_Count",
-    "MPI_Offset" => "MPI_Offset",
-    "MPI_Comm_copy_attr_function" => "MPI_Comm_copy_attr_function",
-    "MPI_Comm_delete_attr_function" => "MPI_Comm_delete_attr_function",
-    "MPI_Comm_errhandler_fn" => "MPI_Comm_errhandler_fn",
-    "MPI_Comm_errhandler_function" => "MPI_Comm_errhandler_function",
-    "MPI_Copy_function" => "MPI_Copy_function",
-    "MPI_Datarep_conversion_function" => "MPI_Datarep_conversion_function",
-    "MPI_Datarep_extent_function" => "MPI_Datarep_extent_function",
-    "MPI_Delete_function" => "MPI_Delete_function",
-    "MPI_File_errhandler_fn" => "MPI_File_errhandler_fn",
-    "MPI_File_errhandler_function" => "MPI_File_errhandler_function",
-    "MPI_Grequest_cancel_function" => "MPI_Grequest_cancel_function",
-    "MPI_Grequest_free_function" => "MPI_Grequest_free_function",
-    "MPI_Grequest_query_function" => "MPI_Grequest_query_function",
-    "MPI_Handler_function" => "MPI_Handler_function",
-    "MPI_Type_copy_attr_function" => "MPI_Type_copy_attr_function",
-    "MPI_Type_delete_attr_function" => "MPI_Type_delete_attr_function",
-    "MPI_User_function" => "MPI_User_function",
-    "MPI_Win_copy_attr_function" => "MPI_Win_copy_attr_function",
-    "MPI_Win_delete_attr_function" => "MPI_Win_delete_attr_function",
-    "MPI_Win_errhandler_fn" => "MPI_Win_errhandler_fn",
-    "MPI_Win_errhandler_function" => "MPI_Win_errhandler_function",
+/// Static set of C data types used in MPI calls that are passed through unchanged
+/// to the C routine called by the corresponding MPI call in Fortran. Fortran calls
+/// by name, hence all C data types are pointer types, most of them pointer to
+/// MPI_Fint. This set lists the data types that are **not** mapped to MPI_Fint*.
+static MPI_C_TO_C_TYPES: phf::Set<&'static str> = phf::phf_set! {
+    "void*",
+    "char",
+    "MPI_Aint",
+    "MPI_Count",
+    "MPI_Offset",
+    "MPI_Comm_copy_attr_function",
+    "MPI_Comm_delete_attr_function",
+    "MPI_Comm_errhandler_fn",
+    "MPI_Comm_errhandler_function",
+    "MPI_Copy_function",
+    "MPI_Datarep_conversion_function",
+    "MPI_Datarep_extent_function",
+    "MPI_Delete_function",
+    "MPI_File_errhandler_fn",
+    "MPI_File_errhandler_function",
+    "MPI_Grequest_cancel_function",
+    "MPI_Grequest_free_function",
+    "MPI_Grequest_query_function",
+    "MPI_Handler_function",
+    "MPI_Type_copy_attr_function",
+    "MPI_Type_delete_attr_function",
+    "MPI_User_function",
+    "MPI_Win_copy_attr_function",
+    "MPI_Win_delete_attr_function",
+    "MPI_Win_errhandler_fn",
+    "MPI_Win_errhandler_function",
 };
 
 /// Formats the extension arguments of an MPI function in the Fortran language.
@@ -107,10 +106,9 @@ fn format_mpi_extension_arguments_fortran(call_info: &MpiCallInfo) -> Result<Vec
 /// 1. Each argument in the call_info tuple is examined and split into its type
 ///    and name components. This step is done using the regular expression
 ///    returned by `c_data_types_regex()`.
-/// 2. The argument types are mapped to their corresponding C types using the
-///    MPI_C_TO_C_TYPES map.
-/// 3. If the type of the argument is not found in the MPI_C_TO_C_TYPES map,
-///    it is set to "MPI_Fint".
+/// 2. The argument types are checked against the MPI_C_TO_C_TYPES set.
+/// 3. If the type of the argument is not found in the MPI_C_TO_C_TYPES set,
+///    it is set to "MPI_Fint"; otherwise it is left unchanged.
 /// 4. If the argument is neither an array nor a pointer, an additional `*` is
 ///    prepended to the argument name. In all other cases, the argument name is left as is.
 /// 5. An additional argument "MPI_Fint *ierror" is appended to the argument list
@@ -153,10 +151,11 @@ fn format_mpi_definition_fortran(underscores: u8, call_info: &MpiCallInfo) -> Re
         let name_part = captures[4].to_string();
         let array_part = captures[5].to_string();
         // Handle the data type
-        let mapped_type = MPI_C_TO_C_TYPES
-            .get(&data_type)
-            .copied()
-            .unwrap_or("MPI_Fint");
+        let mapped_type = if MPI_C_TO_C_TYPES.contains(data_type.as_str()) {
+            data_type.as_str()
+        } else {
+            "MPI_Fint"
+        };
         let pointer_part =
             if mapped_type != "void*" && pointer_part.is_empty() && array_part.is_empty() {
                 "*"
