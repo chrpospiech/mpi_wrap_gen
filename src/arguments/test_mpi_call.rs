@@ -59,7 +59,7 @@ fn format_mpi_call_formats_fortran_arguments() -> Result<()> {
             "const void* buf".to_string(),
             "int count".to_string(),
             "MPI_Datatype datatype".to_string(),
-            "char* name".to_string(),
+            "char *name".to_string(),
         ],
     );
 
@@ -81,7 +81,7 @@ fn format_mpi_call_normalizes_fortran_handle_arrays() -> Result<()> {
         "Waitsome".to_string(),
         vec![
             "MPI_Request array_of_requests[]".to_string(),
-            "char* argv[]".to_string(),
+            "char *argv[]".to_string(),
         ],
     );
 

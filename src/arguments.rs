@@ -87,14 +87,12 @@ fn format_mpi_extension_arguments_fortran(call_info: &MpiCallInfo) -> Result<Vec
     extension_args.push("MPI_Fint *ierror".to_string());
     // Add string length arguments for each character argument
     for param in &call_info.1 {
-        if param.trim().starts_with("char*") || param.trim().starts_with("const char*") {
-            let name = param.split_whitespace().last().unwrap();
-            // strip a potential `[]` suffix from array-of-strings parameters
-            let name = match name.split_once('[') {
-                Some((name, suffix)) if suffix.ends_with(']') => name,
-                _ => name,
-            };
-            extension_args.push(format!("MPI_Fint {}_len", name));
+        if let Some(captures) = c_data_types_regex()?.captures(param.trim()) {
+            let data_type = captures[2].split_whitespace().collect::<String>();
+            let pointer_part = &captures[3];
+            if data_type == "char" && !pointer_part.is_empty() {
+                extension_args.push(format!("MPI_Fint {}_len", &captures[4]));
+            }
         }
     }
     Ok(extension_args)
