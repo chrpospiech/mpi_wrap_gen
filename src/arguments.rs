@@ -17,8 +17,8 @@
 // Author: Dr. Christoph Pospiech
 
 use crate::config::Languages;
-use crate::mpi_calls::MpiCallInfo;
-use anyhow::Result;
+use crate::mpi_calls::{c_data_types_regex, MpiCallInfo};
+use anyhow::{bail, Result};
 use regex::Regex;
 
 #[cfg(test)]
@@ -34,36 +34,31 @@ mod test_mpi_call;
 /// data types that are **not** mapped to MPI_Fint*.
 static MPI_C_TO_C_TYPES: phf::Map<&'static str, &'static str> = phf::phf_map! {
     "void*" => "void*",
-    "const void*" => "void*",
-    "char*" => "char*",
-    "const char*" => "char*",
-    "MPI_Aint" => "MPI_Aint*",
-    "MPI_Aint*" => "MPI_Aint*",
-    "MPI_Count" => "MPI_Count*",
-    "MPI_Count*" => "MPI_Count*",
-    "MPI_Offset" => "MPI_Offset*",
-    "MPI_Offset*" => "MPI_Offset*",
-    "MPI_Comm_copy_attr_function*" => "MPI_Comm_copy_attr_function*",
-    "MPI_Comm_delete_attr_function*" => "MPI_Comm_delete_attr_function*",
-    "MPI_Comm_errhandler_fn*" => "MPI_Comm_errhandler_fn*",
-    "MPI_Comm_errhandler_function*" => "MPI_Comm_errhandler_function*",
-    "MPI_Copy_function*" => "MPI_Copy_function*",
-    "MPI_Datarep_conversion_function*" => "MPI_Datarep_conversion_function*",
-    "MPI_Datarep_extent_function*" => "MPI_Datarep_extent_function*",
-    "MPI_Delete_function*" => "MPI_Delete_function*",
-    "MPI_File_errhandler_fn*" => "MPI_File_errhandler_fn*",
-    "MPI_File_errhandler_function*" => "MPI_File_errhandler_function*",
-    "MPI_Grequest_cancel_function*" => "MPI_Grequest_cancel_function*",
-    "MPI_Grequest_free_function*" => "MPI_Grequest_free_function*",
-    "MPI_Grequest_query_function*" => "MPI_Grequest_query_function*",
-    "MPI_Handler_function*" => "MPI_Handler_function*",
-    "MPI_Type_copy_attr_function*" => "MPI_Type_copy_attr_function*",
-    "MPI_Type_delete_attr_function*" => "MPI_Type_delete_attr_function*",
-    "MPI_User_function*" => "MPI_User_function*",
-    "MPI_Win_copy_attr_function*" => "MPI_Win_copy_attr_function*",
-    "MPI_Win_delete_attr_function*" => "MPI_Win_delete_attr_function*",
-    "MPI_Win_errhandler_fn*" => "MPI_Win_errhandler_fn*",
-    "MPI_Win_errhandler_function*" => "MPI_Win_errhandler_function*",
+    "char" => "char",
+    "MPI_Aint" => "MPI_Aint",
+    "MPI_Count" => "MPI_Count",
+    "MPI_Offset" => "MPI_Offset",
+    "MPI_Comm_copy_attr_function" => "MPI_Comm_copy_attr_function",
+    "MPI_Comm_delete_attr_function" => "MPI_Comm_delete_attr_function",
+    "MPI_Comm_errhandler_fn" => "MPI_Comm_errhandler_fn",
+    "MPI_Comm_errhandler_function" => "MPI_Comm_errhandler_function",
+    "MPI_Copy_function" => "MPI_Copy_function",
+    "MPI_Datarep_conversion_function" => "MPI_Datarep_conversion_function",
+    "MPI_Datarep_extent_function" => "MPI_Datarep_extent_function",
+    "MPI_Delete_function" => "MPI_Delete_function",
+    "MPI_File_errhandler_fn" => "MPI_File_errhandler_fn",
+    "MPI_File_errhandler_function" => "MPI_File_errhandler_function",
+    "MPI_Grequest_cancel_function" => "MPI_Grequest_cancel_function",
+    "MPI_Grequest_free_function" => "MPI_Grequest_free_function",
+    "MPI_Grequest_query_function" => "MPI_Grequest_query_function",
+    "MPI_Handler_function" => "MPI_Handler_function",
+    "MPI_Type_copy_attr_function" => "MPI_Type_copy_attr_function",
+    "MPI_Type_delete_attr_function" => "MPI_Type_delete_attr_function",
+    "MPI_User_function" => "MPI_User_function",
+    "MPI_Win_copy_attr_function" => "MPI_Win_copy_attr_function",
+    "MPI_Win_delete_attr_function" => "MPI_Win_delete_attr_function",
+    "MPI_Win_errhandler_fn" => "MPI_Win_errhandler_fn",
+    "MPI_Win_errhandler_function" => "MPI_Win_errhandler_function",
 };
 
 /// Formats the extension arguments of an MPI function in the Fortran language.
@@ -90,7 +85,7 @@ static MPI_C_TO_C_TYPES: phf::Map<&'static str, &'static str> = phf::phf_map! {
 fn format_mpi_extension_arguments_fortran(call_info: &MpiCallInfo) -> Result<Vec<String>> {
     let mut extension_args: Vec<String> = Vec::new();
     // Add the error code argument
-    extension_args.push("MPI_Fint* ierror".to_string());
+    extension_args.push("MPI_Fint *ierror".to_string());
     // Add string length arguments for each character argument
     for param in &call_info.1 {
         if param.trim().starts_with("char*") || param.trim().starts_with("const char*") {
@@ -110,12 +105,15 @@ fn format_mpi_extension_arguments_fortran(call_info: &MpiCallInfo) -> Result<Vec
 /// The wrapper itself is written in C. The argument list is adapted to
 /// match the Fortran calling conventions. This is done in the following steps:
 /// 1. Each argument in the call_info tuple is examined and split into its type
-///    and name components.
+///    and name components. This step is done using the regular expression
+///    returned by `c_data_types_regex()`.
 /// 2. The argument types are mapped to their corresponding C types using the
 ///    MPI_C_TO_C_TYPES map.
-/// 3. If the argument is not found in the MPI_C_TO_C_TYPES map, it is set to "MPI_Fint*".
-/// 4. The argument names are preserved as they are in the original call_info tuple.
-/// 5. An additional argument "MPI_Fint* ierror" is appended to the argument list
+/// 3. If the type of the argument is not found in the MPI_C_TO_C_TYPES map,
+///    it is set to "MPI_Fint".
+/// 4. If the argument is neither an array nor a pointer, an additional `*` is
+///    prepended to the argument name. In all other cases, the argument name is left as is.
+/// 5. An additional argument "MPI_Fint *ierror" is appended to the argument list
 ///    for Fortran compatibility.
 /// 6. For each argument of type "char*", an additional "MPI_Fint" argument is appended
 ///    to represent the string length.
@@ -138,29 +136,37 @@ fn format_mpi_definition_fortran(underscores: u8, call_info: &MpiCallInfo) -> Re
     let mut formatted_args: Vec<String> = Vec::new();
 
     for param in &call_info.1 {
-        let param = param.trim();
+        let s = param.trim();
         // parameter void means "no argument" => leave alone.
         if param == "void" {
             continue;
         }
-        let (arg_type, arg_name) = param
-            .rsplit_once(char::is_whitespace)
-            .ok_or_else(|| anyhow::anyhow!("Malformed parameter: '{}'", param))?;
-        let (arg_name, is_array) = match arg_name.split_once('[') {
-            Some((name, suffix)) if suffix.ends_with(']') => (name, true),
-            _ => (arg_name, false),
-        };
+        let typed_variable_signature_re = c_data_types_regex()?;
+        // If s matches the MPI call signature regular expression, return a formatted string
+        // composed from joining the matching groups.
+        if !typed_variable_signature_re.is_match(s) {
+            bail!("Failed to extract typed variable declaration: {}", s)
+        }
+        let captures = typed_variable_signature_re.captures(s).unwrap();
+        let data_type = captures[2].to_string();
+        let pointer_part = captures[3].to_string();
+        let name_part = captures[4].to_string();
+        let array_part = captures[5].to_string();
+        // Handle the data type
         let mapped_type = MPI_C_TO_C_TYPES
-            .get(arg_type)
+            .get(&data_type)
             .copied()
-            .unwrap_or("MPI_Fint*");
-        // Add additional `*` for arrays.
-        let mapped_type = if is_array && arg_type.trim_end().ends_with('*') {
-            format!("{}*", mapped_type)
-        } else {
-            mapped_type.to_string()
-        };
-        formatted_args.push(format!("{} {}", mapped_type, arg_name));
+            .unwrap_or("MPI_Fint");
+        let pointer_part =
+            if mapped_type != "void*" && pointer_part.is_empty() && array_part.is_empty() {
+                "*"
+            } else {
+                &pointer_part
+            };
+        formatted_args.push(format!(
+            "{} {}{}{}",
+            mapped_type, pointer_part, name_part, array_part
+        ));
     }
 
     formatted_args.extend(format_mpi_extension_arguments_fortran(call_info)?);
