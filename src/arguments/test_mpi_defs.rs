@@ -76,3 +76,38 @@ fn format_mpi_definition_normalizes_fortran_handle_arrays() -> Result<()> {
     );
     Ok(())
 }
+
+#[test]
+fn format_mpi_definition_fortran_handles_intent_in_arguments() -> Result<()> {
+    let call_info: MpiCallInfo = (
+        "Comm_rank".to_string(),
+        vec!["MPI_Comm comm".to_string(), "int *rank".to_string()],
+    );
+
+    let formatted = format_mpi_definition(&Languages::Fortran, 0, &call_info)?;
+
+    assert_eq!(
+        formatted,
+        "mpi_comm_rank(MPI_Fint *comm, MPI_Fint *rank, MPI_Fint *ierror)"
+    );
+    Ok(())
+}
+
+#[test]
+fn format_mpi_definition_fortran_handles_aint_arguments() -> Result<()> {
+    let call_info: MpiCallInfo = (
+        "Get_address".to_string(),
+        vec![
+            "const void* location".to_string(),
+            "MPI_Aint *address".to_string(),
+        ],
+    );
+
+    let formatted = format_mpi_definition(&Languages::Fortran, 0, &call_info)?;
+
+    assert_eq!(
+        formatted,
+        "mpi_get_address(void* location, MPI_Aint *address, MPI_Fint *ierror)"
+    );
+    Ok(())
+}
