@@ -49,6 +49,10 @@ pub type MpiCallInfo = (String, Vec<String>);
 /// Note: lopdf::extract_text often strips spaces, so the regex handles both
 /// "int MPI_Send(" and "intMPI_Send(" patterns.
 ///
+/// Note: Matching "int MPI..." assumes that MPI calls are declared with the "int" return type.
+/// This misses the calls `double MPI_Wtime()` and `double MPI_Wtick()` as the only MPI calls
+/// with a return type different from "int". However, these calls should not be traced anyhow.
+///
 /// The MPI call name is returned without the "MPI_" prefix, and the parameters are
 /// returned as a vector of strings.
 ///
@@ -242,13 +246,10 @@ fn parse_parameters(params_str: &str) -> Result<Vec<String>> {
         .collect()
 }
 
-/// Parse a single parameter from an MPI call signature.
-/// This function handles missing spaces and tries to extract
-/// potential C type qualifiers, type modifiers, C data types
-/// and the variable name.
+/// Creates a regular expression for parsing C parameter declarations.
+/// The regular expression includes groups for C data types,
+/// pointer operators, variable names, and array brackets.
 ///
-/// The list of C type qualifiers are `const`, `volatile` and `restrict`.
-/// The list of C type modifiers are `unsigned`, `signed`, `short` and `long`.
 /// The list of C data types are `void*`, `int`, `char`, `float` and `double`.
 /// The latter list needs to be extended by the MPI-specific data types, such as
 /// `MPI_Comm`, `MPI_Datatype`, `MPI_Request`, `MPI_Status`, `MPI_File`,
@@ -264,9 +265,8 @@ fn parse_parameters(params_str: &str) -> Result<Vec<String>> {
 /// `MPI_Win_copy_attr_function`, `MPI_Win_delete_attr_function`,
 /// `MPI_Win_errhandler_fn` and `MPI_Win_errhandler_function`.
 ///
-/// For each of these categories, we create a group in a regular expression
-/// by joining the keywords with the separator '|' and enclosing them in
-/// parentheses.
+/// We create a group in a regular expression by joining these keywords
+/// with the separator '|' and enclosing them in parentheses.
 ///
 /// To account for the variable name, three additional groups are appended
 /// to the regular expression:
@@ -274,21 +274,94 @@ fn parse_parameters(params_str: &str) -> Result<Vec<String>> {
 /// - One for the variable name
 /// - One for any array brackets (if present)
 ///
-/// Several of these groups are optional, as C type qualifiers, type modifiers,
-/// and array brackets may not always be present in a parameter declaration.
+/// Several of these groups are optional, as array brackets may not
+/// always be present in a parameter declaration.
 /// We have the choice of `(group|entries)?` versus `(group|entries|)`
 /// to make the group optional. Only in the latter case will the group
 /// match an empty string if the corresponding component is absent.
 ///
-/// Unfortunately, we cannot combine all groups into a single regular expression
-/// because some groups are optional and and may deliver empty matches even when
-/// the corresponding component is **not** absent. Hence, we start with the last
-/// four groups corresponding to the C data type, pointer operator, variable name,
-/// and array brackets, and work our way backward to handle optional components
-/// correctly.
+/// Arguments:
+///     - None
 ///
-/// This is done by joining the last four groups together with a separator `\s*`
-/// to form a first regular expression used for parsing MPI call signatures.
+/// Results:
+///     - `Ok(Regex)`: The correctly assembled regular expression if parsing is successful.
+///     - `Err`: An error message if parsing fails.
+pub fn c_data_types_regex() -> Result<Regex> {
+    // Built once per process: the pattern string and its compiled Regex are
+    // identical on every call, so compute them lazily and reuse afterwards.
+    static REGEX: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
+    if let Some(re) = REGEX.get() {
+        return Ok(re.clone());
+    }
+    // Entries are kept pre-sorted by descending length so that longer, more
+    // specific alternatives are tried before their shorter prefixes/substrings.
+    let data_types = [
+        "MPI_Datarep_conversion_function",
+        "MPI_Comm_delete_attr_function",
+        "MPI_Type_delete_attr_function",
+        "MPI_Comm_errhandler_function",
+        "MPI_File_errhandler_function",
+        "MPI_Grequest_cancel_function",
+        "MPI_Win_delete_attr_function",
+        "MPI_Comm_copy_attr_function",
+        "MPI_Datarep_extent_function",
+        "MPI_Grequest_query_function",
+        "MPI_Type_copy_attr_function",
+        "MPI_Win_errhandler_function",
+        "MPI_Grequest_free_function",
+        "MPI_Win_copy_attr_function",
+        "MPI_Comm_errhandler_fn",
+        "MPI_File_errhandler_fn",
+        "MPI_Win_errhandler_fn",
+        "MPI_Handler_function",
+        "MPI_Delete_function",
+        "MPI_User_function",
+        "MPI_Copy_function",
+        "MPI_Errhandler",
+        "MPI_Datatype",
+        "MPI_Request",
+        "MPI_Message",
+        "MPI_Status",
+        "MPI_Offset",
+        r"void\s*\*",
+        "MPI_Count",
+        "MPI_Group",
+        "MPI_Comm",
+        "MPI_File",
+        "MPI_Aint",
+        "MPI_Info",
+        "MPI_Win",
+        "MPI_Op",
+        "double",
+        "float",
+        "char",
+        "int",
+    ];
+    let data_types_re = format!("({})", data_types.join("|"));
+    let pointer_re = r"(\*+|)".to_string();
+    let identifier_re = r"(\w+)".to_string();
+    let array_re = r"((?:\[[^\]]*\])*)".to_string();
+    // These regular expression pieces are joined together to form a complete
+    // regular expression for parsing MPI call signatures.
+    let typed_variable_signature_re = Regex::new(&format!(
+        "(.*?){}\\s*{}\\s*{}\\s*{}.*",
+        data_types_re, pointer_re, identifier_re, array_re,
+    ))?;
+    Ok(REGEX.get_or_init(|| typed_variable_signature_re).clone())
+}
+
+/// Parse a single parameter from an MPI call signature.
+/// This function handles missing spaces and tries to extract
+/// potential C type qualifiers, type modifiers, C data types
+/// and the variable name.
+///
+/// The list of C type qualifiers are `const`, `volatile` and `restrict`.
+/// The list of C type modifiers are `unsigned`, `signed`, `short` and `long`.
+/// The C data types, pointer operators, variable names, and array brackets
+/// are handled by the function `c_data_types_regex()`.
+///
+/// The regex returned from `c_data_types_regex()` is used to match and capture
+/// the different components of a typed variable declaration in an MPI call signature.
 ///
 /// - If there is no match, an error is returned.
 /// - If there is a match, the captured groups are joined to reconstruct the
@@ -306,62 +379,7 @@ fn parse_parameters(params_str: &str) -> Result<Vec<String>> {
 fn format_variable_declaration(s: &str) -> Result<String> {
     const QUALIFIERS: &[&str] = &["const", "volatile", "restrict"];
     const MODIFIERS: &[&str] = &["unsigned", "signed", "short", "long"];
-    const DATA_TYPES: &[&str] = &[
-        r"void\s*\*",
-        "int",
-        "char",
-        "float",
-        "double",
-        "MPI_Comm",
-        "MPI_Datatype",
-        "MPI_Request",
-        "MPI_Status",
-        "MPI_File",
-        "MPI_Aint",
-        "MPI_Offset",
-        "MPI_Count",
-        "MPI_Win",
-        "MPI_Group",
-        "MPI_Op",
-        "MPI_Info",
-        "MPI_User_function",
-        "MPI_Message",
-        "MPI_Errhandler",
-        "MPI_Comm_copy_attr_function",
-        "MPI_Comm_delete_attr_function",
-        "MPI_Comm_errhandler_fn",
-        "MPI_Comm_errhandler_function",
-        "MPI_Copy_function",
-        "MPI_Datarep_conversion_function",
-        "MPI_Datarep_extent_function",
-        "MPI_Delete_function",
-        "MPI_File_errhandler_fn",
-        "MPI_File_errhandler_function",
-        "MPI_Grequest_cancel_function",
-        "MPI_Grequest_free_function",
-        "MPI_Grequest_query_function",
-        "MPI_Handler_function",
-        "MPI_Type_copy_attr_function",
-        "MPI_Type_delete_attr_function",
-        "MPI_User_function",
-        "MPI_Win_copy_attr_function",
-        "MPI_Win_delete_attr_function",
-        "MPI_Win_errhandler_fn",
-        "MPI_Win_errhandler_function",
-    ];
-    // Build regular expression fragments for parsing MPI call signatures using these lists.
-    let mut data_types = DATA_TYPES.to_vec();
-    data_types.sort_by_key(|data_type| std::cmp::Reverse(data_type.len()));
-    let data_types_re = format!("({})", data_types.join("|"));
-    let pointer_re = r"(\*+|)".to_string();
-    let identifier_re = r"(\w+)".to_string();
-    let array_re = r"((?:\[[^\]]*\])*)".to_string();
-    // These regular expression pieces are joined together to form a complete
-    // regular expression for parsing MPI call signatures.
-    let typed_variable_signature_re = Regex::new(&format!(
-        "(.*?){}\\s*{}\\s*{}\\s*{}.*",
-        data_types_re, pointer_re, identifier_re, array_re,
-    ))?;
+    let typed_variable_signature_re = c_data_types_regex()?;
     // If s matches the MPI call signature regular expression, return a formatted string
     // composed from joining the matching groups. We trim the resulting string to remove
     // any leading or trailing whitespace.
@@ -370,7 +388,12 @@ fn format_variable_declaration(s: &str) -> Result<String> {
     }
     let captures = typed_variable_signature_re.captures(s).unwrap();
     let mut leading_part = captures[1].to_string();
+    // The regular expression `void\s*\*` allows for whitespace between `void`
+    // and the pointer operator `*`. We need to remove any whitespace between them.
     let data_type = captures[2].split_whitespace().collect::<String>();
+    if data_type == "double" || data_type == "float" {
+        bail!("Floating point types are not (yet) supported: {}", s);
+    }
     let mut typed_variable = format!(
         "{} {}{}{}",
         data_type, &captures[3], &captures[4], &captures[5],

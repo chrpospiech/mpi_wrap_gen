@@ -106,18 +106,26 @@ fn test_mpi_call_params_substitution() -> Result<()> {
 #[test]
 fn test_mpi_call_params_fortran_substitution() -> Result<()> {
     let template = "%(mpi_definition)s";
-    let info = ("Send".to_string(), vec!["int count".to_string()]);
+    let info = sample_call_info();
     let output = generate_output(template, 1, "Title", &info, &Languages::Fortran, 0)?;
-    assert_eq!(output, "mpi_send(MPI_Fint* count, MPI_Fint* ierror)");
+    assert_eq!(
+        output,
+        "mpi_send(void* buf, MPI_Fint *count, MPI_Fint *datatype, \
+        MPI_Fint *dest, MPI_Fint *tag, MPI_Fint *comm, MPI_Fint *ierror)"
+    );
     Ok(())
 }
 
 #[test]
 fn test_fortran_mpi_call_with_underscores() -> Result<()> {
     let template = "%(mpi_definition)s";
-    let info = ("Send".to_string(), vec!["int count".to_string()]);
+    let info = sample_call_info();
     let output = generate_output(template, 1, "Title", &info, &Languages::Fortran, 2)?;
-    assert_eq!(output, "mpi_send__(MPI_Fint* count, MPI_Fint* ierror)");
+    assert_eq!(
+        output,
+        "mpi_send__(void* buf, MPI_Fint *count, MPI_Fint *datatype, \
+        MPI_Fint *dest, MPI_Fint *tag, MPI_Fint *comm, MPI_Fint *ierror)"
+    );
     Ok(())
 }
 
