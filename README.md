@@ -70,6 +70,7 @@ The configuration file is a YAML document with the following fields:
 ```yaml
 mpi_pdf: "mpi31-report.pdf"      # Path to the MPI standard PDF
 output_file: "mpi_wrapper.c"     # Path for the generated C output file
+language: "Fortran"              # Programming language for the wrapper
 chapters:                        # List of chapter numbers to process
   - 3
   - 5
