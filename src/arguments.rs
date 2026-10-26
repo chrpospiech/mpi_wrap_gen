@@ -38,7 +38,7 @@ mod test_mpi_call;
 /// following regular expression:
 ///
 /// ```regex
-/// .*?MPI_Comm\s+(\w+)
+/// \bMPI_Comm\b\s*\**\s*(\w+)
 /// ```
 ///
 /// If no matches are found, an empty string is returned. Otherwise, the value
@@ -53,7 +53,7 @@ mod test_mpi_call;
 /// or an empty string if no communicator argument is found.
 pub fn extract_first_mpi_communicator_argument(call_info: &MpiCallInfo) -> Result<String> {
     let joined_parameters = call_info.1.join(",");
-    let re = Regex::new(r".*?MPI_Comm\s+(\w+)")?;
+    let re = Regex::new(r"\bMPI_Comm\b\s*\**\s*(\w+)")?;
     if let Some(captures) = re.captures(&joined_parameters) {
         return Ok(captures[1].to_string());
     }
