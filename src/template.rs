@@ -92,6 +92,13 @@ pub fn generate_output(
     let mpi_call_name_lc = mpi_call_info.0.to_lowercase();
     let mpi_definition = format_mpi_definition(language, underscores, mpi_call_info)?;
     let mpi_call = format_mpi_call(language, underscores, mpi_call_info)?;
+    // Extract the first MPI communicator argument from the MPI call info only when
+    // the template contains `%(comm)s`.
+    let comm = if template.contains("%(comm)s") {
+        extract_first_mpi_communicator_argument(mpi_call_info)?
+    } else {
+        String::new()
+    };
     let vars = std::collections::HashMap::<String, String>::from([
         ("chapter_number".to_string(), chapter_number.to_string()),
         ("chapter_title".to_string(), chapter_title.to_string()),
@@ -103,10 +110,7 @@ pub fn generate_output(
         ),
         ("mpi_definition".to_string(), mpi_definition),
         ("mpi_call".to_string(), mpi_call),
-        (
-            "comm".to_string(),
-            extract_first_mpi_communicator_argument(mpi_call_info)?,
-        ),
+        ("comm".to_string(), comm),
         ("u".to_string(), "_".repeat(underscores as usize)),
         (
             "mess_size".to_string(),
