@@ -93,8 +93,8 @@ pub fn generate_output(
     let mpi_definition = format_mpi_definition(language, underscores, mpi_call_info)?;
     let mpi_call = format_mpi_call(language, underscores, mpi_call_info)?;
     // Extract the first MPI communicator argument from the MPI call info only when
-    // the template contains `%(comm)s`.
-    let comm = if template.contains("%(comm)s") {
+    // the template contains a `comm` placeholder.
+    let comm = if template_has_comm_placeholder(template) {
         extract_first_mpi_communicator_argument(mpi_call_info)?
     } else {
         String::new()
@@ -122,4 +122,15 @@ pub fn generate_output(
         .map_err(|e| anyhow::anyhow!("{e}"))?
         .into_owned();
     Ok(output)
+}
+
+fn template_has_comm_placeholder(template: &str) -> bool {
+    let Ok(specs) = PythonFormat.iter_args(template) else {
+        return false;
+    };
+
+    specs.filter_map(|spec| spec.ok()).any(|spec| {
+        let placeholder = &template[spec.start()..spec.end()];
+        placeholder.starts_with("%(comm)") && !placeholder.ends_with('%')
+    })
 }
