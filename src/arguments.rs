@@ -41,7 +41,7 @@ mod test_mpi_call;
 /// \bMPI_Comm\b\s*\**\s*(\w+)
 /// ```
 ///
-/// If no matches are found, an empty string is returned. Otherwise, the value
+/// If no matches are found, an error is returned. Otherwise, the value
 /// captured by the regular expression, which corresponds to the name of the
 /// first MPI communicator argument, is returned.
 ///
@@ -50,14 +50,17 @@ mod test_mpi_call;
 ///
 /// # Returns
 /// A `Result` containing the name of the first MPI communicator argument as a string
-/// or an empty string if no communicator argument is found.
+/// or an error if no communicator argument is found.
 pub fn extract_first_mpi_communicator_argument(call_info: &MpiCallInfo) -> Result<String> {
     let joined_parameters = call_info.1.join(",");
     let re = Regex::new(r"\bMPI_Comm\b\s*\**\s*(\w+)")?;
     if let Some(captures) = re.captures(&joined_parameters) {
         return Ok(captures[1].to_string());
     }
-    Ok(String::new())
+    bail!(format!(
+        "No MPI communicator argument found for {}",
+        call_info.0
+    ));
 }
 
 /// Static set of C data types used in MPI calls that are passed through unchanged

@@ -157,6 +157,36 @@ fn test_empty_params() -> Result<()> {
 }
 
 #[test]
+fn test_comm_placeholder_with_width_and_alignment() -> Result<()> {
+    let info = sample_call_info();
+    let right_aligned = generate_output("%(comm)20s", 1, "Title", &info, &Languages::C, 0)?;
+    let left_aligned = generate_output("%(comm)-20s", 1, "Title", &info, &Languages::C, 0)?;
+
+    assert_eq!(right_aligned, "                comm");
+    assert_eq!(left_aligned, "comm                ");
+    Ok(())
+}
+
+#[test]
+fn test_comm_width_placeholder_requires_communicator() {
+    let info = ("Barrier".to_string(), vec![]);
+
+    for template in ["%(comm)20s", "%(comm)-20s"] {
+        let result = generate_output(template, 1, "Title", &info, &Languages::C, 0);
+        assert!(result.is_err(), "{template} should require a communicator");
+    }
+}
+
+#[test]
+fn test_escaped_comm_placeholder_does_not_require_communicator() -> Result<()> {
+    let info = ("Barrier".to_string(), vec![]);
+    let output = generate_output("%%(comm)s", 1, "Title", &info, &Languages::C, 0)?;
+
+    assert_eq!(output, "%(comm)s");
+    Ok(())
+}
+
+#[test]
 fn test_mpi_call_name_lc_substitution() -> Result<()> {
     let template = "%(mpi_call_name_lc)s";
     let info = sample_call_info();

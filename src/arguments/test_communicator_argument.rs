@@ -81,8 +81,8 @@ fn extract_first_mpi_communicator_argument_returns_empty_when_absent() -> Result
         vec!["int count".to_string(), "MPI_Datatype datatype".to_string()],
     );
 
-    let name = extract_first_mpi_communicator_argument(&call_info)?;
+    let name = extract_first_mpi_communicator_argument(&call_info);
 
-    assert_eq!(name, "");
+    assert!(name.is_err());
     Ok(())
 }
