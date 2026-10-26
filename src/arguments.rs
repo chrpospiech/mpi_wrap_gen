@@ -57,7 +57,10 @@ pub fn extract_first_mpi_communicator_argument(call_info: &MpiCallInfo) -> Resul
     if let Some(captures) = re.captures(&joined_parameters) {
         return Ok(captures[1].to_string());
     }
-    bail!("No MPI communicator argument found")
+    bail!(format!(
+        "No MPI communicator argument found for {}",
+        call_info.0
+    ));
 }
 
 /// Static set of C data types used in MPI calls that are passed through unchanged
