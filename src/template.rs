@@ -16,7 +16,9 @@
 // Description: ~/tools/Rust/mpi_wrap_gen/src/template.rs
 // Author: Dr. Christoph Pospiech
 
-use crate::arguments::{format_mpi_call, format_mpi_definition};
+use crate::arguments::{
+    extract_first_mpi_communicator_argument, format_mpi_call, format_mpi_definition,
+};
 use crate::config::Languages;
 use crate::mess_size::generate_mess_size_code;
 use crate::mpi_calls::MpiCallInfo;
@@ -101,6 +103,10 @@ pub fn generate_output(
         ),
         ("mpi_definition".to_string(), mpi_definition),
         ("mpi_call".to_string(), mpi_call),
+        (
+            "comm".to_string(),
+            extract_first_mpi_communicator_argument(mpi_call_info)?,
+        ),
         ("u".to_string(), "_".repeat(underscores as usize)),
         (
             "mess_size".to_string(),

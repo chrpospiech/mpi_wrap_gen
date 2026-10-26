@@ -22,10 +22,43 @@ use anyhow::{bail, Result};
 use regex::Regex;
 
 #[cfg(test)]
+mod test_communicator_argument;
+
+#[cfg(test)]
 mod test_mpi_defs;
 
 #[cfg(test)]
 mod test_mpi_call;
+
+/// Extracts the name of the (first) MPI communicator argument from the MPI
+/// call parameters.
+///
+/// First, the parameter call_info.1 is joined to a single string with
+/// `,` as separator. Then this string is searched for matches of the
+/// following regular expression:
+///
+/// ```regex
+/// \bMPI_Comm\b\s*\**\s*(\w+)
+/// ```
+///
+/// If no matches are found, an empty string is returned. Otherwise, the value
+/// captured by the regular expression, which corresponds to the name of the
+/// first MPI communicator argument, is returned.
+///
+/// # Arguments
+/// * `call_info` - A tuple containing the MPI call name and its parameters.
+///
+/// # Returns
+/// A `Result` containing the name of the first MPI communicator argument as a string
+/// or an empty string if no communicator argument is found.
+pub fn extract_first_mpi_communicator_argument(call_info: &MpiCallInfo) -> Result<String> {
+    let joined_parameters = call_info.1.join(",");
+    let re = Regex::new(r"\bMPI_Comm\b\s*\**\s*(\w+)")?;
+    if let Some(captures) = re.captures(&joined_parameters) {
+        return Ok(captures[1].to_string());
+    }
+    Ok(String::new())
+}
 
 /// Static set of C data types used in MPI calls that are passed through unchanged
 /// to the C routine called by the corresponding MPI call in Fortran. Fortran calls
