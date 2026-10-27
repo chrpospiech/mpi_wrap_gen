@@ -1,15 +1,12 @@
 # mpi_wrap_gen
 
-Create wrapper files for MPI profiler.
+Create wrapper files for an MPI profiler.
 
 ## Overview
 
 `mpi_wrap_gen` reads a YAML configuration file, parses the official MPI standard PDF
 (e.g. `mpi31-report.pdf`) to extract MPI function signatures from specified chapters,
-and generates a C source file using configurable templates.
-
-This tool replaces an earlier Perl-based workflow that relied on a plain-text
-conversion of the MPI standard.
+and generates a C source files using configurable templates.
 
 ## Features
 
@@ -18,16 +15,66 @@ conversion of the MPI standard.
 - Identifies chapter boundaries via PDF outline (bookmark) tree
 - Parses function names and parameter lists from the configured chapters
 - Generates C source files using Python-style format string templates
+- Passes the generated source files through clang-format to clean up the code.
 
 ## Requirements
 
-- Rust 2021 edition (1.70+)
+- clang-format (for prettifying the code)
+- Rust 2021 edition (1.70+) (for building, testing and creating the documentation)
 
-## Building
+## Installation
+
+### Installation of the Linux binary
+
+For a given release tag (e.g. `v1.0.0`), you may download the Linux binary
+from the GitHub release asset
+<https://github.com/chrpospiech/mpi_wrap_gen/releases/download/v1.0.0/mpi_wrap_gen>.
+This binary was compiled with `Kubuntu 26.04.1`, but should work on any recent
+Linux distribution.
+
+### Compilation from source
+
+The tool is written in [Rust](https://rust-lang.org/),
+which is also required for installing the tool. The recommended
+way to install `Rust` is by using
+[rustup](https://rust-lang.org/tools/install/).
+
+Once `Rust` is installed, `mpi_wrap_gen` can be installed
+with the following command into `<install_prefix>/bin`.
 
 ```bash
-cargo build --release
+cargo install --path [<project_dir>|.] [--root <install_prefix>]
 ```
+
+### Installation of clang-format
+
+`clang-fortran` may be best installed with `pip` or `uv`.
+
+```bash
+python -m pip install clang-format
+```
+
+If you want to install into a non-existing `.venv` directory using `uv`,
+you may proceed as follows.
+
+- `uv init`
+- `rm .python-version main.py`
+- `uv add clang_fortran`
+- `source .venv/bin/activate`
+
+### Creating Documentation
+
+This requires Rust to be installed. If it is, you may proceed as follows.
+
+```bash
+cd <project_dir>
+cargo doc --no-deps
+chromium target/doc/mpi_wrap_gen/index.html
+```
+
+`chromium` may be replaced by a different browser, however a browser installed
+in a flatpak sandbox (or other container) requires
+the contents of `target/doc/mpi_wrap_gen` to be accessed via a `HTML`-server.
 
 ## Usage
 
@@ -37,14 +84,14 @@ mpi_wrap_gen [OPTIONS] <CONFIG_FILE>
 
 ### Options
 
-| Option                | Description                                       |
-|-----------------------|---------------------------------------------------|
-| `-v`, `--verbose`     | Enable verbose output (default: false)            |
-| `-D`, `--dry-run`     | Run in verbose mode without generating output     |
-| `-u`, `--underscores` | Number of underscores preceding each Fortran call |
-| `--no-prettify`       | Disable prettifying the generated output code     |
-| `-h`, `--help`        | Print help                                        |
-| `-V`, `--version`     | Print version                                     |
+| Option                | Description                                        |
+|-----------------------|----------------------------------------------------|
+| `-v`, `--verbose`     | Enable verbose output (default: false)             |
+| `-D`, `--dry-run`     | Run in verbose mode without generating output      |
+| `-u`, `--underscores` | Number of underscores at the end each Fortran call |
+| `--no-prettify`       | Disable prettifying the generated output code      |
+| `-h`, `--help`        | Print help                                         |
+| `-V`, `--version`     | Print version                                      |
 
 ### Arguments
 
@@ -52,7 +99,7 @@ mpi_wrap_gen [OPTIONS] <CONFIG_FILE>
 |---------------|-------------------------------------|
 | `CONFIG_FILE` | Path to the YAML configuration file |
 
-### Example
+### Examples
 
 ```bash
 mpi_wrap_gen config.yml
@@ -75,6 +122,7 @@ chapters:                        # List of chapter numbers to process
   - 3
   - 5
 excludes:
+  # List of MPI calls to exclude (case-sensitive)
   - "Init"
   - "Finalize"
 templates:
@@ -91,35 +139,95 @@ templates:
 
 ### Configuration File Details
 
+#### MPI Standard PDF
+
+Absolute or relative path pointing to a PDF copy of the MPI standard. The file has to exist.
+No URL is allowed here. The current version was tested only for MPI standard 3.0 and 3.1.
+
+#### Output File
+
+One config file may create a single file or one file per chapter. To achieve the latter, the
+path name for the output file may contain Python `format()` placeholders `%(chapter_number)d`
+and `%(u)d`. For example
+
+```Python
+wrappers/chapter%(chapter_number)02d_Fortran%(u)s.c
+```
+
+will expand to `wrappers/chapter04_Fortran__.c`for chapter `4` and `--underscores 2`.
+Depending on output to a single file or output per chapter of the MPI standard,
+different templates may apply.
+
+#### Language
+
+Output files contain `C` sources, but e.g. the MPI call definitions look different when
+called from a `Fortran` program. This configuration parameter --- in conjunction with the
+`--underscores` option --- switches the language of the calling program.
+
+```Rust
+pub enum Languages {
+    C,
+    Fortran,
+}
+
+fn default_language() -> Languages {
+    Languages::C
+}
+```
+
+#### Chapters
+
+Wrappers are generated only for chapters of the MPI standard listed here.
+
+#### Excludes
+
 `excludes` is optional. Entries are matched case-insensitively, accept either bare
-MPI names (`init`) or `MPI_`-prefixed names (`MPI_Init`), and also suppress matching
-`*_barrier` entries in the collective barrier section.
+MPI names (`init`) or `MPI_`-prefixed names (`MPI_Init`).
 
-### Templates
+#### Templates
 
-Chapter and barrier templates use Python-style placeholders (`%(name)type`), which
-are evaluated before the generated fragments are concatenated. `header` and `footer`
-are copied verbatim and do not support placeholder substitution.
+Templates are multiline strings that contain Python-style placeholders (`%(name)type`).
+The placeholders are evaluated before the generated fragments are concatenated.
 
-The `header` template is emitted once at the start of the output. For each chapter
-with MPI calls, `ch_init` is emitted once (using the first call found), followed by
+### Template Details
+
+#### Required Templates
+
+Only `ch_init` and `ch_body` have to be specified in the configuration file.
+All other templates are optional and default to an empty string.
+
+#### Header and Footer
+
+`header` and `footer` are placed at the begin and at the end of a single output file.
+They are disregarded for output per chapter of the MPI standard.
+They are copied verbatim and do not support placeholder substitution.
+
+#### Templates per Chapter
+
+For each chapter containing MPI calls after removal of the excludes,
+`ch_init` is emitted once (using the first call found), followed by
 the following templates once per MPI call.
 
 - `ch_decl` (optional)
 - `ch_load_imb` (optional, only observed for collective MPI calls)
 - `ch_body` once per MPI call.
 
+`ch_load_imb` is meant for `C`-code measuring load imbalance, e.g. by
+introducing an extra `MPI_Barrier` with timer around it to separate waiting
+time from communication time. If this template is empty, the other two may
+be joined into one `ch_body`.
+
+#### Additional Templates for Barrier Calls
+
 If any of the processed chapters has a title containing the word "collective"
 (case-insensitive) *and* there is a single output file, an additional barrier section
-is appended before the footer. This is composed from the two following templates.
+may be appended before the footer. This is composed from the two following templates.
 
 - `bar_init` is emitted once for that section (using the first barrier call found)
 - `bar_body` (emitted once per collective MPI call)
 
 In the barrier templates, `%(mpi_call_name)s` contains the MPI function name
 with the `_barrier` suffix already appended (e.g. `Bcast_barrier`).
-
-The `footer` template is emitted once at the end.
 
 ### Template Placeholders
 
@@ -141,13 +249,28 @@ src/
 ├── main.rs          # Entry point: parses args, reads config, orchestrates generation
 ├── cmdline.rs       # CLI argument parsing (clap)
 ├── config.rs        # YAML config deserialization
+├── arguments.rs     # MPI argument/parameter model and formatting
 ├── chapters.rs      # PDF outline traversal, chapter-to-page mapping
 ├── mpi_calls.rs     # MPI function signature extraction and parameter parsing
+├── mess_size.rs     # Message-size helper code generation
 ├── listings.rs      # Orchestrates per-chapter extraction and output assembly
-└── template.rs      # Python-style template substitution (dynfmt2)
+├── prettify.rs      # Runs clang-format over generated output
+├── template.rs      # Python-style template substitution (dynfmt2)
+├── arguments/       # Unit tests for arguments.rs
+├── chapters/        # Unit tests for chapters.rs
+├── config/          # Unit tests for config.rs
+├── listings/        # Unit tests for listings.rs
+├── mess_size/       # Unit tests for mess_size.rs
+├── mpi_calls/       # Unit tests for mpi_calls.rs
+├── prettify/        # Unit tests for prettify.rs
+└── template/        # Unit tests for template.rs
 test_data/
-├── mpi_call_xmp.pdf # Sample PDF for MPI call extraction tests
-└── test_outline.pdf # Sample PDF for chapter outline tests
+├── mpi_call_xmp.pdf          # Sample PDF for MPI call extraction tests
+├── test_outline.pdf          # Sample PDF for chapter outline tests
+├── test_outline.tex          # LaTeX source for test_outline.pdf
+├── two_collective_chapters.pdf # Sample PDF with two collective chapters
+├── two_collective_chapters.tex # LaTeX source for two_collective_chapters.pdf
+└── wait_some_xmp.pdf          # Sample PDF for MPI_Waitsome-style tests
 ```
 
 ## License
