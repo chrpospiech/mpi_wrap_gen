@@ -59,7 +59,7 @@ you may proceed as follows.
 
 - `uv init`
 - `rm .python-version main.py`
-- `uv add clang_fortran`
+- `uv add clang-format`
 - `source .venv/bin/activate`
 
 ### Creating Documentation
