@@ -122,7 +122,7 @@ chapters:                        # List of chapter numbers to process
   - 3
   - 5
 excludes:
-  # List of MPI calls to exclude (case-sensitive)
+  # List of MPI calls to exclude (case-insensitive)
   - "Init"
   - "Finalize"
 templates:
