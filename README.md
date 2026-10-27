@@ -147,8 +147,8 @@ No URL is allowed here. The current version was tested only for MPI standard 3.0
 #### Output File
 
 One config file may create a single file or one file per chapter. To achieve the latter, the
-path name for the output file may contain Python `format()` placeholders `%(chapter_number)d`
-and `%(u)d`. For example
+path name for the output file may contain Python %-style placeholders `%(chapter_number)d`
+and `%(u)s`. For example
 
 ```Python
 wrappers/chapter%(chapter_number)02d_Fortran%(u)s.c
