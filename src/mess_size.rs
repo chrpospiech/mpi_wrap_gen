@@ -94,7 +94,7 @@ pub fn generate_mess_size_code(
         Ok(format!(
             "int type_size;\n\
              PMPI_Type_size({}, &type_size);\n\
-             int message_size = ({} * type_size);",
+             MPI_Count message_size = (MPI_Count) {} * type_size;",
             datatype_var, count_var
         ))
     } else {
@@ -102,7 +102,7 @@ pub fn generate_mess_size_code(
             "MPI_Fint type_size;\n\
              MPI_Fint ierror_type_size;\n\
              pmpi_type_size{}({}, &type_size, &ierror_type_size);\n\
-             int message_size = *{} * type_size;",
+             MPI_Count message_size = (MPI_Count) *{} * type_size;",
             "_".repeat(underscores as usize),
             datatype_var,
             count_var
