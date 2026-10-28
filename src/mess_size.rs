@@ -33,7 +33,7 @@ mod generate_mess_size_code_tests;
 /// .*void\*\s+\w+,int\s+(\w+),MPI_Datatype\s+(\w+)
 /// ```
 ///
-/// If no matches are found, the string "MPI_Count message_size = -1;" is returned.
+/// If no matches are found, the string "int message_size = -1;" is returned.
 /// The default message size of -1 indicates that this MPI call does not have a
 /// meaningful message size.
 ///
@@ -42,7 +42,9 @@ mod generate_mess_size_code_tests;
 /// Depending on the values of `language` and `underscores` the generated code
 /// contains the appropriate call to MPI_Type_size to extract the size of the
 /// MPI datatype into a variable type_size. Then the total message size is
-/// computed as `MPI_Count message_size = (MPI_Count) count * type_size;`
+/// computed as `int message_size = count * type_size;`
+///
+/// The data type of `message_size` has to be `int` to match the
 ///
 /// # Arguments
 /// * `language` - The programming language for which to generate the code.
@@ -91,16 +93,16 @@ pub fn generate_mess_size_code(
     if matches!(language, Languages::C) {
         Ok(format!(
             "int type_size;\n\
-            PMPI_Type_size({}, &type_size);\n\
-            MPI_Count message_size = (MPI_Count) {} * type_size;",
+             PMPI_Type_size({}, &type_size);\n\
+             MPI_Count message_size = (MPI_Count) {} * type_size;",
             datatype_var, count_var
         ))
     } else {
         Ok(format!(
-            "MPI_Count type_size;\n\
-            int ierror_type_size;\n\
-            pmpi_type_size{}({}, &type_size, &ierror_type_size);\n\
-            MPI_Count message_size = (MPI_Count) *{} * type_size;",
+            "MPI_Fint type_size;\n\
+             MPI_Fint ierror_type_size;\n\
+             pmpi_type_size{}({}, &type_size, &ierror_type_size);\n\
+             MPI_Count message_size = (MPI_Count) *{} * type_size;",
             "_".repeat(underscores as usize),
             datatype_var,
             count_var
