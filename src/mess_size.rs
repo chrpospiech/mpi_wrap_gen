@@ -86,7 +86,7 @@ pub fn generate_mess_size_code(
     let captures = re.captures(&joined_parameters);
     // If no matches are found, return a default message size of -1.
     if captures.is_none() {
-        return Ok("int message_size = -1;".to_string());
+        return Ok("MPI_Count message_size = -1;".to_string());
     }
     let count_var = &captures.as_ref().unwrap()[1];
     let datatype_var = &captures.as_ref().unwrap()[2];
