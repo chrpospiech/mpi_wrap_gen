@@ -29,7 +29,7 @@ use std::path::PathBuf;
 fn test_pdf_path() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("test_data")
-        .join("wait_some_xmp.pdf")
+        .join("special_calls_xmp.pdf")
 }
 
 #[test]
