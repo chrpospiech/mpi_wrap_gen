@@ -26,9 +26,9 @@ and generates a C source files using configurable templates.
 
 ### Installation of the Linux binary
 
-For a given release tag (e.g. `v1.0.0`), you may download the Linux binary
+For a given release tag (e.g. `v1.1.0`), you may download the Linux binary
 from the GitHub release asset
-<https://github.com/chrpospiech/mpi_wrap_gen/releases/download/v1.0.0/mpi_wrap_gen>.
+<https://github.com/chrpospiech/mpi_wrap_gen/releases/download/v1.1.0/mpi_wrap_gen>.
 This binary was compiled with `Kubuntu 26.04.1`, but should work on any recent
 Linux distribution.
 
