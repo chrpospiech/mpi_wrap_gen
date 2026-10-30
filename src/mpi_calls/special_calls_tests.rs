@@ -29,7 +29,7 @@ use std::path::PathBuf;
 fn test_pdf_path() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("test_data")
-        .join("wait_some_xmp.pdf")
+        .join("special_calls_xmp.pdf")
 }
 
 #[test]
@@ -44,8 +44,8 @@ fn test_mpi_calls_for_page_range_finds_all_calls() -> Result<()> {
     );
     assert_eq!(
         calls.len(),
-        3,
-        "Expected to find 3 MPI calls, found: {:?}",
+        4,
+        "Expected to find 4 MPI calls, found: {:?}",
         calls.iter().map(|(n, _)| n).collect::<Vec<_>>()
     );
     Ok(())
@@ -100,6 +100,36 @@ fn test_mpi_calls_for_page_range_finds_testsome() -> Result<()> {
             .iter()
             .any(|p| p.contains("int") && p.contains("array_of_indices")),
         "MPI_Testsome should have an 'int array_of_indices' parameter, got: {:?}",
+        params
+    );
+    Ok(())
+}
+
+#[test]
+fn test_mpi_calls_for_page_range_finds_graph_create_adj() -> Result<()> {
+    let doc = Document::load(test_pdf_path())?;
+    let num_pages = doc.page_iter().count() as u32;
+    let calls = mpi_calls_for_page_range(&doc, 1, num_pages + 1)?;
+
+    let graph_create_adj_calls: Vec<_> = calls
+        .iter()
+        .filter(|(name, _)| name == "Dist_graph_create_adjacent")
+        .collect();
+    assert!(
+        !graph_create_adj_calls.is_empty(),
+        "Expected to find MPI_Dist_graph_create_adjacent in test PDF, found: {:?}",
+        calls.iter().map(|(n, _)| n).collect::<Vec<_>>()
+    );
+
+    // Check for a parameter 'const int destinations[]'. In the test PDF file
+    // the parts 'const' and 'int destinations[]' are separated by a page break.
+    let (_, params) = &graph_create_adj_calls[0];
+    assert!(
+        params
+            .iter()
+            .any(|p| p.contains("const") && p.contains("int destinations[]")),
+        " MPI_Dist_graph_create_adjacent should have a \
+         'const int destinations[]' parameter, got: {:?}",
         params
     );
     Ok(())
