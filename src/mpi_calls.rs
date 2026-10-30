@@ -242,7 +242,13 @@ fn parse_parameters(params_str: &str) -> Result<Vec<String>> {
     }
     params_str
         .split(',')
-        .map(format_variable_declaration)
+        .map(|param| {
+            // Collapse embedded newlines (e.g. from a signature split across a
+            // PDF page boundary) into spaces so `format_variable_declaration`'s
+            // regex, which does not match across newlines, sees a single line.
+            param.split_whitespace().collect::<Vec<_>>().join(" ")
+        })
+        .map(|param| format_variable_declaration(&param))
         .collect()
 }
 
@@ -414,10 +420,32 @@ fn format_variable_declaration(s: &str) -> Result<String> {
     Ok(typed_variable)
 }
 
-/// Remove line numbers and normalize the text extracted from the PDF.
+/// Remove line numbers and running page headers/footers from text extracted
+/// from the PDF, and normalize the result.
+///
 /// The MPI standard PDF has line numbers in the margins that appear as
-/// standalone numbers on lines or at the start/end of text lines.
+/// standalone numbers on lines or at the start/end of text lines. lopdf's
+/// text extraction sometimes merges a whole run of these margin numbers
+/// (e.g. "1 2 3 ... 48") onto a single line instead of one per line, and it
+/// can also leave a running page header in place, e.g. "7.5. TOPOLOGY
+/// CONSTRUCTORS 297" (section number, ALL-CAPS title, page number), right
+/// before the continuation of a signature that was split across a page
+/// boundary. Both artifacts are stripped before line-based cleanup so they
+/// don't get interleaved into a parameter list and silently swallow
+/// preceding tokens (e.g. a "const" qualifier).
 fn clean_extracted_text(text: &str) -> String {
+    // Running header/footer: "<chapter>.<section>. TITLE IN CAPS <page>".
+    static HEADER_RE: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
+    let header_re =
+        HEADER_RE.get_or_init(|| Regex::new(r"\d+\.\d+\.\s+[A-Z][A-Z ]+\d+\s*").unwrap());
+    // A run of 5+ whitespace-separated small numbers: merged margin line numbers.
+    static MARGIN_RUN_RE: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
+    let margin_run_re =
+        MARGIN_RUN_RE.get_or_init(|| Regex::new(r"(?:\b\d{1,3}\b[ \t]+){4,}\b\d{1,3}\b").unwrap());
+
+    let text = header_re.replace_all(text, "");
+    let text = margin_run_re.replace_all(&text, "");
+
     let mut lines: Vec<&str> = Vec::new();
     for line in text.lines() {
         let trimmed = line.trim();
