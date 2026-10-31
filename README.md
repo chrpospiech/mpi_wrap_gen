@@ -241,6 +241,7 @@ with the `_barrier` suffix already appended (e.g. `Bcast_barrier`).
 | `%(mpi_definition)s`    | string  | Language dependent definition of MPI function |
 | `%(mpi_call)s`          | string  | Language dependent complete MPI call          |
 | `%(u)s`                 | string  | "_".repeat(underscores)                       |
+| `%(mess_size)`          | string  | Language dependent formula for message size   |
 
 ## Project Structure
 
