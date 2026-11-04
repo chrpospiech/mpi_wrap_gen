@@ -18,7 +18,7 @@
 
 use crate::chapters::{find_chapter_pages, get_chapter_title, ChapterMap};
 use crate::cmdline::CliArgs;
-use crate::config::{Config, Languages};
+use crate::config::{create_xlanguage, Config, XLanguage};
 use crate::mpi_calls::{
     create_barrier_names, filter_excluded_mpi_calls, mpi_calls_for_chapter, MpiCallInfo,
 };
@@ -175,8 +175,8 @@ fn format_chapter_number(template: &Path, chapter_number: u32, underscores: u8) 
 /// * `chapter` - The chapter number.
 /// * `chapter_title` - The title of the chapter.
 /// * `mpi_calls` - The filtered MPI calls for this chapter (must be non-empty).
-/// * `language` - The programming language to be used for generating the chapter output.
-/// * `verbose` - Whether to print progress messages.
+/// * `xlanguage` - A tuple containing the target programming language and the underscore\
+///   string for Fortran calls.
 ///
 /// # Returns
 /// A `Result<String>` containing the generated chapter output.
@@ -185,8 +185,7 @@ fn generate_chapter_output(
     chapter: u32,
     chapter_title: &str,
     mpi_calls: Vec<MpiCallInfo>,
-    language: &Languages,
-    underscores: u8,
+    xlanguage: &XLanguage,
     verbose: bool,
 ) -> Result<String> {
     let mut ch_output = String::new();
@@ -212,8 +211,7 @@ fn generate_chapter_output(
             chapter,
             chapter_title,
             first_call,
-            language,
-            underscores,
+            xlanguage,
         )?;
     }
     for mpi_call in mpi_calls {
@@ -230,8 +228,7 @@ fn generate_chapter_output(
                 chapter,
                 chapter_title,
                 &mpi_call,
-                language,
-                underscores,
+                xlanguage,
             )?;
         }
         // Add chapter body template with MPI call information
@@ -246,8 +243,7 @@ fn generate_chapter_output(
             chapter,
             chapter_title,
             &mpi_call,
-            language,
-            underscores,
+            xlanguage,
         )?;
     }
 
@@ -302,6 +298,7 @@ pub fn extract_and_generate_listings(
     let chapter_indices: ChapterMap = find_chapter_pages(doc)?;
     let collective_chapter = find_collective_chapter(&chapter_indices, args, config)?;
     let excludes = create_exclude_set(config);
+    let xlanguage = create_xlanguage(config.language.clone(), args.underscores);
     let mut output: Output = Vec::new();
 
     // Determine whether we have a single output file or multiple
@@ -366,8 +363,7 @@ pub fn extract_and_generate_listings(
             chapter,
             &chapter_title,
             filtered_mpi_calls,
-            &config.language,
-            args.underscores,
+            &xlanguage,
             args.verbose,
         )?;
         if single_output_file {
@@ -410,8 +406,7 @@ pub fn extract_and_generate_listings(
                 collective_chapter,
                 &chapter_title,
                 filtered_mpi_calls,
-                &config.language,
-                args.underscores,
+                &xlanguage,
                 args.verbose,
             )?;
         } else if args.verbose {

@@ -16,7 +16,7 @@
 // Description: ~/tools/Rust/mpi_wrap_gen/src/mess_size.rs
 // Author: Dr. Christoph Pospiech
 
-use crate::config::Languages;
+use crate::config::{Languages, XLanguage};
 use crate::mpi_calls::MpiCallInfo;
 use anyhow::Result;
 use regex::Regex;
@@ -47,16 +47,17 @@ mod generate_mess_size_code_tests;
 /// The data type of `message_size` has to be `int` to match the
 ///
 /// # Arguments
-/// * `language` - The programming language for which to generate the code.
-/// * `underscores` - The number of underscores to use for Fortran calls.
 /// * `call_info` - Information about the MPI call.
+/// * `xlanguage` - A tuple containing the target programming language and\
+///   the underscore string for Fortran calls.
+///
 ///
 /// # Returns
 /// A `Result` containing the generated C code as a `String` if successful.
 ///
 /// # Example
 /// ```no_run
-/// use mpi_wrap_gen::config::Languages;
+/// use mpi_wrap_gen::config::{Languages, XLanguage, create_xlanguage};
 /// use mpi_wrap_gen::mess_size::generate_mess_size_code;
 /// use mpi_wrap_gen::mpi_calls::MpiCallInfo;
 ///
@@ -67,18 +68,15 @@ mod generate_mess_size_code_tests;
 ///          "int dest".to_string(),
 ///          "int tag".to_string(),
 ///          "MPI_Comm comm".to_string()]);
-/// let result = generate_mess_size_code(&Languages::C, 0, &call_info);
+/// let xlanguage = create_xlanguage(Languages::C, 0);
+/// let result = generate_mess_size_code(&call_info, &xlanguage);
 /// match result {
 ///     Ok(code) => println!("Generated code: {}", code),
 ///     Err(e) => eprintln!("Error generating code: {}", e),
 /// }
 /// ```
 ///
-pub fn generate_mess_size_code(
-    language: &Languages,
-    underscores: u8,
-    call_info: &MpiCallInfo,
-) -> Result<String> {
+pub fn generate_mess_size_code(call_info: &MpiCallInfo, xlanguage: &XLanguage) -> Result<String> {
     // Join call_info.1 into a single string with `,` as separator
     let joined_parameters = call_info.1.join(",");
     // Search for matches of the regular expression in the joined parameters string
@@ -90,7 +88,7 @@ pub fn generate_mess_size_code(
     }
     let count_var = &captures.as_ref().unwrap()[1];
     let datatype_var = &captures.as_ref().unwrap()[2];
-    if matches!(language, Languages::C) {
+    if matches!(xlanguage.0, Languages::C) {
         Ok(format!(
             "int type_size;\n\
              PMPI_Type_size({}, &type_size);\n\
@@ -103,9 +101,7 @@ pub fn generate_mess_size_code(
              MPI_Fint ierror_type_size;\n\
              pmpi_type_size{}({}, &type_size, &ierror_type_size);\n\
              MPI_Count message_size = (MPI_Count) *{} * type_size;",
-            "_".repeat(underscores as usize),
-            datatype_var,
-            count_var
+            xlanguage.1, datatype_var, count_var
         ))
     }
 }
