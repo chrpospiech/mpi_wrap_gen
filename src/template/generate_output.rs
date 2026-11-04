@@ -17,7 +17,7 @@
 // Author: Dr. Christoph Pospiech
 
 use super::generate_output;
-use crate::config::Languages;
+use crate::config::{create_xlanguage, Languages};
 use anyhow::Result;
 
 fn sample_call_info() -> (String, Vec<String>) {
@@ -38,7 +38,13 @@ fn sample_call_info() -> (String, Vec<String>) {
 fn test_chapter_number_substitution() -> Result<()> {
     let template = "Chapter %(chapter_number)d";
     let info = sample_call_info();
-    let output = generate_output(template, 3, "Title", &info, &Languages::C, 0)?;
+    let output = generate_output(
+        template,
+        3,
+        "Title",
+        &info,
+        &create_xlanguage(Languages::C, 0),
+    )?;
     assert_eq!(output, "Chapter 3");
     Ok(())
 }
@@ -52,8 +58,7 @@ fn test_chapter_title_substitution() -> Result<()> {
         1,
         "Point-to-Point Communication",
         &info,
-        &Languages::C,
-        0,
+        &create_xlanguage(Languages::C, 0),
     )?;
     assert_eq!(output, "Point-to-Point Communication");
     Ok(())
@@ -63,7 +68,13 @@ fn test_chapter_title_substitution() -> Result<()> {
 fn test_mpi_call_name_substitution() -> Result<()> {
     let template = "MPI_%(mpi_call_name)s";
     let info = sample_call_info();
-    let output = generate_output(template, 1, "Title", &info, &Languages::C, 0)?;
+    let output = generate_output(
+        template,
+        1,
+        "Title",
+        &info,
+        &create_xlanguage(Languages::C, 0),
+    )?;
     assert_eq!(output, "MPI_Send");
     Ok(())
 }
@@ -77,8 +88,7 @@ fn test_all_placeholders() -> Result<()> {
         3,
         "Point-to-Point Communication",
         &info,
-        &Languages::C,
-        0,
+        &create_xlanguage(Languages::C, 0),
     )?;
     assert_eq!(
         output,
@@ -95,7 +105,13 @@ fn test_all_placeholders() -> Result<()> {
 fn test_mpi_call_params_substitution() -> Result<()> {
     let template = "%(mpi_definition)s";
     let info = sample_call_info();
-    let output = generate_output(template, 1, "Title", &info, &Languages::C, 0)?;
+    let output = generate_output(
+        template,
+        1,
+        "Title",
+        &info,
+        &create_xlanguage(Languages::C, 0),
+    )?;
     assert_eq!(
         output,
         "MPI_Send(const void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm)"
@@ -107,7 +123,13 @@ fn test_mpi_call_params_substitution() -> Result<()> {
 fn test_mpi_call_params_fortran_substitution() -> Result<()> {
     let template = "%(mpi_definition)s";
     let info = sample_call_info();
-    let output = generate_output(template, 1, "Title", &info, &Languages::Fortran, 0)?;
+    let output = generate_output(
+        template,
+        1,
+        "Title",
+        &info,
+        &create_xlanguage(Languages::Fortran, 0),
+    )?;
     assert_eq!(
         output,
         "mpi_send(void* buf, MPI_Fint *count, MPI_Fint *datatype, \
@@ -120,7 +142,13 @@ fn test_mpi_call_params_fortran_substitution() -> Result<()> {
 fn test_fortran_mpi_call_with_underscores() -> Result<()> {
     let template = "%(mpi_definition)s";
     let info = sample_call_info();
-    let output = generate_output(template, 1, "Title", &info, &Languages::Fortran, 2)?;
+    let output = generate_output(
+        template,
+        1,
+        "Title",
+        &info,
+        &create_xlanguage(Languages::Fortran, 2),
+    )?;
     assert_eq!(
         output,
         "mpi_send__(void* buf, MPI_Fint *count, MPI_Fint *datatype, \
@@ -133,7 +161,13 @@ fn test_fortran_mpi_call_with_underscores() -> Result<()> {
 fn test_template_without_placeholders() -> Result<()> {
     let template = "no placeholders here";
     let info = sample_call_info();
-    let output = generate_output(template, 1, "Title", &info, &Languages::C, 0)?;
+    let output = generate_output(
+        template,
+        1,
+        "Title",
+        &info,
+        &create_xlanguage(Languages::C, 0),
+    )?;
     assert_eq!(output, "no placeholders here");
     Ok(())
 }
@@ -142,7 +176,13 @@ fn test_template_without_placeholders() -> Result<()> {
 fn test_empty_template() -> Result<()> {
     let template = "";
     let info = sample_call_info();
-    let output = generate_output(template, 1, "Title", &info, &Languages::C, 0)?;
+    let output = generate_output(
+        template,
+        1,
+        "Title",
+        &info,
+        &create_xlanguage(Languages::C, 0),
+    )?;
     assert_eq!(output, "");
     Ok(())
 }
@@ -151,7 +191,13 @@ fn test_empty_template() -> Result<()> {
 fn test_empty_params() -> Result<()> {
     let template = "%(mpi_definition)s";
     let info = ("Barrier".to_string(), vec![]);
-    let output = generate_output(template, 1, "Title", &info, &Languages::C, 0)?;
+    let output = generate_output(
+        template,
+        1,
+        "Title",
+        &info,
+        &create_xlanguage(Languages::C, 0),
+    )?;
     assert_eq!(output, "MPI_Barrier()");
     Ok(())
 }
@@ -159,8 +205,20 @@ fn test_empty_params() -> Result<()> {
 #[test]
 fn test_comm_placeholder_with_width_and_alignment() -> Result<()> {
     let info = sample_call_info();
-    let right_aligned = generate_output("%(comm)20s", 1, "Title", &info, &Languages::C, 0)?;
-    let left_aligned = generate_output("%(comm)-20s", 1, "Title", &info, &Languages::C, 0)?;
+    let right_aligned = generate_output(
+        "%(comm)20s",
+        1,
+        "Title",
+        &info,
+        &create_xlanguage(Languages::C, 0),
+    )?;
+    let left_aligned = generate_output(
+        "%(comm)-20s",
+        1,
+        "Title",
+        &info,
+        &create_xlanguage(Languages::C, 0),
+    )?;
 
     assert_eq!(right_aligned, "                comm");
     assert_eq!(left_aligned, "comm                ");
@@ -172,7 +230,13 @@ fn test_comm_width_placeholder_requires_communicator() {
     let info = ("Barrier".to_string(), vec![]);
 
     for template in ["%(comm)20s", "%(comm)-20s"] {
-        let result = generate_output(template, 1, "Title", &info, &Languages::C, 0);
+        let result = generate_output(
+            template,
+            1,
+            "Title",
+            &info,
+            &create_xlanguage(Languages::C, 0),
+        );
         assert!(result.is_err(), "{template} should require a communicator");
     }
 }
@@ -180,7 +244,13 @@ fn test_comm_width_placeholder_requires_communicator() {
 #[test]
 fn test_escaped_comm_placeholder_does_not_require_communicator() -> Result<()> {
     let info = ("Barrier".to_string(), vec![]);
-    let output = generate_output("%%(comm)s", 1, "Title", &info, &Languages::C, 0)?;
+    let output = generate_output(
+        "%%(comm)s",
+        1,
+        "Title",
+        &info,
+        &create_xlanguage(Languages::C, 0),
+    )?;
 
     assert_eq!(output, "%(comm)s");
     Ok(())
@@ -190,7 +260,13 @@ fn test_escaped_comm_placeholder_does_not_require_communicator() -> Result<()> {
 fn test_mpi_call_name_lc_substitution() -> Result<()> {
     let template = "%(mpi_call_name_lc)s";
     let info = sample_call_info();
-    let output = generate_output(template, 1, "Title", &info, &Languages::C, 0)?;
+    let output = generate_output(
+        template,
+        1,
+        "Title",
+        &info,
+        &create_xlanguage(Languages::C, 0),
+    )?;
     assert_eq!(output, "send");
     Ok(())
 }
@@ -199,7 +275,13 @@ fn test_mpi_call_name_lc_substitution() -> Result<()> {
 fn test_mpi_call_name_id_substitution() -> Result<()> {
     let template = "%(mpi_call_name_id)s";
     let info = sample_call_info();
-    let output = generate_output(template, 1, "Title", &info, &Languages::C, 0)?;
+    let output = generate_output(
+        template,
+        1,
+        "Title",
+        &info,
+        &create_xlanguage(Languages::C, 0),
+    )?;
     assert_eq!(output, "send_id,");
     Ok(())
 }
@@ -208,7 +290,13 @@ fn test_mpi_call_name_id_substitution() -> Result<()> {
 fn test_mpi_call_name_id_left_aligned_padding() -> Result<()> {
     let template = "%(mpi_call_name_id)-20s";
     let info = sample_call_info();
-    let output = generate_output(template, 1, "Title", &info, &Languages::C, 0)?;
+    let output = generate_output(
+        template,
+        1,
+        "Title",
+        &info,
+        &create_xlanguage(Languages::C, 0),
+    )?;
     // "send_id," is 8 chars, padded on the right to width 20
     assert_eq!(output, "send_id,            ");
     assert_eq!(output.len(), 20);
@@ -219,7 +307,13 @@ fn test_mpi_call_name_id_left_aligned_padding() -> Result<()> {
 fn test_mpi_call_name_id_right_aligned_padding() -> Result<()> {
     let template = "%(mpi_call_name_id)20s";
     let info = sample_call_info();
-    let output = generate_output(template, 1, "Title", &info, &Languages::C, 0)?;
+    let output = generate_output(
+        template,
+        1,
+        "Title",
+        &info,
+        &create_xlanguage(Languages::C, 0),
+    )?;
     // "send_id," is 8 chars, padded on the left to width 20
     assert_eq!(output, "            send_id,");
     assert_eq!(output.len(), 20);
@@ -230,7 +324,13 @@ fn test_mpi_call_name_id_right_aligned_padding() -> Result<()> {
 fn test_mpi_call_name_id_exact_width() -> Result<()> {
     let template = "%(mpi_call_name_id)8s";
     let info = sample_call_info();
-    let output = generate_output(template, 1, "Title", &info, &Languages::C, 0)?;
+    let output = generate_output(
+        template,
+        1,
+        "Title",
+        &info,
+        &create_xlanguage(Languages::C, 0),
+    )?;
     // "send_id," is exactly 8 chars — no padding applied
     assert_eq!(output, "send_id,");
     Ok(())
@@ -240,7 +340,13 @@ fn test_mpi_call_name_id_exact_width() -> Result<()> {
 fn test_mpi_call_name_id_width_less_than_value() -> Result<()> {
     let template = "%(mpi_call_name_id)5s";
     let info = sample_call_info();
-    let output = generate_output(template, 1, "Title", &info, &Languages::C, 0)?;
+    let output = generate_output(
+        template,
+        1,
+        "Title",
+        &info,
+        &create_xlanguage(Languages::C, 0),
+    )?;
     // width < actual length: no truncation, value passed through unchanged
     assert_eq!(output, "send_id,");
     Ok(())
@@ -250,7 +356,13 @@ fn test_mpi_call_name_id_width_less_than_value() -> Result<()> {
 fn test_mpi_call_name_lc_left_aligned_padding() -> Result<()> {
     let template = "%(mpi_call_name_lc)-10s";
     let info = sample_call_info();
-    let output = generate_output(template, 1, "Title", &info, &Languages::C, 0)?;
+    let output = generate_output(
+        template,
+        1,
+        "Title",
+        &info,
+        &create_xlanguage(Languages::C, 0),
+    )?;
     // "send" is 4 chars, padded on the right to width 10
     assert_eq!(output, "send      ");
     assert_eq!(output.len(), 10);
@@ -261,7 +373,13 @@ fn test_mpi_call_name_lc_left_aligned_padding() -> Result<()> {
 fn test_mpi_call_name_left_aligned_padding() -> Result<()> {
     let template = "%(mpi_call_name)-8s";
     let info = sample_call_info();
-    let output = generate_output(template, 1, "Title", &info, &Languages::C, 0)?;
+    let output = generate_output(
+        template,
+        1,
+        "Title",
+        &info,
+        &create_xlanguage(Languages::C, 0),
+    )?;
     // "Send" is 4 chars, padded on the right to width 8
     assert_eq!(output, "Send    ");
     assert_eq!(output.len(), 8);
@@ -272,7 +390,13 @@ fn test_mpi_call_name_left_aligned_padding() -> Result<()> {
 fn test_left_aligned_padding_in_context() -> Result<()> {
     let template = "id=%(mpi_call_name_id)-10s;";
     let info = sample_call_info();
-    let output = generate_output(template, 1, "Title", &info, &Languages::C, 0)?;
+    let output = generate_output(
+        template,
+        1,
+        "Title",
+        &info,
+        &create_xlanguage(Languages::C, 0),
+    )?;
     // "send_id," is 8 chars, padded on the right to width 10, wrapped in context
     assert_eq!(output, "id=send_id,  ;");
     Ok(())
@@ -282,6 +406,12 @@ fn test_left_aligned_padding_in_context() -> Result<()> {
 fn test_invalid_placeholder_returns_error() {
     let template = "%(unknown_key)s";
     let info = sample_call_info();
-    let result = generate_output(template, 1, "Title", &info, &Languages::C, 0);
+    let result = generate_output(
+        template,
+        1,
+        "Title",
+        &info,
+        &create_xlanguage(Languages::C, 0),
+    );
     assert!(result.is_err());
 }

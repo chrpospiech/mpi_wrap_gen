@@ -17,6 +17,7 @@
 // Author: Dr. Christoph Pospiech
 
 use super::*;
+use crate::config::create_xlanguage;
 
 fn send_call_info() -> MpiCallInfo {
     (
@@ -35,7 +36,7 @@ fn send_call_info() -> MpiCallInfo {
 #[test]
 fn test_no_match_returns_default_message_size() -> Result<()> {
     let call_info: MpiCallInfo = ("Barrier".to_string(), vec!["MPI_Comm comm".to_string()]);
-    let code = generate_mess_size_code(&Languages::C, 0, &call_info)?;
+    let code = generate_mess_size_code(&call_info, &create_xlanguage(Languages::C, 0))?;
     assert_eq!(code, "MPI_Count message_size = -1;");
     Ok(())
 }
@@ -43,7 +44,7 @@ fn test_no_match_returns_default_message_size() -> Result<()> {
 #[test]
 fn test_c_language_uses_pmpi_type_size_call() -> Result<()> {
     let call_info = send_call_info();
-    let code = generate_mess_size_code(&Languages::C, 0, &call_info)?;
+    let code = generate_mess_size_code(&call_info, &create_xlanguage(Languages::C, 0))?;
     assert!(code.contains("PMPI_Type_size(datatype, &type_size);"));
     assert!(code.contains("MPI_Count message_size = (MPI_Count) count * type_size;"));
     Ok(())
@@ -52,7 +53,7 @@ fn test_c_language_uses_pmpi_type_size_call() -> Result<()> {
 #[test]
 fn test_fortran_language_uses_pmpi_type_size_with_underscores() -> Result<()> {
     let call_info = send_call_info();
-    let code = generate_mess_size_code(&Languages::Fortran, 2, &call_info)?;
+    let code = generate_mess_size_code(&call_info, &create_xlanguage(Languages::Fortran, 2))?;
     assert!(code.contains("pmpi_type_size__(datatype, &type_size, &ierror_type_size);"));
     assert!(code.contains("MPI_Count message_size = (MPI_Count) *count * type_size;"));
     Ok(())
@@ -61,7 +62,7 @@ fn test_fortran_language_uses_pmpi_type_size_with_underscores() -> Result<()> {
 #[test]
 fn test_fortran_language_with_zero_underscores() -> Result<()> {
     let call_info = send_call_info();
-    let code = generate_mess_size_code(&Languages::Fortran, 0, &call_info)?;
+    let code = generate_mess_size_code(&call_info, &create_xlanguage(Languages::Fortran, 0))?;
     assert!(code.contains("pmpi_type_size(datatype, &type_size, &ierror_type_size);"));
     Ok(())
 }

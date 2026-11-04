@@ -19,7 +19,7 @@
 use crate::arguments::{
     extract_first_mpi_communicator_argument, format_mpi_call, format_mpi_definition,
 };
-use crate::config::Languages;
+use crate::config::XLanguage;
 use crate::mess_size::generate_mess_size_code;
 use crate::mpi_calls::MpiCallInfo;
 use anyhow::Result;
@@ -46,8 +46,8 @@ mod generate_output;
 /// * `chapter_number` - The number of the chapter to be included in the output string.
 /// * `chapter_title` - The title of the chapter to be included in the output string.
 /// * `mpi_call_info` - A tuple containing the MPI call name and its parameters.
-/// * `language` - The target programming language for which to format the MPI call.
-/// * `underscores` - The number of underscores to use for Fortran calls.
+/// * `xlanguage` - A tuple containing the target programming language and the underscore\
+///   string for Fortran calls.
 ///
 /// # Returns
 /// A Result containing the formatted string with placeholders replaced by actual values.
@@ -55,7 +55,7 @@ mod generate_output;
 ///
 /// Example:
 /// ```no_run
-/// use mpi_wrap_gen::config::Languages;
+/// use mpi_wrap_gen::config::{Languages, create_xlanguage};
 /// use mpi_wrap_gen::template::generate_output;
 ///
 /// let template = "Chapter %(chapter_number)d: %(chapter_title)s ";
@@ -68,13 +68,13 @@ mod generate_output;
 ///                           "int dest".to_string(),
 ///                           "int tag".to_string(),
 ///                      "MPI_Comm comm".to_string()]);
+/// let xlanguage = create_xlanguage(Languages::C, 0);
 /// let result = generate_output(
 ///     template,
 ///     chapter_number,
 ///     chapter_title,
 ///     &mpi_call_info,
-///     &Languages::C,
-///     0,
+///     &xlanguage,
 /// );
 /// match result {
 ///     Ok(output) => println!("Generated output: {}", output),
@@ -86,12 +86,11 @@ pub fn generate_output(
     chapter_number: u32,
     chapter_title: &str,
     mpi_call_info: &MpiCallInfo,
-    language: &Languages,
-    underscores: u8,
+    xlanguage: &XLanguage,
 ) -> Result<String> {
     let mpi_call_name_lc = mpi_call_info.0.to_lowercase();
-    let mpi_definition = format_mpi_definition(language, underscores, mpi_call_info)?;
-    let mpi_call = format_mpi_call(language, underscores, mpi_call_info)?;
+    let mpi_definition = format_mpi_definition(mpi_call_info, xlanguage)?;
+    let mpi_call = format_mpi_call(mpi_call_info, xlanguage)?;
     // Extract the first MPI communicator argument from the MPI call info only when
     // the template contains a `comm` placeholder.
     let comm = if template_has_comm_placeholder(template) {
@@ -111,10 +110,10 @@ pub fn generate_output(
         ("mpi_definition".to_string(), mpi_definition),
         ("mpi_call".to_string(), mpi_call),
         ("comm".to_string(), comm),
-        ("u".to_string(), "_".repeat(underscores as usize)),
+        ("u".to_string(), xlanguage.1.to_string()),
         (
             "mess_size".to_string(),
-            generate_mess_size_code(language, underscores, mpi_call_info)?,
+            generate_mess_size_code(mpi_call_info, xlanguage)?,
         ),
     ]);
     let output = PythonFormat

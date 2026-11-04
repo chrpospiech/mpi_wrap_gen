@@ -1,5 +1,5 @@
 use super::format_mpi_call;
-use crate::config::Languages;
+use crate::config::{create_xlanguage, Languages};
 use crate::mpi_calls::MpiCallInfo;
 use anyhow::Result;
 
@@ -14,7 +14,7 @@ fn format_mpi_call_c_formats_arguments() -> Result<()> {
         ],
     );
 
-    let formatted = format_mpi_call(&Languages::C, 0, &call_info)?;
+    let formatted = format_mpi_call(&call_info, &create_xlanguage(Languages::C, 0))?;
 
     assert_eq!(formatted, "MPI_Send(buf, count, datatype)");
     Ok(())
@@ -32,7 +32,7 @@ fn format_mpi_call_handles_c_complex_parameter_list() -> Result<()> {
         ],
     );
 
-    let formatted = format_mpi_call(&Languages::C, 0, &call_info)?;
+    let formatted = format_mpi_call(&call_info, &create_xlanguage(Languages::C, 0))?;
 
     assert_eq!(
         formatted,
@@ -45,7 +45,7 @@ fn format_mpi_call_handles_c_complex_parameter_list() -> Result<()> {
 fn format_mpi_call_handles_empty_parameter_list_for_fortran() -> Result<()> {
     let call_info: MpiCallInfo = ("Barrier".to_string(), vec![]);
 
-    let formatted = format_mpi_call(&Languages::Fortran, 0, &call_info)?;
+    let formatted = format_mpi_call(&call_info, &create_xlanguage(Languages::Fortran, 0))?;
 
     assert_eq!(formatted, "mpi_barrier(ierror)");
     Ok(())
@@ -63,7 +63,7 @@ fn format_mpi_call_formats_fortran_arguments() -> Result<()> {
         ],
     );
 
-    let formatted = format_mpi_call(&Languages::Fortran, 2, &call_info)?;
+    let formatted = format_mpi_call(&call_info, &create_xlanguage(Languages::Fortran, 2))?;
 
     assert_eq!(
         formatted,
@@ -85,7 +85,7 @@ fn format_mpi_call_normalizes_fortran_handle_arrays() -> Result<()> {
         ],
     );
 
-    let formatted = format_mpi_call(&Languages::Fortran, 0, &call_info)?;
+    let formatted = format_mpi_call(&call_info, &create_xlanguage(Languages::Fortran, 0))?;
 
     assert_eq!(
         formatted,
@@ -101,7 +101,7 @@ fn format_mpi_call_fortran_handles_intent_in_arguments() -> Result<()> {
         vec!["MPI_Comm comm".to_string(), "int *rank".to_string()],
     );
 
-    let formatted = format_mpi_call(&Languages::Fortran, 0, &call_info)?;
+    let formatted = format_mpi_call(&call_info, &create_xlanguage(Languages::Fortran, 0))?;
 
     assert_eq!(formatted, "mpi_comm_rank(comm, rank, ierror)");
     Ok(())
@@ -117,7 +117,7 @@ fn format_mpi_call_fortran_handles_aint_arguments() -> Result<()> {
         ],
     );
 
-    let formatted = format_mpi_call(&Languages::Fortran, 0, &call_info)?;
+    let formatted = format_mpi_call(&call_info, &create_xlanguage(Languages::Fortran, 0))?;
 
     assert_eq!(formatted, "mpi_get_address(location, address, ierror)");
     Ok(())
