@@ -66,7 +66,7 @@ pub struct Config {
 pub type XLanguage = (Languages, String);
 
 /// Creates an XLanguage tuple from a given language and the underscore option,
-/// which is a of type u8 indicating how may underscores for the second part of the tuple.
+/// which is of type u8 and specifies how many underscores to include in the tuple's second element.
 /// The function returns an XLanguage tuple with the language and the underscore string.
 pub fn create_xlanguage(language: Languages, underscores: u8) -> XLanguage {
     (language, "_".repeat(underscores as usize))
