@@ -63,6 +63,15 @@ pub struct Config {
     pub excludes: Vec<String>,
 }
 
+pub type XLanguage = (Languages, String);
+
+/// Creates an XLanguage tuple from a given language and the underscore option,
+/// which is a of type u8 indicating how may underscores for the second part of the tuple.
+/// The function returns an XLanguage tuple with the language and the underscore string.
+pub fn create_xlanguage(language: Languages, underscores: u8) -> XLanguage {
+    (language, "_".repeat(underscores as usize))
+}
+
 /// This function reads the configuration from a YAML
 /// file and returns a Config struct.
 /// It uses the `serde_yaml_ng` crate to parse the YAML file and

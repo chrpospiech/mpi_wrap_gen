@@ -16,7 +16,7 @@
 // Description: ~/tools/Rust/mpi_wrap_gen/src/arguments.rs
 // Author: Dr. Christoph Pospiech
 
-use crate::config::Languages;
+use crate::config::{Languages, XLanguage};
 use crate::mpi_calls::{c_data_types_regex, MpiCallInfo};
 use anyhow::{bail, Result};
 use regex::Regex;
@@ -153,18 +153,14 @@ fn format_mpi_extension_arguments_fortran(call_info: &MpiCallInfo) -> Result<Vec
 ///    and returned as the result of the function.
 ///
 /// # Arguments
-/// * `underscores` - The number of underscores to use for Fortran calls.
+/// * `underscores` - The string containing the required underscores for Fortran calls.
 /// * `call_info` - A tuple containing the MPI call name and its parameters.
 ///
 /// # Returns
 /// A `Result` containing the formatted MPI call as a string, or an error if formatting fails.
 ///
-fn format_mpi_definition_fortran(underscores: u8, call_info: &MpiCallInfo) -> Result<String> {
-    let call_name = format!(
-        "mpi_{}{}",
-        call_info.0.to_lowercase(),
-        "_".repeat(underscores as usize)
-    );
+fn format_mpi_definition_fortran(underscores: &str, call_info: &MpiCallInfo) -> Result<String> {
+    let call_name = format!("mpi_{}{}", call_info.0.to_lowercase(), underscores);
     let mut formatted_args: Vec<String> = Vec::new();
 
     for param in &call_info.1 {
@@ -213,9 +209,9 @@ fn format_mpi_definition_fortran(underscores: u8, call_info: &MpiCallInfo) -> Re
 /// a string representation of the MPI call suitable for the specified language.
 ///
 /// # Arguments
-/// * `language` - The target programming language for which to format the MPI call.
-/// * `underscores` - The number of underscores to use for Fortran calls.
 /// * `call_info` - A tuple containing the MPI call name and its parameters.
+/// * `xlanguage` - A tuple containing the target programming language and the\
+///   underscore string for Fortran calls.
 ///
 /// # Returns
 /// A `Result` containing the formatted MPI call as a string, or an error if formatting fails.
@@ -223,7 +219,7 @@ fn format_mpi_definition_fortran(underscores: u8, call_info: &MpiCallInfo) -> Re
 /// # Example
 ///
 /// ```rust
-/// use crate::config::Languages;
+/// use crate::config::{Languages, XLanguage, create_xlanguage};
 /// use crate::mpi_calls::MpiCallInfo;
 /// use crate::arguments::format_mpi_definition;
 ///
@@ -235,22 +231,21 @@ fn format_mpi_definition_fortran(underscores: u8, call_info: &MpiCallInfo) -> Re
 ///                           "int tag".to_string(),
 ///                           "MPI_Comm comm".to_string()])
 /// ;
-/// let formatted_call = format_mpi_definition(&Languages::C, 0, &call_info).unwrap();
+/// let xlanguage = create_xlanguage(Languages::C, 0);
+/// let formatted_call = format_mpi_definition(&call_info, &xlanguage).unwrap();
 /// println!("{}", formatted_call);
 /// ```
 ///
-pub fn format_mpi_definition(
-    language: &Languages,
-    underscores: u8,
-    call_info: &MpiCallInfo,
-) -> Result<String> {
+pub fn format_mpi_definition(call_info: &MpiCallInfo, xlanguage: &XLanguage) -> Result<String> {
+    let language = xlanguage.0.clone();
+    let underscores = xlanguage.1.clone();
     match language {
         Languages::C => {
             let call_name = format!("MPI_{}", call_info.0);
             let params = call_info.1.join(", ");
             Ok(format!("{}({})", call_name, params))
         }
-        Languages::Fortran => format_mpi_definition_fortran(underscores, call_info),
+        Languages::Fortran => format_mpi_definition_fortran(&underscores, call_info),
     }
 }
 
@@ -268,9 +263,9 @@ pub fn format_mpi_definition(
 ///    with the formatted argument list.
 ///
 /// # Arguments
-/// * `language` - The target programming language for which to format the MPI call.
-/// * `underscores` - The number of underscores to use for Fortran calls.
 /// * `call_info` - A tuple containing the MPI call name and its parameters.
+/// * `xlanguage` - A tuple containing the target programming language and\
+///   the underscore string for Fortran calls.
 ///
 /// # Returns
 /// A `Result` containing the formatted MPI call as a string, or an error if formatting fails.
@@ -278,7 +273,7 @@ pub fn format_mpi_definition(
 /// # Example
 ///
 /// ```rust
-/// use crate::config::Languages;
+/// use crate::config::{Languages, XLanguage, create_xlanguage};
 /// use crate::mpi_calls::MpiCallInfo;
 /// use crate::arguments::format_mpi_call;
 ///
@@ -290,17 +285,14 @@ pub fn format_mpi_definition(
 ///                           "int tag".to_string(),
 ///                           "MPI_Comm comm".to_string()])
 /// ;
-/// let formatted_call = format_mpi_call(&Languages::C, 0, &call_info).unwrap();
+/// let xlanguage = create_xlanguage(Languages::C, 0);
+/// let formatted_call = format_mpi_call(&call_info, &xlanguage).unwrap();
 /// println!("{}", formatted_call);
 /// ```
 ///
-pub fn format_mpi_call(
-    language: &Languages,
-    underscores: u8,
-    call_info: &MpiCallInfo,
-) -> Result<String> {
+pub fn format_mpi_call(call_info: &MpiCallInfo, xlanguage: &XLanguage) -> Result<String> {
     let mut ext_params = call_info.1.clone();
-    if let Languages::Fortran = language {
+    if let Languages::Fortran = xlanguage.0 {
         ext_params.extend(format_mpi_extension_arguments_fortran(call_info)?);
     }
     let pointer_re = r"(\*+|)".to_string();
@@ -321,13 +313,9 @@ pub fn format_mpi_call(
         })
         .collect::<Result<Vec<String>>>()?
         .join(", ");
-    let call_name = match language {
+    let call_name = match xlanguage.0 {
         Languages::C => format!("MPI_{}", call_info.0),
-        Languages::Fortran => format!(
-            "mpi_{}{}",
-            call_info.0.to_lowercase(),
-            "_".repeat(underscores as usize)
-        ),
+        Languages::Fortran => format!("mpi_{}{}", call_info.0.to_lowercase(), xlanguage.1),
     };
     Ok(format!("{}({})", call_name, extended_params))
 }

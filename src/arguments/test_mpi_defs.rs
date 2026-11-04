@@ -1,5 +1,5 @@
 use super::format_mpi_definition;
-use crate::config::Languages;
+use crate::config::{create_xlanguage, Languages};
 use crate::mpi_calls::MpiCallInfo;
 use anyhow::Result;
 
@@ -14,7 +14,7 @@ fn format_mpi_definition_c_formats_arguments() -> Result<()> {
         ],
     );
 
-    let formatted = format_mpi_definition(&Languages::C, 0, &call_info)?;
+    let formatted = format_mpi_definition(&call_info, &create_xlanguage(Languages::C, 0))?;
 
     assert_eq!(
         formatted,
@@ -27,7 +27,7 @@ fn format_mpi_definition_c_formats_arguments() -> Result<()> {
 fn format_mpi_definition_handles_empty_parameter_list() -> Result<()> {
     let call_info: MpiCallInfo = ("Barrier".to_string(), vec![]);
 
-    let formatted = format_mpi_definition(&Languages::C, 0, &call_info)?;
+    let formatted = format_mpi_definition(&call_info, &create_xlanguage(Languages::C, 0))?;
 
     assert_eq!(formatted, "MPI_Barrier()");
     Ok(())
@@ -45,7 +45,7 @@ fn format_mpi_definition_formats_fortran_arguments() -> Result<()> {
         ],
     );
 
-    let formatted = format_mpi_definition(&Languages::Fortran, 2, &call_info)?;
+    let formatted = format_mpi_definition(&call_info, &create_xlanguage(Languages::Fortran, 2))?;
 
     assert_eq!(
         formatted,
@@ -68,7 +68,7 @@ fn format_mpi_definition_normalizes_fortran_handle_arrays() -> Result<()> {
         ],
     );
 
-    let formatted = format_mpi_definition(&Languages::Fortran, 0, &call_info)?;
+    let formatted = format_mpi_definition(&call_info, &create_xlanguage(Languages::Fortran, 0))?;
 
     assert_eq!(
         formatted,
@@ -84,7 +84,7 @@ fn format_mpi_definition_fortran_handles_intent_in_arguments() -> Result<()> {
         vec!["MPI_Comm comm".to_string(), "int *rank".to_string()],
     );
 
-    let formatted = format_mpi_definition(&Languages::Fortran, 0, &call_info)?;
+    let formatted = format_mpi_definition(&call_info, &create_xlanguage(Languages::Fortran, 0))?;
 
     assert_eq!(
         formatted,
@@ -103,7 +103,7 @@ fn format_mpi_definition_fortran_handles_aint_arguments() -> Result<()> {
         ],
     );
 
-    let formatted = format_mpi_definition(&Languages::Fortran, 0, &call_info)?;
+    let formatted = format_mpi_definition(&call_info, &create_xlanguage(Languages::Fortran, 0))?;
 
     assert_eq!(
         formatted,
