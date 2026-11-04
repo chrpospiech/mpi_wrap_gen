@@ -63,10 +63,16 @@ pub struct Config {
     pub excludes: Vec<String>,
 }
 
+/// Type alias for a tuple containing a language and a string of underscores.
+/// The first element of the tuple is the language, and the second element
+/// is a string of underscores. This string of underscores is appended to
+/// every subroutine call called from a Fortran program.
 pub type XLanguage = (Languages, String);
 
 /// Creates an XLanguage tuple from a given language and the underscore option,
-/// which is of type u8 and specifies how many underscores to include in the tuple's second element.
+/// which is of type u8 and specifies how many underscores to include in the
+/// tuple's second element. This string of underscores is appended to
+/// every subroutine call called from a Fortran program.
 /// The function returns an XLanguage tuple with the language and the underscore string.
 pub fn create_xlanguage(language: Languages, underscores: u8) -> XLanguage {
     (language, "_".repeat(underscores as usize))
