@@ -24,6 +24,41 @@ use regex::Regex;
 #[cfg(test)]
 mod generate_mess_size_code_tests;
 
+#[cfg(test)]
+mod macro_tests;
+
+/// Macro for extracting the variable name from a parameter declaration string.
+/// It takes a name of a variable of type `MpiCallInfo` and a position in the parameter list,
+/// and returns the variable name as a reference to str.
+///
+/// # Arguments
+/// * `mpi_call_info` - The `MpiCallInfo` instance containing information about the MPI call.
+/// * `position` - The position of the parameter in the parameter list.
+///
+/// # Returns
+/// The name of the variable at the specified position as a `&str`.
+///
+/// # Example
+/// ```no_run
+/// let call_info: MpiCallInfo = (
+///     "Send".to_string(),
+///     vec![
+///         "const void* buf".to_string(),
+///         "int count".to_string(),
+///         "MPI_Datatype datatype".to_string(),
+///     ],
+/// );
+/// let variable_name = var_name!(call_info, 1);
+/// ```
+///
+macro_rules! var_name {
+    ($mpi_call_info:ident, $index:expr) => {
+        $mpi_call_info.1[$index].split_whitespace().last().unwrap()
+    };
+}
+#[cfg(test)]
+pub(crate) use var_name;
+
 /// Generates a string that contains C code for computing the size of an MPI message.
 ///
 /// First, the parameter call_info.1 is joined to a single string with `,` as separator.
@@ -88,6 +123,8 @@ pub fn generate_mess_size_code(call_info: &MpiCallInfo, xlanguage: &XLanguage) -
     }
     let count_var = &captures.as_ref().unwrap()[1];
     let datatype_var = &captures.as_ref().unwrap()[2];
+    // dummy call to the var_name macro to extract the variable name for the count parameter
+    let _count_var = var_name!(call_info, 1);
     if matches!(xlanguage.0, Languages::C) {
         Ok(format!(
             "int type_size;\n\
