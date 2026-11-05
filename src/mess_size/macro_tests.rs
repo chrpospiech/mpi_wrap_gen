@@ -16,11 +16,14 @@
 // Description: ~/tools/Rust/mpi_wrap_gen/src/mess_size/macro_tests.rs
 // Author: Dr. Christoph Pospiech
 
-use crate::mess_size::var_name;
+use crate::config::{create_xlanguage, Languages};
+use crate::mess_size::{mess_size, var_name};
+use crate::mpi_calls::MpiCallInfo;
+use anyhow::Result;
 
 #[test]
-fn test_var_name_macro() {
-    let call_info: crate::mpi_calls::MpiCallInfo = (
+fn test_var_name_macro() -> Result<()> {
+    let call_info: &MpiCallInfo = &(
         "Send".to_string(),
         vec![
             "const void* buf".to_string(),
@@ -30,4 +33,66 @@ fn test_var_name_macro() {
     );
     let variable_name = var_name!(call_info, 1);
     assert_eq!(variable_name, "count");
+    Ok(())
+}
+
+#[test]
+fn test_mess_size_macro_c() -> Result<()> {
+    let call_info: &MpiCallInfo = &(
+        "Send".to_string(),
+        vec![
+            "const void* buf".to_string(),
+            "int count".to_string(),
+            "MPI_Datatype datatype".to_string(),
+        ],
+    );
+    let xlanguage = create_xlanguage(Languages::C, 0);
+    let count_var = var_name!(call_info, 1);
+    let datatype_var = var_name!(call_info, 2);
+    let result: Result<String> = mess_size!(
+        "MPI_Count message_size =",
+        count_var,
+        datatype_var,
+        xlanguage
+    );
+    assert!(result.is_ok());
+    let result_str = &result.unwrap();
+    assert_eq!(
+        result_str,
+        "int type_size;\n\
+        PMPI_Type_size(datatype, &type_size);\n\
+        MPI_Count message_size = (MPI_Count) count * type_size;"
+    );
+    Ok(())
+}
+
+#[test]
+fn test_mess_size_macro_f() -> Result<()> {
+    let call_info: &MpiCallInfo = &(
+        "Send".to_string(),
+        vec![
+            "const void* buf".to_string(),
+            "int count".to_string(),
+            "MPI_Datatype datatype".to_string(),
+        ],
+    );
+    let xlanguage = create_xlanguage(Languages::Fortran, 1);
+    let count_var = var_name!(call_info, 1);
+    let datatype_var = var_name!(call_info, 2);
+    let result: Result<String> = mess_size!(
+        "MPI_Count message_size =",
+        count_var,
+        datatype_var,
+        xlanguage
+    );
+    assert!(result.is_ok());
+    let result_str = &result.unwrap();
+    assert_eq!(
+        result_str,
+        "MPI_Fint type_size;\n\
+        MPI_Fint ierror_type_size;\n\
+        pmpi_type_size_(datatype, &type_size, &ierror_type_size);\n\
+        MPI_Count message_size = (MPI_Count) *count * type_size;"
+    );
+    Ok(())
 }

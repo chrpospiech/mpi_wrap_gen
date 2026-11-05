@@ -59,6 +59,56 @@ macro_rules! var_name {
 #[cfg(test)]
 pub(crate) use var_name;
 
+/// Macro for creating a C code snippet to compute MPI message size.
+/// The first argument specifies how the message size variable should be declared
+/// or updated in the generated C code. It it a string expression, typically
+/// some thing like `"int message_size = "` or `"message_size += "`.
+/// The second and third arguments are the variable names of the count and
+/// datatype parameters, respectively. The last argument is a variable name of
+/// type XLanguage.
+///
+/// # Arguments
+/// * `decl_or_update` - A string specifying how the message size variable
+///   should be declared or updated.
+/// * `count_var` - The variable name of the count parameter.
+/// * `datatype_var` - The variable name of the datatype parameter.
+/// * `xlanguage_var` - The variable name of type XLanguage.
+///
+/// # Returns
+/// A `String` containing the generated C code snippet for computing the MPI message size.
+///
+/// # Example
+/// ```no_run
+/// let decl_or_update = "int message_size = ";
+/// let count_var = "count";
+/// let datatype_var = "datatype";
+/// let xlanguage_var = "xlanguage";
+/// let code = mess_size!(decl_or_update, count_var, datatype_var, xlanguage_var);
+/// ```
+///
+macro_rules! mess_size {
+    ($decl_or_update:expr, $count:ident, $datatype:ident, $xlanguage:ident) => {
+        if matches!($xlanguage.0, Languages::C) {
+            Ok(format!(
+                "int type_size;\n\
+                 PMPI_Type_size({}, &type_size);\n\
+                 {} (MPI_Count) {} * type_size;",
+                $datatype, $decl_or_update, $count
+            ))
+        } else {
+            Ok(format!(
+                "MPI_Fint type_size;\n\
+                 MPI_Fint ierror_type_size;\n\
+                 pmpi_type_size{}({}, &type_size, &ierror_type_size);\n\
+                 {} (MPI_Count) *{} * type_size;",
+                $xlanguage.1, $datatype, $decl_or_update, $count
+            ))
+        }
+    };
+}
+#[cfg(test)]
+pub(crate) use mess_size;
+
 /// Generates a string that contains C code for computing the size of an MPI message.
 ///
 /// First, the parameter call_info.1 is joined to a single string with `,` as separator.
@@ -125,20 +175,10 @@ pub fn generate_mess_size_code(call_info: &MpiCallInfo, xlanguage: &XLanguage) -
     let datatype_var = &captures.as_ref().unwrap()[2];
     // dummy call to the var_name macro to extract the variable name for the count parameter
     let _count_var = var_name!(call_info, 1);
-    if matches!(xlanguage.0, Languages::C) {
-        Ok(format!(
-            "int type_size;\n\
-             PMPI_Type_size({}, &type_size);\n\
-             MPI_Count message_size = (MPI_Count) {} * type_size;",
-            datatype_var, count_var
-        ))
-    } else {
-        Ok(format!(
-            "MPI_Fint type_size;\n\
-             MPI_Fint ierror_type_size;\n\
-             pmpi_type_size{}({}, &type_size, &ierror_type_size);\n\
-             MPI_Count message_size = (MPI_Count) *{} * type_size;",
-            xlanguage.1, datatype_var, count_var
-        ))
-    }
+    mess_size!(
+        "MPI_Count message_size =",
+        count_var,
+        datatype_var,
+        xlanguage
+    )
 }
