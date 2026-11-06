@@ -19,6 +19,7 @@
 use crate::config::{Languages, XLanguage};
 use crate::mpi_calls::MpiCallInfo;
 use anyhow::Result;
+use phf::phf_map;
 use regex::Regex;
 
 #[cfg(test)]
@@ -109,9 +110,142 @@ macro_rules! mess_size {
 #[cfg(test)]
 pub(crate) use mess_size;
 
+/// Macro for generating C code to set a boolean variable `is_root` indicating
+/// whether a rank is the root in a collective operation in a communicator.
+/// As it is strictly illegal to call a collective operation from a rank that
+/// is not part of the communicator, this macro only generates code to check
+/// if the current rank is the root.
+///
+/// # Arguments
+/// * `root_var` - The variable name of the root rank.
+/// * `comm_var` - The variable name of the communicator.
+/// * `xlanguage_var` - The variable name of type XLanguage.
+///
+/// # Returns
+/// A `String` containing the generated C code snippet for checking
+/// if a rank is the root in the communicator.
+///
+/// # Example
+/// ```no_run
+/// let root_var = "root";
+/// let comm_var = "comm";
+/// let xlanguage_var = "xlanguage";
+/// let code = is_root!(root_var, comm_var, xlanguage_var);
+/// ```
+///
+macro_rules! is_root {
+    ($root:ident, $comm:ident, $xlanguage:ident) => {
+        if matches!($xlanguage.0, Languages::C) {
+            Ok(format!(
+                "int rank;\n\
+                 MPI_Comm_rank({}, &rank);\n\
+                 bool is_root = (rank == {});",
+                $comm, $root
+            ))
+        } else {
+            Ok(format!(
+                "MPI_Fint rank;\n\
+                 MPI_Fint ierror_rank;\n\
+                 pmpi_comm_rank{}({}, &rank, &ierror_rank);\n\
+                 bool is_root = (rank == *{});",
+                $xlanguage.1, $comm, $root
+            ))
+        }
+    };
+}
+#[cfg(test)]
+pub(crate) use is_root;
+
+/// Type alias for a function pointer that generates message size code for a specific MPI call.
+/// The function takes a reference to `MpiCallInfo` and `XLanguage` and returns a `Result<String>`.
+type SpecialMessageSizeGenerator = fn(&MpiCallInfo, &XLanguage) -> Result<String>;
+
+/// Generates C code for computing the size of a call to MPI_Sendrecv.
+/// This function is called internally by `generate_mess_size_code`
+/// to handle MPI_Sendrecv calls specifically.
+///
+/// # Arguments
+/// * `call_info` - Information about the MPI call.
+/// * `xlanguage` - A tuple containing the target programming language and\
+///   the underscore string for Fortran calls.
+///
+/// # Returns
+/// A `Result` containing the generated C code as a `String` if successful.
+fn generate_mess_size4sendrecv(call_info: &MpiCallInfo, xlanguage: &XLanguage) -> Result<String> {
+    // Message size for sending and receiving in MPI_Sendrecv.
+    let send_count_var = var_name!(call_info, 1);
+    let send_datatype_var = var_name!(call_info, 2);
+    let send_size: Result<String> = mess_size!(
+        "MPI_Count message_size =",
+        send_count_var,
+        send_datatype_var,
+        xlanguage
+    );
+    let recv_count_var = var_name!(call_info, 6);
+    let recv_datatype_var = var_name!(call_info, 7);
+    let recv_size: Result<String> = mess_size!(
+        "message_size +=",
+        recv_count_var,
+        recv_datatype_var,
+        xlanguage
+    );
+    Ok(format!("{}\n{}", send_size?, recv_size?))
+}
+
+/// Generates C code for computing the size of a call to MPI_Scatter.
+/// This function is called internally by `generate_mess_size_code`
+/// to handle MPI_Scatter calls specifically.
+///
+/// # Arguments
+/// * `call_info` - Information about the MPI call.
+/// * `xlanguage` - A tuple containing the target programming language and\
+///   the underscore string for Fortran calls.
+///
+/// # Returns
+/// A `Result` containing the generated C code as a `String` if successful.
+fn generate_mess_size4scatter(call_info: &MpiCallInfo, xlanguage: &XLanguage) -> Result<String> {
+    let send_count_var = var_name!(call_info, 2);
+    let send_datatype_var = var_name!(call_info, 3);
+    let send_size: Result<String> = mess_size!(
+        "message_size +=",
+        send_count_var,
+        send_datatype_var,
+        xlanguage
+    );
+    let recv_count_var = var_name!(call_info, 4);
+    let recv_datatype_var = var_name!(call_info, 5);
+    let recv_size: Result<String> = mess_size!(
+        "message_size +=",
+        recv_count_var,
+        recv_datatype_var,
+        xlanguage
+    );
+    let root_var = var_name!(call_info, 6);
+    let comm_var = var_name!(call_info, 7);
+    let is_root_code: Result<String> = is_root!(root_var, comm_var, xlanguage);
+    Ok(format!(
+        "{}\nMPI_Count message_size = 0;\nif (is_root) {{\n{}\n}}\nelse {{\n{}\n}}",
+        is_root_code?, send_size?, recv_size?
+    ))
+}
+
+static SPECIAL_GENERATORS: phf::Map<&'static str, SpecialMessageSizeGenerator> = phf_map! {
+    "Sendrecv" => generate_mess_size4sendrecv,
+    "Scatter" => generate_mess_size4scatter,
+};
+
 /// Generates a string that contains C code for computing the size of an MPI message.
 ///
-/// First, the parameter call_info.1 is joined to a single string with `,` as separator.
+/// First, the function looks up the MPI call (i.e. `call_info.0`) in the
+/// special generators map.
+///
+///  * If a special generator is found for the MPI call, it is invoked to
+///    generate the message size code.
+///  * If no special generator is found, the function proceeds with the default
+///    message size computation logic.
+///
+/// The default message size computation logic starts by joining the parameter
+/// `call_info.1` is joined to a single string with `,` as separator.
 /// Then this string is searched for matches of the following regular expression:
 ///
 /// ```regex
@@ -135,7 +269,6 @@ pub(crate) use mess_size;
 /// * `call_info` - Information about the MPI call.
 /// * `xlanguage` - A tuple containing the target programming language and\
 ///   the underscore string for Fortran calls.
-///
 ///
 /// # Returns
 /// A `Result` containing the generated C code as a `String` if successful.
@@ -162,6 +295,10 @@ pub(crate) use mess_size;
 /// ```
 ///
 pub fn generate_mess_size_code(call_info: &MpiCallInfo, xlanguage: &XLanguage) -> Result<String> {
+    // Check if there is a special generator for this MPI call
+    if let Some(generator) = SPECIAL_GENERATORS.get(call_info.0.as_str()) {
+        return generator(call_info, xlanguage);
+    }
     // Join call_info.1 into a single string with `,` as separator
     let joined_parameters = call_info.1.join(",");
     // Search for matches of the regular expression in the joined parameters string
