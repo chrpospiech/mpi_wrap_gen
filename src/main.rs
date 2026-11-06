@@ -31,6 +31,7 @@ pub(crate) mod template;
 
 fn main() -> Result<()> {
     let args = cmdline::parse_args()?;
+    cmdline::check_args(&args)?;
     cmdline::echo_args(&args)?;
 
     let config = config::read_config(&args.config_file)?;
