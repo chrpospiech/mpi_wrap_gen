@@ -25,7 +25,7 @@ fn send_call_info() -> MpiCallInfo {
         vec![
             "const void* buf".to_string(),
             "int count".to_string(),
-            "MPI_Datatype datatype".to_string(),
+            "MPI_Datatype type".to_string(),
             "int dest".to_string(),
             "int tag".to_string(),
             "MPI_Comm comm".to_string(),
@@ -45,7 +45,7 @@ fn test_no_match_returns_default_message_size() -> Result<()> {
 fn test_c_language_uses_pmpi_type_size_call() -> Result<()> {
     let call_info = send_call_info();
     let code = generate_mess_size_code(&call_info, &create_xlanguage(Languages::C, 0))?;
-    assert!(code.contains("PMPI_Type_size(datatype, &type_size);"));
+    assert!(code.contains("PMPI_Type_size(type, &type_size);"));
     assert!(code.contains("MPI_Count message_size = (MPI_Count) count * type_size;"));
     Ok(())
 }
@@ -54,7 +54,7 @@ fn test_c_language_uses_pmpi_type_size_call() -> Result<()> {
 fn test_fortran_language_uses_pmpi_type_size_with_underscores() -> Result<()> {
     let call_info = send_call_info();
     let code = generate_mess_size_code(&call_info, &create_xlanguage(Languages::Fortran, 2))?;
-    assert!(code.contains("pmpi_type_size__(datatype, &type_size, &ierror_type_size);"));
+    assert!(code.contains("pmpi_type_size__(type, &type_size, &ierror_type_size);"));
     assert!(code.contains("MPI_Count message_size = (MPI_Count) *count * type_size;"));
     Ok(())
 }
@@ -63,6 +63,6 @@ fn test_fortran_language_uses_pmpi_type_size_with_underscores() -> Result<()> {
 fn test_fortran_language_with_zero_underscores() -> Result<()> {
     let call_info = send_call_info();
     let code = generate_mess_size_code(&call_info, &create_xlanguage(Languages::Fortran, 0))?;
-    assert!(code.contains("pmpi_type_size(datatype, &type_size, &ierror_type_size);"));
+    assert!(code.contains("pmpi_type_size(type, &type_size, &ierror_type_size);"));
     Ok(())
 }

@@ -28,6 +28,9 @@ mod generate_mess_size_code_tests;
 #[cfg(test)]
 mod macro_tests;
 
+#[cfg(test)]
+mod sendrecv;
+
 /// Macro for extracting the variable name from a parameter declaration string.
 /// It takes a name of a variable of type `MpiCallInfo` and a position in the parameter list,
 /// and returns the variable name as a reference to str.
@@ -91,18 +94,20 @@ macro_rules! mess_size {
     ($decl_or_update:expr, $count:ident, $datatype:ident, $xlanguage:ident) => {
         if matches!($xlanguage.0, Languages::C) {
             Ok(format!(
-                "int type_size;\n\
-                 PMPI_Type_size({}, &type_size);\n\
-                 {} (MPI_Count) {} * type_size;",
-                $datatype, $decl_or_update, $count
+                "int {type}_size;\n\
+                 PMPI_Type_size({type}, &{type}_size);\n\
+                 {} (MPI_Count) {} * {type}_size;",
+                $decl_or_update, $count,
+                type = $datatype
             ))
         } else {
             Ok(format!(
-                "MPI_Fint type_size;\n\
-                 MPI_Fint ierror_type_size;\n\
-                 pmpi_type_size{}({}, &type_size, &ierror_type_size);\n\
-                 {} (MPI_Count) *{} * type_size;",
-                $xlanguage.1, $datatype, $decl_or_update, $count
+                "MPI_Fint {type}_size;\n\
+                 MPI_Fint ierror_{type}_size;\n\
+                 pmpi_type_size{}({type}, &{type}_size, &ierror_{type}_size);\n\
+                 {} (MPI_Count) *{} * {type}_size;",
+                $xlanguage.1, $decl_or_update, $count,
+                type = $datatype
             ))
         }
     };

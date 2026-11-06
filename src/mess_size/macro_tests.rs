@@ -43,7 +43,7 @@ fn test_mess_size_macro_c() -> Result<()> {
         vec![
             "const void* buf".to_string(),
             "int count".to_string(),
-            "MPI_Datatype datatype".to_string(),
+            "MPI_Datatype type".to_string(),
         ],
     );
     let xlanguage = create_xlanguage(Languages::C, 0);
@@ -60,7 +60,7 @@ fn test_mess_size_macro_c() -> Result<()> {
     assert_eq!(
         result_str,
         "int type_size;\n\
-        PMPI_Type_size(datatype, &type_size);\n\
+        PMPI_Type_size(type, &type_size);\n\
         MPI_Count message_size = (MPI_Count) count * type_size;"
     );
     Ok(())
@@ -73,7 +73,7 @@ fn test_mess_size_macro_f() -> Result<()> {
         vec![
             "const void* buf".to_string(),
             "int count".to_string(),
-            "MPI_Datatype datatype".to_string(),
+            "MPI_Datatype type".to_string(),
         ],
     );
     let xlanguage = create_xlanguage(Languages::Fortran, 1);
@@ -91,7 +91,7 @@ fn test_mess_size_macro_f() -> Result<()> {
         result_str,
         "MPI_Fint type_size;\n\
         MPI_Fint ierror_type_size;\n\
-        pmpi_type_size_(datatype, &type_size, &ierror_type_size);\n\
+        pmpi_type_size_(type, &type_size, &ierror_type_size);\n\
         MPI_Count message_size = (MPI_Count) *count * type_size;"
     );
     Ok(())
