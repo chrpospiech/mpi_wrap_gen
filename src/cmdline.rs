@@ -64,6 +64,18 @@ pub fn parse_args() -> Result<CliArgs> {
     Ok(args)
 }
 
+/// Check the validity of the parsed command-line arguments.
+pub fn check_args(args: &CliArgs) -> Result<()> {
+    if args.config_file.trim().is_empty() {
+        anyhow::bail!("Configuration file must be provided.");
+    }
+    if args.underscores > 2 {
+        anyhow::bail!("Number of underscores must be between 0 and 2.");
+    }
+    Ok(())
+}
+
+/// Echo the parsed command-line arguments for debugging purposes.
 pub fn echo_args(args: &CliArgs) -> Result<()> {
     if args.dry_run {
         println!("Performing a dry run");
