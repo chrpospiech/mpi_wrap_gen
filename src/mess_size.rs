@@ -31,6 +31,9 @@ mod macro_tests;
 #[cfg(test)]
 mod sendrecv;
 
+#[cfg(test)]
+mod scatter;
+
 /// Macro for extracting the variable name from a parameter declaration string.
 /// It takes a name of a variable of type `MpiCallInfo` and a position in the parameter list,
 /// and returns the variable name as a reference to str.
@@ -209,8 +212,8 @@ fn generate_mess_size4sendrecv(call_info: &MpiCallInfo, xlanguage: &XLanguage) -
 /// # Returns
 /// A `Result` containing the generated C code as a `String` if successful.
 fn generate_mess_size4scatter(call_info: &MpiCallInfo, xlanguage: &XLanguage) -> Result<String> {
-    let send_count_var = var_name!(call_info, 2);
-    let send_datatype_var = var_name!(call_info, 3);
+    let send_count_var = var_name!(call_info, 1);
+    let send_datatype_var = var_name!(call_info, 2);
     let send_size: Result<String> = mess_size!(
         "message_size +=",
         send_count_var,
@@ -229,7 +232,7 @@ fn generate_mess_size4scatter(call_info: &MpiCallInfo, xlanguage: &XLanguage) ->
     let comm_var = var_name!(call_info, 7);
     let is_root_code: Result<String> = is_root!(root_var, comm_var, xlanguage);
     Ok(format!(
-        "{}\nMPI_Count message_size = 0;\nif (is_root) {{\n{}\n}}\nelse {{\n{}\n}}",
+        "{}\nMPI_Count message_size = 0;\nif (is_root) {{\n{}\n}} else {{\n{}\n}}",
         is_root_code?, send_size?, recv_size?
     ))
 }
