@@ -165,12 +165,10 @@ macro_rules! is_root {
 pub(crate) use is_root;
 
 /// Type alias for a function pointer that generates message size code for a specific MPI call.
-/// The function takes a reference to `MpiCallInfo` and `XLanguage` and returns a `Result<String>`.
-type SpecialMessageSizeGenerator = fn(&MpiCallInfo, &XLanguage) -> Result<String>;
-
-/// Generates C code for computing the size of a call to MPI_Sendrecv.
-/// This function is called internally by `generate_mess_size_code`
-/// to handle MPI_Sendrecv calls specifically.
+/// This is used by [`SPECIAL_GENERATORS`] to override the default message size computation
+/// in [`generate_mess_size_code`] for MPI calls whose message size can't be derived by the
+/// generic single count/datatype pattern (e.g. because they have two message sizes, or because
+/// the size depends on the calling rank being root in a collective operation).
 ///
 /// # Arguments
 /// * `call_info` - Information about the MPI call.
@@ -179,8 +177,11 @@ type SpecialMessageSizeGenerator = fn(&MpiCallInfo, &XLanguage) -> Result<String
 ///
 /// # Returns
 /// A `Result` containing the generated C code as a `String` if successful.
+type SpecialMessageSizeGenerator = fn(&MpiCallInfo, &XLanguage) -> Result<String>;
+
+/// [`SpecialMessageSizeGenerator`] for MPI_Sendrecv.
+/// Message size for sending and receiving in MPI_Sendrecv are added together.
 fn generate_mess_size4sendrecv(call_info: &MpiCallInfo, xlanguage: &XLanguage) -> Result<String> {
-    // Message size for sending and receiving in MPI_Sendrecv.
     let send_count_var = var_name!(call_info, 1);
     let send_datatype_var = var_name!(call_info, 2);
     let send_size: Result<String> = mess_size!(
@@ -200,17 +201,9 @@ fn generate_mess_size4sendrecv(call_info: &MpiCallInfo, xlanguage: &XLanguage) -
     Ok(format!("{}\n{}", send_size?, recv_size?))
 }
 
-/// Generates C code for computing the size of a call to MPI_Scatter.
-/// This function is called internally by `generate_mess_size_code`
-/// to handle MPI_Scatter calls specifically.
-///
-/// # Arguments
-/// * `call_info` - Information about the MPI call.
-/// * `xlanguage` - A tuple containing the target programming language and\
-///   the underscore string for Fortran calls.
-///
-/// # Returns
-/// A `Result` containing the generated C code as a `String` if successful.
+/// [`SpecialMessageSizeGenerator`] for MPI_Scatter.
+/// For non-root processes, only the receive message size is considered.
+/// For root processes, both the send and receive message sizes are considered.
 fn generate_mess_size4scatter(call_info: &MpiCallInfo, xlanguage: &XLanguage) -> Result<String> {
     let send_count_var = var_name!(call_info, 1);
     let send_datatype_var = var_name!(call_info, 2);
