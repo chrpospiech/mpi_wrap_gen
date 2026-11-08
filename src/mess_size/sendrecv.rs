@@ -45,12 +45,17 @@ fn test_sendrecv_c() -> Result<()> {
     let code = generate_mess_size_code(&call_info, &create_xlanguage(Languages::C, 0))?;
     assert_eq!(
         code,
-        "int sendtype_size;\n\
+        "MPI_Count message_size = 0;\n\
+        if (dest != MPI_PROC_NULL) {\n\
+        int sendtype_size;\n\
         PMPI_Type_size(sendtype, &sendtype_size);\n\
-        MPI_Count message_size = (MPI_Count) sendcount * sendtype_size;\n\
+        message_size += (MPI_Count) sendcount * sendtype_size;\n\
+        }\n\
+        if (source != MPI_PROC_NULL) {\n\
         int recvtype_size;\n\
         PMPI_Type_size(recvtype, &recvtype_size);\n\
-        message_size += (MPI_Count) recvcount * recvtype_size;"
+        message_size += (MPI_Count) recvcount * recvtype_size;\n\
+        }"
     );
     Ok(())
 }
@@ -61,14 +66,19 @@ fn test_sendrecv_fortran() -> Result<()> {
     let code = generate_mess_size_code(&call_info, &create_xlanguage(Languages::Fortran, 1))?;
     assert_eq!(
         code,
-        "MPI_Fint sendtype_size;\n\
+        "MPI_Count message_size = 0;\n\
+        if (*dest != MPI_PROC_NULL) {\n\
+        MPI_Fint sendtype_size;\n\
         MPI_Fint ierror_sendtype_size;\n\
         pmpi_type_size_(sendtype, &sendtype_size, &ierror_sendtype_size);\n\
-        MPI_Count message_size = (MPI_Count) *sendcount * sendtype_size;\n\
+        message_size += (MPI_Count) *sendcount * sendtype_size;\n\
+        }\n\
+        if (*source != MPI_PROC_NULL) {\n\
         MPI_Fint recvtype_size;\n\
         MPI_Fint ierror_recvtype_size;\n\
         pmpi_type_size_(recvtype, &recvtype_size, &ierror_recvtype_size);\n\
-        message_size += (MPI_Count) *recvcount * recvtype_size;"
+        message_size += (MPI_Count) *recvcount * recvtype_size;\n\
+        }"
     );
     Ok(())
 }
