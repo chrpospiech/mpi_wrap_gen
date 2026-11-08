@@ -118,52 +118,6 @@ macro_rules! mess_size {
 #[cfg(test)]
 pub(crate) use mess_size;
 
-/// Macro for generating C code to set a boolean variable `is_root` indicating
-/// whether a rank is the root in a collective operation in a communicator.
-/// As it is strictly illegal to call a collective operation from a rank that
-/// is not part of the communicator, this macro only generates code to check
-/// if the current rank is the root.
-///
-/// # Arguments
-/// * `root_var` - The variable name of the root rank.
-/// * `comm_var` - The variable name of the communicator.
-/// * `xlanguage_var` - The variable name of type XLanguage.
-///
-/// # Returns
-/// A `String` containing the generated C code snippet for checking
-/// if a rank is the root in the communicator.
-///
-/// # Example
-/// ```no_run
-/// let root_var = "root";
-/// let comm_var = "comm";
-/// let xlanguage_var = "xlanguage";
-/// let code = is_root!(root_var, comm_var, xlanguage_var);
-/// ```
-///
-macro_rules! is_root {
-    ($root:ident, $comm:ident, $xlanguage:ident) => {
-        if matches!($xlanguage.0, Languages::C) {
-            Ok(format!(
-                "int rank;\n\
-                 MPI_Comm_rank({}, &rank);\n\
-                 bool is_root = (rank == {});",
-                $comm, $root
-            ))
-        } else {
-            Ok(format!(
-                "MPI_Fint rank;\n\
-                 MPI_Fint ierror_rank;\n\
-                 pmpi_comm_rank{}({}, &rank, &ierror_rank);\n\
-                 bool is_root = (rank == *{});",
-                $xlanguage.1, $comm, $root
-            ))
-        }
-    };
-}
-#[cfg(test)]
-pub(crate) use is_root;
-
 /// Type alias for a function pointer that generates message size code for a specific MPI call.
 /// This is used by [`SPECIAL_GENERATORS`] to override the default message size computation
 /// in [`generate_mess_size_code`] for MPI calls whose message size can't be derived by the

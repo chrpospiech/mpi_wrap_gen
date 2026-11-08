@@ -17,7 +17,7 @@
 // Author: Dr. Christoph Pospiech
 
 use crate::config::{create_xlanguage, Languages};
-use crate::mess_size::{is_root, mess_size, var_name};
+use crate::mess_size::{mess_size, var_name};
 use crate::mpi_calls::MpiCallInfo;
 use anyhow::Result;
 
@@ -93,41 +93,6 @@ fn test_mess_size_macro_f() -> Result<()> {
         MPI_Fint ierror_type_size;\n\
         pmpi_type_size_(type, &type_size, &ierror_type_size);\n\
         MPI_Count message_size = (MPI_Count) *count * type_size;"
-    );
-    Ok(())
-}
-
-#[test]
-fn test_is_root_macro_c() -> Result<()> {
-    let root_var = "root";
-    let comm_var = "comm";
-    let xlanguage_var = create_xlanguage(Languages::C, 0);
-    let result: Result<String> = is_root!(root_var, comm_var, xlanguage_var);
-    assert!(result.is_ok());
-    let result_str = &result.unwrap();
-    assert_eq!(
-        result_str,
-        "int rank;\n\
-         MPI_Comm_rank(comm, &rank);\n\
-         bool is_root = (rank == root);"
-    );
-    Ok(())
-}
-
-#[test]
-fn test_is_root_macro_f() -> Result<()> {
-    let root_var = "root";
-    let comm_var = "comm";
-    let xlanguage_var = create_xlanguage(Languages::Fortran, 1);
-    let result: Result<String> = is_root!(root_var, comm_var, xlanguage_var);
-    assert!(result.is_ok());
-    let result_str = &result.unwrap();
-    assert_eq!(
-        result_str,
-        "MPI_Fint rank;\n\
-         MPI_Fint ierror_rank;\n\
-         pmpi_comm_rank_(comm, &rank, &ierror_rank);\n\
-         bool is_root = (rank == *root);"
     );
     Ok(())
 }
