@@ -46,12 +46,11 @@ fn test_scatter_c() -> Result<()> {
         bool is_root = (rank == root);\n\
         MPI_Count message_size = 0;\n\
         if (is_root) {\n\
+        int comm_size;\n\
+        PMPI_Comm_size(comm, &comm_size);\n\
         int sendtype_size;\n\
         PMPI_Type_size(sendtype, &sendtype_size);\n\
-        message_size += (MPI_Count) sendcount * sendtype_size;\n\
-        int recvtype_size;\n\
-        PMPI_Type_size(recvtype, &recvtype_size);\n\
-        message_size -= (MPI_Count) recvcount * recvtype_size;\n\
+        message_size += (MPI_Count) (comm_size - 1) * sendcount * sendtype_size;\n\
         } else {\n\
         int recvtype_size;\n\
         PMPI_Type_size(recvtype, &recvtype_size);\n\
@@ -73,14 +72,13 @@ fn test_scatter_fortran() -> Result<()> {
         bool is_root = (rank == *root);\n\
         MPI_Count message_size = 0;\n\
         if (is_root) {\n\
+        MPI_Fint comm_size;\n\
+        MPI_Fint ierror_comm_size;\n\
+        pmpi_comm_size_(comm, &comm_size, &ierror_comm_size);\n\
         MPI_Fint sendtype_size;\n\
         MPI_Fint ierror_sendtype_size;\n\
         pmpi_type_size_(sendtype, &sendtype_size, &ierror_sendtype_size);\n\
-        message_size += (MPI_Count) *sendcount * sendtype_size;\n\
-        MPI_Fint recvtype_size;\n\
-        MPI_Fint ierror_recvtype_size;\n\
-        pmpi_type_size_(recvtype, &recvtype_size, &ierror_recvtype_size);\n\
-        message_size -= (MPI_Count) *recvcount * recvtype_size;\n\
+        message_size += (MPI_Count) (comm_size - 1) * *sendcount * sendtype_size;\n\
         } else {\n\
         MPI_Fint recvtype_size;\n\
         MPI_Fint ierror_recvtype_size;\n\

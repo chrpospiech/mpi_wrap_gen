@@ -203,24 +203,39 @@ fn generate_mess_size4sendrecv(call_info: &MpiCallInfo, xlanguage: &XLanguage) -
 
 /// [`SpecialMessageSizeGenerator`] for MPI_Scatter.
 /// For non-root processes, only the receive message size is considered.
-/// For root processes, both the send and receive message sizes are considered.
+/// For root processes, the send size for all other processes is considered.
 fn generate_mess_size4scatter(call_info: &MpiCallInfo, xlanguage: &XLanguage) -> Result<String> {
     let send_count_var = var_name!(call_info, 1);
     let send_datatype_var = var_name!(call_info, 2);
-    let send_size: Result<String> = mess_size!(
-        "message_size +=",
-        send_count_var,
-        send_datatype_var,
-        xlanguage
-    );
+    let send_size = if matches!(xlanguage.0, Languages::C) {
+        format!(
+            "int comm_size;\n\
+             PMPI_Comm_size({comm}, &comm_size);\n\
+             int {datatype}_size;\n\
+             PMPI_Type_size({datatype}, &{datatype}_size);\n\
+             message_size += (MPI_Count) (comm_size - 1) * {count} * {datatype}_size;",
+            comm = var_name!(call_info, 7),
+            datatype = send_datatype_var,
+            count = send_count_var
+        )
+    } else {
+        format!(
+            "MPI_Fint comm_size;\n\
+             MPI_Fint ierror_comm_size;\n\
+             pmpi_comm_size{}({}, &comm_size, &ierror_comm_size);\n\
+             MPI_Fint {datatype}_size;\n\
+             MPI_Fint ierror_{datatype}_size;\n\
+             pmpi_type_size{}({datatype}, &{datatype}_size, &ierror_{datatype}_size);\n\
+             message_size += (MPI_Count) (comm_size - 1) * *{count} * {datatype}_size;",
+            xlanguage.1,
+            var_name!(call_info, 7),
+            xlanguage.1,
+            datatype = send_datatype_var,
+            count = send_count_var
+        )
+    };
     let recv_count_var = var_name!(call_info, 4);
     let recv_datatype_var = var_name!(call_info, 5);
-    let send_size_reduction: Result<String> = mess_size!(
-        "message_size -=",
-        recv_count_var,
-        recv_datatype_var,
-        xlanguage
-    );
     let recv_size: Result<String> = mess_size!(
         "message_size +=",
         recv_count_var,
@@ -231,8 +246,8 @@ fn generate_mess_size4scatter(call_info: &MpiCallInfo, xlanguage: &XLanguage) ->
     let comm_var = var_name!(call_info, 7);
     let is_root_code: Result<String> = is_root!(root_var, comm_var, xlanguage);
     Ok(format!(
-        "{}\nMPI_Count message_size = 0;\nif (is_root) {{\n{}\n{}\n}} else {{\n{}\n}}",
-        is_root_code?, send_size?, send_size_reduction?, recv_size?
+        "{}\nMPI_Count message_size = 0;\nif (is_root) {{\n{}\n}} else {{\n{}\n}}",
+        is_root_code?, send_size, recv_size?
     ))
 }
 
