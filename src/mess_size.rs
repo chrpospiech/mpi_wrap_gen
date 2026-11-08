@@ -235,53 +235,105 @@ fn generate_mess_size4sendrecv(call_info: &MpiCallInfo, xlanguage: &XLanguage) -
 }
 
 /// [`SpecialMessageSizeGenerator`] for MPI_Scatter.
-/// For non-root processes, only the receive message size is considered.
-/// For root processes, the send size for all other processes is considered.
+/// For intracommunicators, non-root processes use the receive message size and
+/// the root uses the send size for all other processes. Intercommunicator root
+/// processes use the send size for the remote group, while receiving processes
+/// use the receive message size.
 fn generate_mess_size4scatter(call_info: &MpiCallInfo, xlanguage: &XLanguage) -> Result<String> {
     let send_count_var = var_name!(call_info, 1);
     let send_datatype_var = var_name!(call_info, 2);
-    let send_size = if matches!(xlanguage.0, Languages::C) {
+    let recv_count_var = var_name!(call_info, 4);
+    let recv_datatype_var = var_name!(call_info, 5);
+    let root_var = var_name!(call_info, 6);
+    let comm_var = var_name!(call_info, 7);
+    Ok(if matches!(xlanguage.0, Languages::C) {
         format!(
-            "int comm_size;\n\
+            "int is_intercomm;\n\
+             PMPI_Comm_test_inter({comm}, &is_intercomm);\n\
+             MPI_Count message_size = 0;\n\
+             if (is_intercomm) {{\n\
+             if ({root} == MPI_ROOT) {{\n\
+             int remote_size;\n\
+             PMPI_Comm_remote_size({comm}, &remote_size);\n\
+             int {send_datatype}_size;\n\
+             PMPI_Type_size({send_datatype}, &{send_datatype}_size);\n\
+             message_size += (MPI_Count) remote_size * {send_count} * {send_datatype}_size;\n\
+             }} else if ({root} != MPI_PROC_NULL) {{\n\
+             int {recv_datatype}_size;\n\
+             PMPI_Type_size({recv_datatype}, &{recv_datatype}_size);\n\
+             message_size += (MPI_Count) {recv_count} * {recv_datatype}_size;\n\
+             }}\n\
+             }} else {{\n\
+             int rank;\n\
+             PMPI_Comm_rank({comm}, &rank);\n\
+             if (rank == {root}) {{\n\
+             int comm_size;\n\
              PMPI_Comm_size({comm}, &comm_size);\n\
-             int {datatype}_size;\n\
-             PMPI_Type_size({datatype}, &{datatype}_size);\n\
-             message_size += (MPI_Count) (comm_size - 1) * {count} * {datatype}_size;",
-            comm = var_name!(call_info, 7),
-            datatype = send_datatype_var,
-            count = send_count_var
+             int {send_datatype}_size;\n\
+             PMPI_Type_size({send_datatype}, &{send_datatype}_size);\n\
+             message_size += (MPI_Count) (comm_size - 1) * {send_count} * {send_datatype}_size;\n\
+             }} else {{\n\
+             int {recv_datatype}_size;\n\
+             PMPI_Type_size({recv_datatype}, &{recv_datatype}_size);\n\
+             message_size += (MPI_Count) {recv_count} * {recv_datatype}_size;\n\
+             }}\n\
+             }}",
+            comm = comm_var,
+            root = root_var,
+            send_datatype = send_datatype_var,
+            send_count = send_count_var,
+            recv_datatype = recv_datatype_var,
+            recv_count = recv_count_var
         )
     } else {
         format!(
-            "MPI_Fint comm_size;\n\
+            "MPI_Fint is_intercomm;\n\
+             MPI_Fint ierror_comm_test_inter;\n\
+             pmpi_comm_test_inter{underscore}({comm}, &is_intercomm, &ierror_comm_test_inter);\n\
+             MPI_Count message_size = 0;\n\
+             if (is_intercomm) {{\n\
+             if (*{root} == MPI_ROOT) {{\n\
+             MPI_Fint remote_size;\n\
+             MPI_Fint ierror_remote_size;\n\
+             pmpi_comm_remote_size{underscore}({comm}, &remote_size, &ierror_remote_size);\n\
+             MPI_Fint {send_datatype}_size;\n\
+             MPI_Fint ierror_{send_datatype}_size;\n\
+             pmpi_type_size{underscore}({send_datatype}, &{send_datatype}_size, &ierror_{send_datatype}_size);\n\
+             message_size += (MPI_Count) remote_size * *{send_count} * {send_datatype}_size;\n\
+             }} else if (*{root} != MPI_PROC_NULL) {{\n\
+             MPI_Fint {recv_datatype}_size;\n\
+             MPI_Fint ierror_{recv_datatype}_size;\n\
+             pmpi_type_size{underscore}({recv_datatype}, &{recv_datatype}_size, &ierror_{recv_datatype}_size);\n\
+             message_size += (MPI_Count) *{recv_count} * {recv_datatype}_size;\n\
+             }}\n\
+             }} else {{\n\
+             MPI_Fint rank;\n\
+             MPI_Fint ierror_rank;\n\
+             pmpi_comm_rank{underscore}({comm}, &rank, &ierror_rank);\n\
+             if (rank == *{root}) {{\n\
+             MPI_Fint comm_size;\n\
              MPI_Fint ierror_comm_size;\n\
-             pmpi_comm_size{}({}, &comm_size, &ierror_comm_size);\n\
-             MPI_Fint {datatype}_size;\n\
-             MPI_Fint ierror_{datatype}_size;\n\
-             pmpi_type_size{}({datatype}, &{datatype}_size, &ierror_{datatype}_size);\n\
-             message_size += (MPI_Count) (comm_size - 1) * *{count} * {datatype}_size;",
-            xlanguage.1,
-            var_name!(call_info, 7),
-            xlanguage.1,
-            datatype = send_datatype_var,
-            count = send_count_var
+             pmpi_comm_size{underscore}({comm}, &comm_size, &ierror_comm_size);\n\
+             MPI_Fint {send_datatype}_size;\n\
+             MPI_Fint ierror_{send_datatype}_size;\n\
+             pmpi_type_size{underscore}({send_datatype}, &{send_datatype}_size, &ierror_{send_datatype}_size);\n\
+             message_size += (MPI_Count) (comm_size - 1) * *{send_count} * {send_datatype}_size;\n\
+             }} else {{\n\
+             MPI_Fint {recv_datatype}_size;\n\
+             MPI_Fint ierror_{recv_datatype}_size;\n\
+             pmpi_type_size{underscore}({recv_datatype}, &{recv_datatype}_size, &ierror_{recv_datatype}_size);\n\
+             message_size += (MPI_Count) *{recv_count} * {recv_datatype}_size;\n\
+             }}\n\
+             }}",
+            underscore = xlanguage.1,
+            comm = comm_var,
+            root = root_var,
+            send_datatype = send_datatype_var,
+            send_count = send_count_var,
+            recv_datatype = recv_datatype_var,
+            recv_count = recv_count_var
         )
-    };
-    let recv_count_var = var_name!(call_info, 4);
-    let recv_datatype_var = var_name!(call_info, 5);
-    let recv_size: Result<String> = mess_size!(
-        "message_size +=",
-        recv_count_var,
-        recv_datatype_var,
-        xlanguage
-    );
-    let root_var = var_name!(call_info, 6);
-    let comm_var = var_name!(call_info, 7);
-    let is_root_code: Result<String> = is_root!(root_var, comm_var, xlanguage);
-    Ok(format!(
-        "{}\nMPI_Count message_size = 0;\nif (is_root) {{\n{}\n}} else {{\n{}\n}}",
-        is_root_code?, send_size, recv_size?
-    ))
+    })
 }
 
 static SPECIAL_GENERATORS: phf::Map<&'static str, SpecialMessageSizeGenerator> = phf_map! {
