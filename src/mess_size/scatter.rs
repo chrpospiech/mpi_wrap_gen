@@ -49,6 +49,9 @@ fn test_scatter_c() -> Result<()> {
         int sendtype_size;\n\
         PMPI_Type_size(sendtype, &sendtype_size);\n\
         message_size += (MPI_Count) sendcount * sendtype_size;\n\
+        int recvtype_size;\n\
+        PMPI_Type_size(recvtype, &recvtype_size);\n\
+        message_size -= (MPI_Count) recvcount * recvtype_size;\n\
         } else {\n\
         int recvtype_size;\n\
         PMPI_Type_size(recvtype, &recvtype_size);\n\
@@ -74,6 +77,10 @@ fn test_scatter_fortran() -> Result<()> {
         MPI_Fint ierror_sendtype_size;\n\
         pmpi_type_size_(sendtype, &sendtype_size, &ierror_sendtype_size);\n\
         message_size += (MPI_Count) *sendcount * sendtype_size;\n\
+        MPI_Fint recvtype_size;\n\
+        MPI_Fint ierror_recvtype_size;\n\
+        pmpi_type_size_(recvtype, &recvtype_size, &ierror_recvtype_size);\n\
+        message_size -= (MPI_Count) *recvcount * recvtype_size;\n\
         } else {\n\
         MPI_Fint recvtype_size;\n\
         MPI_Fint ierror_recvtype_size;\n\

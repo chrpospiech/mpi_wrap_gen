@@ -215,6 +215,12 @@ fn generate_mess_size4scatter(call_info: &MpiCallInfo, xlanguage: &XLanguage) ->
     );
     let recv_count_var = var_name!(call_info, 4);
     let recv_datatype_var = var_name!(call_info, 5);
+    let send_size_reduction: Result<String> = mess_size!(
+        "message_size -=",
+        recv_count_var,
+        recv_datatype_var,
+        xlanguage
+    );
     let recv_size: Result<String> = mess_size!(
         "message_size +=",
         recv_count_var,
@@ -225,8 +231,8 @@ fn generate_mess_size4scatter(call_info: &MpiCallInfo, xlanguage: &XLanguage) ->
     let comm_var = var_name!(call_info, 7);
     let is_root_code: Result<String> = is_root!(root_var, comm_var, xlanguage);
     Ok(format!(
-        "{}\nMPI_Count message_size = 0;\nif (is_root) {{\n{}\n}} else {{\n{}\n}}",
-        is_root_code?, send_size?, recv_size?
+        "{}\nMPI_Count message_size = 0;\nif (is_root) {{\n{}\n{}\n}} else {{\n{}\n}}",
+        is_root_code?, send_size?, send_size_reduction?, recv_size?
     ))
 }
 
