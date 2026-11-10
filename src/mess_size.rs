@@ -62,6 +62,13 @@ macro_rules! var_name {
     ($mpi_call_info:ident, $index:expr) => {
         $mpi_call_info.1[$index].split_whitespace().last().unwrap()
     };
+    ($mpi_call_info:ident, $index:expr, $xlanguage:ident) => {
+        if matches!($xlanguage.0, Languages::C) {
+            var_name!($mpi_call_info, $index).to_string()
+        } else {
+            format!("*{}", var_name!($mpi_call_info, $index))
+        }
+    };
 }
 #[cfg(test)]
 pub(crate) use var_name;
