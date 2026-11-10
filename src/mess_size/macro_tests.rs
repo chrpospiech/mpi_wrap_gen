@@ -37,6 +37,22 @@ fn test_var_name_macro() -> Result<()> {
 }
 
 #[test]
+fn test_var_name_macro_with_xlanguage() -> Result<()> {
+    let call_info: &MpiCallInfo = &(
+        "Send".to_string(),
+        vec![
+            "const void* buf".to_string(),
+            "int count".to_string(),
+            "MPI_Datatype datatype".to_string(),
+        ],
+    );
+    let xlanguage = create_xlanguage(Languages::Fortran, 0);
+    let variable_name = var_name!(call_info, 1, xlanguage);
+    assert_eq!(variable_name, "*count");
+    Ok(())
+}
+
+#[test]
 fn test_mess_size_macro_c() -> Result<()> {
     let call_info: &MpiCallInfo = &(
         "Send".to_string(),
