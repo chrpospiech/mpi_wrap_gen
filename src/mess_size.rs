@@ -38,12 +38,19 @@ mod scatter;
 /// It takes a name of a variable of type `MpiCallInfo` and a position in the parameter list,
 /// and returns the variable name as a reference to str.
 ///
+/// An optional third argument of type XLanguage can be given. If the language
+/// is Fortran, the returned variable name is prefixed with `*` (since Fortran
+/// MPI calls pass this parameter by reference) and returned as an owned `String`
+/// instead of a `&str`.
+///
 /// # Arguments
 /// * `mpi_call_info` - The `MpiCallInfo` instance containing information about the MPI call.
 /// * `position` - The position of the parameter in the parameter list.
+/// * `xlanguage` - (optional) An expression of type XLanguage.
 ///
 /// # Returns
-/// The name of the variable at the specified position as a `&str`.
+/// The name of the variable at the specified position, as a `&str` if `xlanguage`
+/// is not given, or as a `String` (prefixed with `*` for Fortran) if it is.
 ///
 /// # Example
 /// ```no_run
@@ -56,11 +63,19 @@ mod scatter;
 ///     ],
 /// );
 /// let variable_name = var_name!(call_info, 1);
+/// let variable_name_f = var_name!(call_info, 1, xlanguage);
 /// ```
 ///
 macro_rules! var_name {
     ($mpi_call_info:ident, $index:expr) => {
         $mpi_call_info.1[$index].split_whitespace().last().unwrap()
+    };
+    ($mpi_call_info:ident, $index:expr, $xlanguage:ident) => {
+        if matches!($xlanguage.0, Languages::C) {
+            var_name!($mpi_call_info, $index).to_string()
+        } else {
+            format!("*{}", var_name!($mpi_call_info, $index))
+        }
     };
 }
 #[cfg(test)]
