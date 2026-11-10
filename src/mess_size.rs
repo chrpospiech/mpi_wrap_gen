@@ -70,19 +70,30 @@ pub(crate) use var_name;
 /// The first argument specifies how the message size variable should be declared
 /// or updated in the generated C code. It it a string expression, typically
 /// some thing like `"int message_size = "` or `"message_size += "`.
-/// The second and third arguments are the variable names of the count and
-/// datatype parameters, respectively. The last argument is a variable name of
-/// type XLanguage.
+/// The last argument is an expression of type XLanguage.
+///
+/// There are two forms:
+/// * `mess_size!(decl_or_update, count, datatype, xlanguage)` - `count` and
+///   `datatype` are expressions evaluating to the variable names of the count
+///   and datatype parameters, respectively.
+/// * `mess_size!(decl_or_update, mpi_call_info, count_inx, datatype_inx:datatype_inx, xlanguage)` -
+///   `count` and `datatype` variable names are extracted from `mpi_call_info`
+///   via [`var_name!`] using the given argument indices. The literal token
+///   `datatype_inx:` is required to disambiguate the two index expressions.
 ///
 /// # Arguments
 /// * `decl_or_update` - A string specifying how the message size variable
 ///   should be declared or updated.
-/// * `count_var` - The variable name of the count parameter.
-/// * `datatype_var` - The variable name of the datatype parameter.
-/// * `xlanguage_var` - The variable name of type XLanguage.
+/// * `count` - An expression evaluating to the variable name of the count parameter.
+/// * `datatype` - An expression evaluating to the variable name of the datatype parameter.
+/// * `mpi_call_info` - A [`MpiCallInfo`] identifier to extract `count` and
+///   `datatype` variable names from, by argument index.
+/// * `count_inx` - The argument index of the count parameter in `mpi_call_info`.
+/// * `datatype_inx` - The argument index of the datatype parameter in `mpi_call_info`.
+/// * `xlanguage` - An expression of type XLanguage.
 ///
 /// # Returns
-/// A `String` containing the generated C code snippet for computing the MPI message size.
+/// A `Result<String>` containing the generated C code snippet for computing the MPI message size.
 ///
 /// # Example
 /// ```no_run
@@ -94,7 +105,8 @@ pub(crate) use var_name;
 /// ```
 ///
 macro_rules! mess_size {
-    ($decl_or_update:expr, $count:ident, $datatype:ident, $xlanguage:ident) => {
+    // Count and datatype based message size computation for MPI calls.
+    ($decl_or_update:expr, $count:expr, $datatype:expr, $xlanguage:ident) => {
         if matches!($xlanguage.0, Languages::C) {
             Ok(format!(
                 "int {type}_size;\n\
@@ -113,6 +125,17 @@ macro_rules! mess_size {
                 type = $datatype
             ))
         }
+    };
+    // Count and datatype are extracted from $mpi_call_info
+    ($decl_or_update:expr, $mpi_call_info:ident,
+        $count_inx:expr, datatype_inx:$datatype_inx:expr,
+        $xlanguage:ident) => {
+        mess_size!(
+            $decl_or_update,
+            var_name!($mpi_call_info, $count_inx),
+            var_name!($mpi_call_info, $datatype_inx),
+            $xlanguage
+        )
     };
 }
 #[cfg(test)]

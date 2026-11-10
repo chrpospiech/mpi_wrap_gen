@@ -67,6 +67,34 @@ fn test_mess_size_macro_c() -> Result<()> {
 }
 
 #[test]
+fn test_mess_size_macro_ext_c() -> Result<()> {
+    let call_info: &MpiCallInfo = &(
+        "Send".to_string(),
+        vec![
+            "const void* buf".to_string(),
+            "int count".to_string(),
+            "MPI_Datatype type".to_string(),
+        ],
+    );
+    let xlanguage = create_xlanguage(Languages::C, 0);
+    let result: Result<String> = mess_size!(
+        "MPI_Count message_size =",
+        call_info,
+        1, datatype_inx:2,
+        xlanguage
+    );
+    assert!(result.is_ok());
+    let result_str = &result.unwrap();
+    assert_eq!(
+        result_str,
+        "int type_size;\n\
+        PMPI_Type_size(type, &type_size);\n\
+        MPI_Count message_size = (MPI_Count) count * type_size;"
+    );
+    Ok(())
+}
+
+#[test]
 fn test_mess_size_macro_f() -> Result<()> {
     let call_info: &MpiCallInfo = &(
         "Send".to_string(),
