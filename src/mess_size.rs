@@ -94,7 +94,8 @@ pub(crate) use var_name;
 /// ```
 ///
 macro_rules! mess_size {
-    ($decl_or_update:expr, $count:ident, $datatype:ident, $xlanguage:ident) => {
+    // Count and datatype based message size computation for MPI calls.
+    ($decl_or_update:expr, $count:expr, $datatype:expr, $xlanguage:ident) => {
         if matches!($xlanguage.0, Languages::C) {
             Ok(format!(
                 "int {type}_size;\n\
@@ -113,6 +114,17 @@ macro_rules! mess_size {
                 type = $datatype
             ))
         }
+    };
+    // Count and datatype are extracted from $mpi_call_info
+    ($decl_or_update:expr, $mpi_call_info:ident,
+        $count_inx:expr, datatype_inx:$datatype_inx:expr,
+        $xlanguage:ident) => {
+        mess_size!(
+            $decl_or_update,
+            var_name!($mpi_call_info, $count_inx),
+            var_name!($mpi_call_info, $datatype_inx),
+            $xlanguage
+        )
     };
 }
 #[cfg(test)]
