@@ -172,58 +172,33 @@ pub(crate) use mess_size;
 type SpecialMessageSizeGenerator = fn(&MpiCallInfo, &XLanguage) -> Result<String>;
 
 /// [`SpecialMessageSizeGenerator`] for MPI_Sendrecv.
-/// Message size for sending and receiving in MPI_Sendrecv are added together.
+/// Message size for sending and receiving in MPI_Sendrecv are added together,
+/// taking into account that either the source or destination may be `MPI_PROC_NULL`.
 fn generate_mess_size4sendrecv(call_info: &MpiCallInfo, xlanguage: &XLanguage) -> Result<String> {
-    let send_count_var = var_name!(call_info, 1);
-    let send_datatype_var = var_name!(call_info, 2);
-    let dest_var = var_name!(call_info, 3);
-    let recv_count_var = var_name!(call_info, 6);
-    let recv_datatype_var = var_name!(call_info, 7);
-    let source_var = var_name!(call_info, 8);
-    if matches!(xlanguage.0, Languages::C) {
-        Ok(format!(
-            "MPI_Count message_size = 0;\n\
-             if ({dest} != MPI_PROC_NULL) {{\n\
-             int {send_type}_size;\n\
-             PMPI_Type_size({send_type}, &{send_type}_size);\n\
-             message_size += (MPI_Count) {send_count} * {send_type}_size;\n\
-             }}\n\
-             if ({source} != MPI_PROC_NULL) {{\n\
-             int {recv_type}_size;\n\
-             PMPI_Type_size({recv_type}, &{recv_type}_size);\n\
-             message_size += (MPI_Count) {recv_count} * {recv_type}_size;\n\
-             }}",
-            dest = dest_var,
-            send_type = send_datatype_var,
-            send_count = send_count_var,
-            source = source_var,
-            recv_type = recv_datatype_var,
-            recv_count = recv_count_var
-        ))
-    } else {
-        Ok(format!(
-            "MPI_Count message_size = 0;\n\
-             if (*{dest} != MPI_PROC_NULL) {{\n\
-             MPI_Fint {send_type}_size;\n\
-             MPI_Fint ierror_{send_type}_size;\n\
-             pmpi_type_size{underscore}({send_type}, &{send_type}_size, &ierror_{send_type}_size);\n\
-             message_size += (MPI_Count) *{send_count} * {send_type}_size;\n\
-             }}\n\
-             if (*{source} != MPI_PROC_NULL) {{\n\
-             MPI_Fint {recv_type}_size;\n\
-             MPI_Fint ierror_{recv_type}_size;\n\
-             pmpi_type_size{underscore}({recv_type}, &{recv_type}_size, &ierror_{recv_type}_size);\n\
-             message_size += (MPI_Count) *{recv_count} * {recv_type}_size;\n\
-             }}",
-            dest = dest_var,
-            send_type = send_datatype_var,
-            send_count = send_count_var,
-            source = source_var,
-            recv_type = recv_datatype_var,
-            recv_count = recv_count_var,
-            underscore = xlanguage.1
-        ))
-    }
+    let dest_var = var_name!(call_info, 3, xlanguage);
+    let source_var = var_name!(call_info, 8, xlanguage);
+    let send_part: Result<String> = mess_size!(
+        "message_size +=",
+        call_info,
+        1, datatype_inx:2,
+        xlanguage
+    );
+    let recv_part: Result<String> = mess_size!(
+        "message_size +=",
+        call_info,
+        6, datatype_inx:7,
+        xlanguage
+    );
+    Ok(format!(
+        "MPI_Count message_size = 0;\n\
+        if ({} != MPI_PROC_NULL) {{\n\
+        {}\n\
+        }}\n\
+        if ({} != MPI_PROC_NULL) {{\n\
+        {}\n\
+        }}",
+        dest_var, send_part?, source_var, recv_part?
+    ))
 }
 
 /// [`SpecialMessageSizeGenerator`] for MPI_Scatter.
