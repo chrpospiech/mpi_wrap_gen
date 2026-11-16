@@ -42,35 +42,29 @@ fn test_scatter_c() -> Result<()> {
     assert_eq!(
         code,
         "int is_intercomm;\n\
+        int remote_size = 0;\n\
         PMPI_Comm_test_inter(comm, &is_intercomm);\n\
-        MPI_Count message_size = 0;\n\
         if (is_intercomm) {\n\
         if (root == MPI_ROOT) {\n\
-        int remote_size;\n\
         PMPI_Comm_remote_size(comm, &remote_size);\n\
-        int sendtype_size;\n\
-        PMPI_Type_size(sendtype, &sendtype_size);\n\
-        message_size += (MPI_Count) remote_size * sendcount * sendtype_size;\n\
         } else if (root != MPI_PROC_NULL) {\n\
-        int recvtype_size;\n\
-        PMPI_Type_size(recvtype, &recvtype_size);\n\
-        message_size += (MPI_Count) recvcount * recvtype_size;\n\
+        remote_size = 1;\n\
         }\n\
+        // End of inter-communicator code\n\
         } else {\n\
+        // Intra-communicator code\n\
         int rank;\n\
         PMPI_Comm_rank(comm, &rank);\n\
         if (rank == root) {\n\
-        int comm_size;\n\
-        PMPI_Comm_size(comm, &comm_size);\n\
-        int sendtype_size;\n\
-        PMPI_Type_size(sendtype, &sendtype_size);\n\
-        message_size += (MPI_Count) (comm_size - 1) * sendcount * sendtype_size;\n\
+        PMPI_Comm_size(comm, &remote_size);\n\
+        remote_size -= 1;\n\
         } else {\n\
+        remote_size = 1;\n\
+        }\n\
+        // End of intra-communicator code\n\
         int recvtype_size;\n\
         PMPI_Type_size(recvtype, &recvtype_size);\n\
-        message_size += (MPI_Count) recvcount * recvtype_size;\n\
-        }\n\
-        }"
+        MPI_Count message_size = remote_size * (MPI_Count) recvcount * recvtype_size;"
     );
     Ok(())
 }
@@ -82,43 +76,34 @@ fn test_scatter_fortran() -> Result<()> {
     assert_eq!(
         code,
         "MPI_Fint is_intercomm;\n\
+        MPI_Fint remote_size = 0;\n\
         MPI_Fint ierror_comm_test_inter;\n\
         pmpi_comm_test_inter_(comm, &is_intercomm, &ierror_comm_test_inter);\n\
-        MPI_Count message_size = 0;\n\
         if (is_intercomm) {\n\
         if (*root == MPI_ROOT) {\n\
-        MPI_Fint remote_size;\n\
         MPI_Fint ierror_remote_size;\n\
         pmpi_comm_remote_size_(comm, &remote_size, &ierror_remote_size);\n\
-        MPI_Fint sendtype_size;\n\
-        MPI_Fint ierror_sendtype_size;\n\
-        pmpi_type_size_(sendtype, &sendtype_size, &ierror_sendtype_size);\n\
-        message_size += (MPI_Count) remote_size * *sendcount * sendtype_size;\n\
         } else if (*root != MPI_PROC_NULL) {\n\
-        MPI_Fint recvtype_size;\n\
-        MPI_Fint ierror_recvtype_size;\n\
-        pmpi_type_size_(recvtype, &recvtype_size, &ierror_recvtype_size);\n\
-        message_size += (MPI_Count) *recvcount * recvtype_size;\n\
+        remote_size = 1;\n\
         }\n\
+        // End of inter-communicator code\n\
         } else {\n\
+        // Intra-communicator code\n\
         MPI_Fint rank;\n\
-        MPI_Fint ierror_rank;\n\
-        pmpi_comm_rank_(comm, &rank, &ierror_rank);\n\
+        MPI_Fint ierror_comm_rank;\n\
+        pmpi_comm_rank_(comm, &rank, &ierror_comm_rank);\n\
         if (rank == *root) {\n\
-        MPI_Fint comm_size;\n\
         MPI_Fint ierror_comm_size;\n\
-        pmpi_comm_size_(comm, &comm_size, &ierror_comm_size);\n\
-        MPI_Fint sendtype_size;\n\
-        MPI_Fint ierror_sendtype_size;\n\
-        pmpi_type_size_(sendtype, &sendtype_size, &ierror_sendtype_size);\n\
-        message_size += (MPI_Count) (comm_size - 1) * *sendcount * sendtype_size;\n\
+        pmpi_comm_size_(comm, &remote_size, &ierror_comm_size);\n\
+        remote_size -= 1;\n\
         } else {\n\
+        remote_size = 1;\n\
+        }\n\
+        // End of intra-communicator code\n\
         MPI_Fint recvtype_size;\n\
         MPI_Fint ierror_recvtype_size;\n\
         pmpi_type_size_(recvtype, &recvtype_size, &ierror_recvtype_size);\n\
-        message_size += (MPI_Count) *recvcount * recvtype_size;\n\
-        }\n\
-        }"
+        MPI_Count message_size = remote_size * (MPI_Count) *recvcount * recvtype_size;"
     );
     Ok(())
 }
