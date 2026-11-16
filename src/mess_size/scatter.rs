@@ -61,6 +61,7 @@ fn test_scatter_c() -> Result<()> {
         } else {\n\
         remote_size = 1;\n\
         }\n\
+        }\n\
         // End of intra-communicator code\n\
         int recvtype_size;\n\
         PMPI_Type_size(recvtype, &recvtype_size);\n\
@@ -98,6 +99,7 @@ fn test_scatter_fortran() -> Result<()> {
         remote_size -= 1;\n\
         } else {\n\
         remote_size = 1;\n\
+        }\n\
         }\n\
         // End of intra-communicator code\n\
         MPI_Fint recvtype_size;\n\

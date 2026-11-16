@@ -185,6 +185,7 @@ fn test_comm_partners_macro_c() -> Result<()> {
                 } else {\n\
                 remote_size = 1;\n\
                 }\n\
+                }\n\
                 // End of intra-communicator code\n\
                 ";
     assert_eq!(result_str, expected_str);
@@ -238,6 +239,7 @@ fn test_comm_partners_macro_f() -> Result<()> {
                 remote_size -= 1;\n\
                 } else {\n\
                 remote_size = 1;\n\
+                }\n\
                 }\n\
                 // End of intra-communicator code\n\
                 ";

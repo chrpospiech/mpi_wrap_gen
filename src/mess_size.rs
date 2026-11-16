@@ -203,6 +203,7 @@ macro_rules! comm_partners {
                 }} else {{\n\
                 remote_size = 1;\n\
                 }}\n\
+                }}\n\
                 // End of intra-communicator code\n\
                 ",
                 comm = var_name!($mpi_call_info, $comm_inx),
@@ -234,6 +235,7 @@ macro_rules! comm_partners {
                 remote_size -= 1;\n\
                 }} else {{\n\
                 remote_size = 1;\n\
+                }}\n\
                 }}\n\
                 // End of intra-communicator code\n\
                 ",
