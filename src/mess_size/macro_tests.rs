@@ -17,7 +17,7 @@
 // Author: Dr. Christoph Pospiech
 
 use crate::config::{create_xlanguage, Languages};
-use crate::mess_size::{mess_size, var_name};
+use crate::mess_size::{comm_partners, mess_size, var_name};
 use crate::mpi_calls::MpiCallInfo;
 use anyhow::Result;
 
@@ -138,5 +138,107 @@ fn test_mess_size_macro_f() -> Result<()> {
         pmpi_type_size_(type, &type_size, &ierror_type_size);\n\
         MPI_Count message_size = (MPI_Count) *count * type_size;"
     );
+    Ok(())
+}
+
+#[test]
+fn test_comm_partners_macro_c() -> Result<()> {
+    let call_info: &MpiCallInfo = &(
+        "Gather".to_string(),
+        vec![
+            "void* sendbuffer".to_string(),
+            "int sendcount".to_string(),
+            "MPI_Datatype sendtype".to_string(),
+            "void* recvbuffer".to_string(),
+            "int recvcount".to_string(),
+            "MPI_Datatype recvtype".to_string(),
+            "int root".to_string(),
+            "MPI_Comm comm".to_string(),
+        ],
+    );
+    let xlanguage = create_xlanguage(Languages::C, 0);
+    let result: Result<String> = comm_partners!(
+        call_info,
+        root_inx: 6,
+        comm_inx: 7,
+        xlanguage
+    );
+    assert!(result.is_ok());
+    let result_str = &result.unwrap();
+    let expected_str = "int is_intercomm;\n\
+                int remote_size = 0;\n\
+                PMPI_Comm_test_inter(comm, &is_intercomm);\n\
+                if (is_intercomm) {\n\
+                if (root == MPI_ROOT) {\n\
+                PMPI_Comm_remote_size(comm, &remote_size);\n\
+                } else if (root != MPI_PROC_NULL) {\n\
+                remote_size = 1;\n\
+                // End of inter-communicator code\n\
+                } else {\n\
+                // Intra-communicator code\n\
+                int rank;\n\
+                PMPI_Comm_rank(comm, &rank);\n\
+                if (rank == root) {\n\
+                PMPI_Comm_size(comm, &remote_size);\n\
+                remote_size -= 1;\n\
+                } else {\n\
+                remote_size = 1;\n\
+                }\n\
+                // End of intra-communicator code\n\
+                ";
+    assert_eq!(result_str, expected_str);
+    Ok(())
+}
+
+#[test]
+fn test_comm_partners_macro_f() -> Result<()> {
+    let call_info: &MpiCallInfo = &(
+        "Gather".to_string(),
+        vec![
+            "void* sendbuffer".to_string(),
+            "int sendcount".to_string(),
+            "MPI_Datatype sendtype".to_string(),
+            "void* recvbuffer".to_string(),
+            "int recvcount".to_string(),
+            "MPI_Datatype recvtype".to_string(),
+            "int root".to_string(),
+            "MPI_Comm comm".to_string(),
+        ],
+    );
+    let xlanguage = create_xlanguage(Languages::Fortran, 1);
+    let result: Result<String> = comm_partners!(
+        call_info,
+        root_inx: 6,
+        comm_inx: 7,
+        xlanguage
+    );
+    assert!(result.is_ok());
+    let result_str = &result.unwrap();
+    let expected_str = "MPI_Fint is_intercomm;\n\
+                MPI_Fint remote_size = 0;\n\
+                MPI_Fint ierror_comm_test_inter;\n\
+                pmpi_comm_test_inter_(comm, &is_intercomm, &ierror_comm_test_inter);\n\
+                if (is_intercomm) {\n\
+                if (*root == MPI_ROOT) {\n\
+                MPI_Fint ierror_remote_size;\n\
+                pmpi_comm_remote_size_(comm, &remote_size, &ierror_remote_size);\n\
+                } else if (*root != MPI_PROC_NULL) {\n\
+                remote_size = 1;\n\
+                // End of inter-communicator code\n\
+                } else {\n\
+                // Intra-communicator code\n\
+                MPI_Fint rank;\n\
+                MPI_Fint ierror_comm_rank;\n\
+                pmpi_comm_rank_(comm, &rank, &ierror_comm_rank);\n\
+                if (rank == *root) {\n\
+                MPI_Fint ierror_comm_size;\n\
+                pmpi_comm_size_(comm, &remote_size, &ierror_comm_size);\n\
+                remote_size -= 1;\n\
+                } else {\n\
+                remote_size = 1;\n\
+                }\n\
+                // End of intra-communicator code\n\
+                ";
+    assert_eq!(result_str, expected_str);
     Ok(())
 }
