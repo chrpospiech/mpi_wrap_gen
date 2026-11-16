@@ -34,6 +34,9 @@ mod sendrecv;
 #[cfg(test)]
 mod scatter;
 
+#[cfg(test)]
+mod gather;
+
 /// Macro for extracting the variable name from a parameter declaration string.
 /// It takes a name of a variable of type `MpiCallInfo` and a position in the parameter list,
 /// and returns the variable name as a reference to str.
@@ -312,9 +315,33 @@ fn generate_mess_size4scatter(call_info: &MpiCallInfo, xlanguage: &XLanguage) ->
     Ok(format!("{}{}", comm_part?, recv_part?))
 }
 
+/// [`SpecialMessageSizeGenerator`] for MPI_Gather.
+/// First, the function determines the communication partners for the gather operation.
+/// Then, it computes the message size for the send buffer based on the number of elements
+/// and the datatype and multiplies it by the remote group size to get the total message size.
+/// The receive buffer message size per communication partner must be the same as the send
+/// message size, which is implicitly accounted for by multiplying the send message
+/// size by the remote group size.
+fn generate_mess_size4gather(call_info: &MpiCallInfo, xlanguage: &XLanguage) -> Result<String> {
+    let comm_part: Result<String> = comm_partners!(
+        call_info,
+        root_inx: 6,
+        comm_inx: 7,
+        xlanguage
+    );
+    let send_part: Result<String> = mess_size!(
+        "MPI_Count message_size = remote_size *",
+        call_info,
+        1, datatype_inx:2,
+        xlanguage
+    );
+    Ok(format!("{}{}", comm_part?, send_part?))
+}
+
 static SPECIAL_GENERATORS: phf::Map<&'static str, SpecialMessageSizeGenerator> = phf_map! {
     "Sendrecv" => generate_mess_size4sendrecv,
     "Scatter" => generate_mess_size4scatter,
+    "Gather" => generate_mess_size4gather,
 };
 
 /// Generates a string that contains C code for computing the size of an MPI message.
