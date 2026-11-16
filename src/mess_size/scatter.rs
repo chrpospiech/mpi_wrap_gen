@@ -49,6 +49,7 @@ fn test_scatter_c() -> Result<()> {
         PMPI_Comm_remote_size(comm, &remote_size);\n\
         } else if (root != MPI_PROC_NULL) {\n\
         remote_size = 1;\n\
+        }\n\
         // End of inter-communicator code\n\
         } else {\n\
         // Intra-communicator code\n\
@@ -84,6 +85,7 @@ fn test_scatter_fortran() -> Result<()> {
         pmpi_comm_remote_size_(comm, &remote_size, &ierror_remote_size);\n\
         } else if (*root != MPI_PROC_NULL) {\n\
         remote_size = 1;\n\
+        }\n\
         // End of inter-communicator code\n\
         } else {\n\
         // Intra-communicator code\n\
