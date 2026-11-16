@@ -41,12 +41,14 @@ fn test_scatter_c() -> Result<()> {
     let code = generate_mess_size_code(&call_info, &create_xlanguage(Languages::C, 0))?;
     assert_eq!(
         code,
-        "int is_intercomm;\n\
-        int remote_size = 0;\n\
+        "int remote_size = 0;\n\
+        int is_root = 0;\n\
+        int is_intercomm;\n\
         PMPI_Comm_test_inter(comm, &is_intercomm);\n\
         if (is_intercomm) {\n\
         if (root == MPI_ROOT) {\n\
         PMPI_Comm_remote_size(comm, &remote_size);\n\
+        is_root = 1;\n\
         } else if (root != MPI_PROC_NULL) {\n\
         remote_size = 1;\n\
         }\n\
@@ -58,6 +60,7 @@ fn test_scatter_c() -> Result<()> {
         if (rank == root) {\n\
         PMPI_Comm_size(comm, &remote_size);\n\
         remote_size -= 1;\n\
+        is_root = 1;\n\
         } else {\n\
         remote_size = 1;\n\
         }\n\
@@ -76,14 +79,16 @@ fn test_scatter_fortran() -> Result<()> {
     let code = generate_mess_size_code(&call_info, &create_xlanguage(Languages::Fortran, 1))?;
     assert_eq!(
         code,
-        "MPI_Fint is_intercomm;\n\
-        MPI_Fint remote_size = 0;\n\
+        "MPI_Fint remote_size = 0;\n\
+        MPI_Fint is_root = 0;\n\
+        MPI_Fint is_intercomm;\n\
         MPI_Fint ierror_comm_test_inter;\n\
         pmpi_comm_test_inter_(comm, &is_intercomm, &ierror_comm_test_inter);\n\
         if (is_intercomm) {\n\
         if (*root == MPI_ROOT) {\n\
         MPI_Fint ierror_remote_size;\n\
         pmpi_comm_remote_size_(comm, &remote_size, &ierror_remote_size);\n\
+        is_root = 1;\n\
         } else if (*root != MPI_PROC_NULL) {\n\
         remote_size = 1;\n\
         }\n\
@@ -97,6 +102,7 @@ fn test_scatter_fortran() -> Result<()> {
         MPI_Fint ierror_comm_size;\n\
         pmpi_comm_size_(comm, &remote_size, &ierror_comm_size);\n\
         remote_size -= 1;\n\
+        is_root = 1;\n\
         } else {\n\
         remote_size = 1;\n\
         }\n\
