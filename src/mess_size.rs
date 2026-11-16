@@ -341,7 +341,9 @@ fn generate_mess_size4gather(call_info: &MpiCallInfo, xlanguage: &XLanguage) -> 
 static SPECIAL_GENERATORS: phf::Map<&'static str, SpecialMessageSizeGenerator> = phf_map! {
     "Sendrecv" => generate_mess_size4sendrecv,
     "Scatter" => generate_mess_size4scatter,
+    "Iscatter" => generate_mess_size4scatter,
     "Gather" => generate_mess_size4gather,
+    "Igather" => generate_mess_size4gather,
 };
 
 /// Generates a string that contains C code for computing the size of an MPI message.
