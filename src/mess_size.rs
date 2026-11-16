@@ -288,111 +288,26 @@ fn generate_mess_size4sendrecv(call_info: &MpiCallInfo, xlanguage: &XLanguage) -
 }
 
 /// [`SpecialMessageSizeGenerator`] for MPI_Scatter.
-/// For intracommunicators, non-root processes use the receive message size and
-/// the root uses the send size for all other processes. Intercommunicator root
-/// processes use the send size for the remote group, while receiving processes
-/// use the receive message size.
+/// First, the function determines the communication partners for the scatter operation.
+/// Then, it computes the message size for the receive buffer based on the number of elements
+/// and the datatype and multiplies it by the remote group size to get the total message size.
+/// The send buffer message size per communication partner must be the same as the receive
+/// message size, which is implicitly accounted for by multiplying the receive message
+/// size by the remote group size.
 fn generate_mess_size4scatter(call_info: &MpiCallInfo, xlanguage: &XLanguage) -> Result<String> {
-    let send_count_var = var_name!(call_info, 1);
-    let send_datatype_var = var_name!(call_info, 2);
-    let recv_count_var = var_name!(call_info, 4);
-    let recv_datatype_var = var_name!(call_info, 5);
-    let root_var = var_name!(call_info, 6);
-    let comm_var = var_name!(call_info, 7);
-    let _dummy: Result<String> = comm_partners!(
+    let comm_part: Result<String> = comm_partners!(
         call_info,
         root_inx: 6,
         comm_inx: 7,
         xlanguage
     );
-    Ok(if matches!(xlanguage.0, Languages::C) {
-        format!(
-            "int is_intercomm;\n\
-             PMPI_Comm_test_inter({comm}, &is_intercomm);\n\
-             MPI_Count message_size = 0;\n\
-             if (is_intercomm) {{\n\
-             if ({root} == MPI_ROOT) {{\n\
-             int remote_size;\n\
-             PMPI_Comm_remote_size({comm}, &remote_size);\n\
-             int {send_datatype}_size;\n\
-             PMPI_Type_size({send_datatype}, &{send_datatype}_size);\n\
-             message_size += (MPI_Count) remote_size * {send_count} * {send_datatype}_size;\n\
-             }} else if ({root} != MPI_PROC_NULL) {{\n\
-             int {recv_datatype}_size;\n\
-             PMPI_Type_size({recv_datatype}, &{recv_datatype}_size);\n\
-             message_size += (MPI_Count) {recv_count} * {recv_datatype}_size;\n\
-             }}\n\
-             }} else {{\n\
-             int rank;\n\
-             PMPI_Comm_rank({comm}, &rank);\n\
-             if (rank == {root}) {{\n\
-             int comm_size;\n\
-             PMPI_Comm_size({comm}, &comm_size);\n\
-             int {send_datatype}_size;\n\
-             PMPI_Type_size({send_datatype}, &{send_datatype}_size);\n\
-             message_size += (MPI_Count) (comm_size - 1) * {send_count} * {send_datatype}_size;\n\
-             }} else {{\n\
-             int {recv_datatype}_size;\n\
-             PMPI_Type_size({recv_datatype}, &{recv_datatype}_size);\n\
-             message_size += (MPI_Count) {recv_count} * {recv_datatype}_size;\n\
-             }}\n\
-             }}",
-            comm = comm_var,
-            root = root_var,
-            send_datatype = send_datatype_var,
-            send_count = send_count_var,
-            recv_datatype = recv_datatype_var,
-            recv_count = recv_count_var
-        )
-    } else {
-        format!(
-            "MPI_Fint is_intercomm;\n\
-             MPI_Fint ierror_comm_test_inter;\n\
-             pmpi_comm_test_inter{underscore}({comm}, &is_intercomm, &ierror_comm_test_inter);\n\
-             MPI_Count message_size = 0;\n\
-             if (is_intercomm) {{\n\
-             if (*{root} == MPI_ROOT) {{\n\
-             MPI_Fint remote_size;\n\
-             MPI_Fint ierror_remote_size;\n\
-             pmpi_comm_remote_size{underscore}({comm}, &remote_size, &ierror_remote_size);\n\
-             MPI_Fint {send_datatype}_size;\n\
-             MPI_Fint ierror_{send_datatype}_size;\n\
-             pmpi_type_size{underscore}({send_datatype}, &{send_datatype}_size, &ierror_{send_datatype}_size);\n\
-             message_size += (MPI_Count) remote_size * *{send_count} * {send_datatype}_size;\n\
-             }} else if (*{root} != MPI_PROC_NULL) {{\n\
-             MPI_Fint {recv_datatype}_size;\n\
-             MPI_Fint ierror_{recv_datatype}_size;\n\
-             pmpi_type_size{underscore}({recv_datatype}, &{recv_datatype}_size, &ierror_{recv_datatype}_size);\n\
-             message_size += (MPI_Count) *{recv_count} * {recv_datatype}_size;\n\
-             }}\n\
-             }} else {{\n\
-             MPI_Fint rank;\n\
-             MPI_Fint ierror_rank;\n\
-             pmpi_comm_rank{underscore}({comm}, &rank, &ierror_rank);\n\
-             if (rank == *{root}) {{\n\
-             MPI_Fint comm_size;\n\
-             MPI_Fint ierror_comm_size;\n\
-             pmpi_comm_size{underscore}({comm}, &comm_size, &ierror_comm_size);\n\
-             MPI_Fint {send_datatype}_size;\n\
-             MPI_Fint ierror_{send_datatype}_size;\n\
-             pmpi_type_size{underscore}({send_datatype}, &{send_datatype}_size, &ierror_{send_datatype}_size);\n\
-             message_size += (MPI_Count) (comm_size - 1) * *{send_count} * {send_datatype}_size;\n\
-             }} else {{\n\
-             MPI_Fint {recv_datatype}_size;\n\
-             MPI_Fint ierror_{recv_datatype}_size;\n\
-             pmpi_type_size{underscore}({recv_datatype}, &{recv_datatype}_size, &ierror_{recv_datatype}_size);\n\
-             message_size += (MPI_Count) *{recv_count} * {recv_datatype}_size;\n\
-             }}\n\
-             }}",
-            underscore = xlanguage.1,
-            comm = comm_var,
-            root = root_var,
-            send_datatype = send_datatype_var,
-            send_count = send_count_var,
-            recv_datatype = recv_datatype_var,
-            recv_count = recv_count_var
-        )
-    })
+    let recv_part: Result<String> = mess_size!(
+        "MPI_Count message_size = remote_size *",
+        call_info,
+        4, datatype_inx:5,
+        xlanguage
+    );
+    Ok(format!("{}{}", comm_part?, recv_part?))
 }
 
 static SPECIAL_GENERATORS: phf::Map<&'static str, SpecialMessageSizeGenerator> = phf_map! {
