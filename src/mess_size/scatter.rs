@@ -66,9 +66,16 @@ fn test_scatter_c() -> Result<()> {
         }\n\
         }\n\
         // End of intra-communicator code\n\
+        MPI_Count message_size = 0;\n\
+        if (is_root) {\n\
+        int sendtype_size;\n\
+        PMPI_Type_size(sendtype, &sendtype_size);\n\
+        message_size = remote_size * (MPI_Count) sendcount * sendtype_size;\n\
+        } else {\n\
         int recvtype_size;\n\
         PMPI_Type_size(recvtype, &recvtype_size);\n\
-        MPI_Count message_size = remote_size * (MPI_Count) recvcount * recvtype_size;"
+        message_size = remote_size * (MPI_Count) recvcount * recvtype_size;\n\
+        }"
     );
     Ok(())
 }
@@ -108,10 +115,18 @@ fn test_scatter_fortran() -> Result<()> {
         }\n\
         }\n\
         // End of intra-communicator code\n\
+        MPI_Count message_size = 0;\n\
+        if (is_root) {\n\
+        MPI_Fint sendtype_size;\n\
+        MPI_Fint ierror_sendtype_size;\n\
+        pmpi_type_size_(sendtype, &sendtype_size, &ierror_sendtype_size);\n\
+        message_size = remote_size * (MPI_Count) *sendcount * sendtype_size;\n\
+        } else {\n\
         MPI_Fint recvtype_size;\n\
         MPI_Fint ierror_recvtype_size;\n\
         pmpi_type_size_(recvtype, &recvtype_size, &ierror_recvtype_size);\n\
-        MPI_Count message_size = remote_size * (MPI_Count) *recvcount * recvtype_size;"
+        message_size = remote_size * (MPI_Count) *recvcount * recvtype_size;\n\
+        }"
     );
     Ok(())
 }
