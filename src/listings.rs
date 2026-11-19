@@ -432,8 +432,14 @@ pub fn extract_and_generate_listings(
     }
     output_str.push_str(&config.templates.footer);
 
+    // Even if we are in the single_output_file mode, we still need to format
+    // the output path, as `config.output_file` may contain `%(u)s` placeholders,
+    // and push it to the output vector.
     if single_output_file {
-        output.push((PathBuf::from(&config.output_file), output_str));
+        output.push((
+            format_chapter_number(&config.output_file, 1, args.underscores)?,
+            output_str,
+        ));
     }
 
     Ok(output)
