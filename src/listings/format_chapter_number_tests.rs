@@ -139,3 +139,13 @@ fn zero_underscores_substitutes_empty_string() -> Result<()> {
     assert_eq!(result, PathBuf::from("/output/chapter_3.c"));
     Ok(())
 }
+
+/// output paths containing only underscore placeholders don't generate multiple file outputs.
+#[test]
+fn only_underscore_placeholders_do_not_generate_multiple_files() -> Result<()> {
+    let outfile_name = Path::new("/output%(u)s/%(u)s.c");
+    let template = PathBuf::from(outfile_name.to_str().unwrap().replace("%(u)s", ""));
+    let result = format_chapter_number(&template, 3, 2).unwrap();
+    assert_eq!(result, template);
+    Ok(())
+}

@@ -304,12 +304,22 @@ pub fn extract_and_generate_listings(
     // Determine whether we have a single output file or multiple
     // output files based on the presence of the
     // `%(chapter_number)[...]s` placeholder in the output file path template.
-    // This is determined by comparing input and output paths after
+    // The decision should not depend on the underscores setting in the command line arguments.
+    // Hence a template is used by removing any occurrences of the string "%(u)s" from the
+    // output file path template.
+    // Then the decision is made by comparing input and output paths after
     // formatting the chapter number. The result is stored in a
     // boolean variable `single_output_file`.
     let single_output_file = {
-        let formatted_path = format_chapter_number(&config.output_file, 1, 0)?;
-        formatted_path == config.output_file
+        let template = PathBuf::from(
+            config
+                .output_file
+                .to_str()
+                .ok_or_else(|| anyhow::anyhow!("Invalid output path"))?
+                .replace("%(u)s", ""),
+        );
+        let formatted_path = format_chapter_number(&template, 1, 0)?;
+        formatted_path == template
     };
 
     // If we have a single output file, we will generate the output for all chapters
@@ -422,8 +432,14 @@ pub fn extract_and_generate_listings(
     }
     output_str.push_str(&config.templates.footer);
 
+    // Even if we are in the single_output_file mode, we still need to format
+    // the output path, as `config.output_file` may contain `%(u)s` placeholders,
+    // and push it to the output vector.
     if single_output_file {
-        output.push((PathBuf::from(&config.output_file), output_str));
+        output.push((
+            format_chapter_number(&config.output_file, 1, args.underscores)?,
+            output_str,
+        ));
     }
 
     Ok(output)
