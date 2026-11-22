@@ -85,7 +85,7 @@ pub(crate) use var_name;
 ///   should be declared or updated.
 /// * `count` - An expression evaluating to the variable name of the count parameter.
 /// * `datatype` - An expression evaluating to the variable name of the datatype parameter.
-/// * `mpi_call_info` - A [`MpiCallInfo`] identifier to extract `count` and
+/// * `mpi_call_info` - A [`MpiCallInfo`](crate::mpi_calls::MpiCallInfo) identifier to extract `count` and
 ///   `datatype` variable names from, by argument index.
 /// * `count_inx` - The argument index of the count parameter in `mpi_call_info`.
 /// * `datatype_inx` - The argument index of the datatype parameter in `mpi_call_info`.
