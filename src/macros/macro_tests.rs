@@ -17,7 +17,7 @@
 // Author: Dr. Christoph Pospiech
 
 use crate::config::{create_xlanguage, Languages};
-use crate::mess_size::{comm_partners, mess_size, var_name};
+use crate::macros::{comm_partners, mess_size, var_name};
 use crate::mpi_calls::MpiCallInfo;
 use anyhow::Result;
 
